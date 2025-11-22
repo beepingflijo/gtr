@@ -11,6 +11,14 @@
     width: fit-content;
     height: fit-content;
     white-space: wrap;
+    overflow: hidden;
+}
+
+.line-name-original {
+    display: inline-block;
+    width: fit-content !important;
+    height: fit-content;
+    opacity: 0.6 !important;
 }
 
 .line-selector.collapsed .line-name-original {
