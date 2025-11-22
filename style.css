@@ -363,7 +363,7 @@ header * {
     width: fit-content;
 }
 
-.selection .selection-item:not(.active) span {
+.selection .icon-btn.selection-item:not(.active) span {
     width: 0;
     opacity: 0;
 }

@@ -16,9 +16,9 @@
 
 .line-name-original {
     display: inline-block;
-    width: fit-content !important;
+    width: fit-content;
     height: fit-content;
-    opacity: 0.6 !important;
+    opacity: 0.6;
 }
 
 .line-selector.collapsed .line-name-original {
