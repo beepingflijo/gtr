@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Loading...</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+</head>
+<body>
+<script>
+    // 获取用户最后访问的页面
+    const lastVisitedPage = localStorage.getItem('lastVisitedPage');
+    const lastVisitedParams = localStorage.getItem('lastVisitedParams');
+    
+    // 默认跳转到 lines_info.html
+    let redirectPage = 'lines_info.html';
+    let redirectParams = '';
+    
+    // 如果有记录最后访问的页面，则跳转到该页面
+    if (lastVisitedPage && ['lines_info.html', 'ticket_calculator.html', 'trains_info.html'].includes(lastVisitedPage)) {
+        redirectPage = lastVisitedPage;
+        redirectParams = lastVisitedParams || '';
+    }
+    
+    // 获取当前URL参数并传递
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentParams = urlParams.toString();
+    
+    // 合并存储的参数和当前URL参数
+    let finalParams = redirectParams;
+    if (currentParams) {
+        finalParams = redirectParams ? `${redirectParams}&${currentParams}` : currentParams;
+    }
+    
+    // 构造跳转URL
+    const redirectURL = `${redirectPage}${finalParams ? '?' + finalParams : ''}`;
+    
+    // 跳转到目标页面
+    window.location.href = redirectURL;
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+main {
+    display: flex;
+    flex-direction: column;
+}
+
+main .item { 
+    background-color: var(--color-background-card);
+    width: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+}
+
+.search-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    width: -webkit-fill-available;
+}
+
+.train-header { 
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 2px 4px;
+    flex-wrap: wrap;
+}
+
+.train-info-container {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    width: -webkit-fill-available;
+    gap: 4px;
+    padding: 0 8px;
+    margin-bottom: 4px;
+}
+
+.train-info-basic {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: -webkit-fill-available;
+    gap: 4px;
+}
+
+.train-line { 
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 4px 8px;
+    transition: all 0.2s ease;
+    width: fit-content;
+}
+
+.train-line:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1) saturate(1.05) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.train-info-number {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-start;
+    min-width: fit-content;
+    max-width: 30vw;
+    text-align: end;
+}
+
+.train-warning {
+    color: crimson;
+    background: linear-gradient(transparent 20%,rgba(255, 0, 0, 0.05) 80%, rgba(255, 0, 0, 0.1)) ;
+    font-weight: bold;
+    border-radius: 0 0 12px 12px;
+    padding: 6px 12px;
+    padding-bottom: 8px;
+}
+
+.train-cars, .next-station { 
+    font-size: 0.9em;
+    color: var(--color-text-secondary);
+}
+
+.next-station {
+    max-width: 30vw;
+}
+
+.eta-next-station {
+    font-size: 1.6em;
+    font-weight: 500;
+}
+
+.train-platform { 
+    font-size: 1.9em;
+    color: var(--color-primary);
+    font-weight: 600;
+}

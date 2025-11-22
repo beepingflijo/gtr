@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <!-- 添加视口元标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>列车信息</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="trains_info.css">
+</head>
+<body>
+<div class="app-container">
+    <header>
+        <div class="title">
+            <img src="./res/gtr.png" alt="logo">
+            <h1>列车信息</h1>
+        </div>
+        <div class="actions search-bar collapsed"> 
+            <div class="icon-btn search-btn">
+                <img src="./res/search.png" alt="search" class="icon"></img>
+            </div>
+            <input type="text" class="search-input" placeholder="车号/站名/线路…"></input>
+        </div>
+        <div class="language-selection selection collapsed"> 
+            <!-- 语言选项将通过 JavaScript 动态添加 -->
+        </div>
+        <div class="actions tabs"> 
+            <div class="icon-btn lines-btn">
+                <img src="./res/tracking.png" alt="fare" class="icon"></img>
+            </div>
+            <div class="icon-btn fare-btn">
+                <img src="./res/cash.png" alt="fare" class="icon"></img>
+            </div>
+            <div class="icon-btn trains-btn">
+                <img src="./res/train.png" alt="fare" class="icon active"></img>
+            </div>
+        </div>
+        <div class="gradient-blur"></div>
+    </header>
+    <main>
+        <!-- 列车信息将会通过 JavaScript 动态添加 -->
+    </main>
+    <footer>
+    </footer>
+</div>
+<script src="script.js"></script>
+<script src="trains_info.js" type="module"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</body>
+</html>

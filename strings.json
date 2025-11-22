@@ -1,0 +1,149 @@
+{
+    "general":{
+        "ok":{"zh_hans":"确定", "en": "OK", "zh_hant":"確定", "uk": "Гаразд"},
+        "cancel":{"zh_hans":"取消", "en": "Cancel", "zh_hant":"取消", "uk": "Скасувати"},
+        "lang":{"zh_hans":"简体中文", "zh_hant":"繁體中文", "en": "English", "uk": "Українська", "pt": "Português"},
+        "lang_short":{"zh_hans":"简", "zh_hant":"繁", "en": "EN", "uk": "УК", "pt": "PT"},
+        "footer":{
+            "zh_hans":"网站部分代码使用AI生成，图标来自<a href=\"icons8.com\">Icons8<\/a>。",
+            "zh_hant":"網站部分代碼使用AI生成，圖標來自<a href=\"icons8.com\">Icons8<\/a>。",
+            "en": "This site is partially AI-generated. Icons from <a href=\"icons8.com\">Icons8<\/a>.",
+            "uk": "Цей сайт частково створено за допомогою ШІ. Іконки з <a href=\"icons8.com\">Icons8<\/a>."
+        },
+        "unknown":{"zh_hans":"未知", "en": "Unknown", "zh_hant":"未知", "uk": "Невідомо"}
+    },
+    "mainpage":{
+        "title":{"zh_hans":"主页","zh_hant":"主頁","en": "Home","uk": "Головна"},
+        "slogan":{
+            "zh_hans":"从运输出发 \n探索智慧生活的各种可能",
+            "zh_hant":"從運輸出發 \n探索智慧生活的各種可能",
+            "en": "From transport, \nExploring more for a smarter life",
+            "uk": "Від транспорту, \nБільше можливостей для розумнішого життя.",
+            "pt": "Do setor dos transportes, \nExplorando mais para uma vida \nmais inteligente."
+        }
+    },
+    "station_names":{
+        "AFN":{"original": "船橋", "zh_hans": "船桥", "en": "Funabashi", "zh_hant": "船橋", "uk": "Фунабаші"},
+        "AGS":{"zh_hans": "格林布希","en": "Greenbush", "zh_hant": "格林布希","uk":"Грінбуш"},
+        "GBA":{"zh_hans": "北安", "en": "Bei'an", "zh_hant": "北安","uk":"Бейань"},
+        "GYZ":{"zh_hans": "广阳", "en": "Guangyang", "zh_hant": "廣陽","uk": "Ґуанъян"},
+        "JBH":{"zh_hans": "滨海", "en": "Binhai", "zh_hant": "濱海", "uk":"Біньхай"},
+        "JBX":{"zh_hans": "新华门", "en": "Xinhuamen", "zh_hant": "新華門", "uk":"Сїньхуамень"},
+        "JXB":{"zh_hans": "旧巷北", "en": "Jiuxiang North", "zh_hant": "舊巷北", "uk":"Цзюсян Північ"},
+        "JXN":{"zh_hans": "旧巷南", "en": "Jiuxiang South", "zh_hant": "舊巷南", "uk":"Цзюсян Південь"},
+        "JXX":{"zh_hans": "旧巷西", "en": "Jiuxiang West", "zh_hant": "舊巷西", "uk":"Цзюсян Захід"},
+        "NZZ":{"zh_hans": "莒南总站","en": "Junan Terminal", "zh_hant": "莒南總站","uk":"Термінал Цзюйнань"},
+        "OWL":{"zh_hans": "欧文北","en": "Owl State North", "zh_hant": "歐文北","uk":"Штат Оул Північ"},
+        "QBL":{"zh_hans": "北麓", "en": "Beilu", "zh_hant": "北麓", "uk":"Бейлу"},
+        "QGL":{"zh_hans": "沁京观澜", "en": "Qingjing Guanlan", "zh_hant": "沁京觀澜", "uk":"Цїньцзїн Ґуаньлань"},
+        "SMC":{"zh_hans": "静见中央车站","en": "Shizumi Central", "zh_hant": "靜見中央車站","uk":"Центральний Шідзумі"},
+        "XYD":{"zh_hans": "圆湖东","en": "Yuanhu East", "zh_hant": "圓湖東", "uk":"Юаньху Схід"},
+        "YBK":{"zh_hans": "颐北煤矿", "en": "Coal Mine of North Yiheng", "zh_hant": "頣北煤礦", "uk":"Вугільна шахта Північного Їхена"}
+    },
+    "lines_info":{
+        "page_title":{"zh_hans":"线路信息", "en": "Lines Info", "zh_hant":"路線資訊", "uk": "Інформація про лінії"},
+        "updated_at":{"zh_hans":"更新于", "en": "Updated at ", "zh_hant":"更新於", "uk": "Оновлено о "},
+        "offline":{"zh_hans":"无法加载列车数据", "en": "Trains data not found", "zh_hant":"列車數據無法加載", "uk": "Дані про потяги не знайдено"},
+        "json_parse_error":{"zh_hans":"JSON解析错误", "en": "JSON parse error", "zh_hant":"JSON解析錯誤", "uk": "Помилка аналізу JSON"},
+        "invalid_data_format":{"zh_hans":"无效数据格式", "en": "Invalid data format", "zh_hant":"無效數據格式", "uk": "Неприпустимий формат даних"},
+        "loading":{"zh_hans":"数据加载中…", "en": "Loading...", "zh_hant":"數據加載中…", "uk": "Завантаження..."},
+        "server_maintaining":{
+            "zh_hans":"服务器可能正在维护", 
+            "en": " Server may be maintaining.", 
+            "zh_hant":"伺服器可能正在維護", 
+            "uk": " Сервер може обслуговуватися."
+        },
+        "route_map":{"zh_hans":"线路图", "en": "Route Map", "zh_hant":"路線圖", "uk": "Карта маршруту"},
+        "locations_for_reference_only":{
+            "zh_hans":"列车位置及速度仅供参考", 
+            "en": "Locations and speed for reference only", 
+            "zh_hant":"列車位置及速度僅供參考", 
+            "uk": "Місцезнаходження та швидкість лише для довідки"
+        },
+        "share_route":{"zh_hans":"分享路线", "en": "Share Route", "zh_hant":"分享路線", "uk": "Поділитися маршрутом"},
+        "copied":{"zh_hans":"已复制", "en": "Copied", "zh_hant":"已複製", "uk": "Скопійовано"},
+        "copy_failed":{"zh_hans":"复制失败", "en": "Copy failed", "zh_hant":"複製失敗", "uk": "Помилка копіювання"},
+        "train":{"zh_hans":"列车", "en": "Train", "zh_hant":"列車", "uk": "Потяг"},
+        "next_station":{"zh_hans":"下一站", "en": "Next Station", "zh_hant":"下一站", "uk": "Наступна станція"},
+        "final_station":{"zh_hans":"终点站", "en": "Terminal Station", "zh_hant":"終點站", "uk": "Кінцева станція"},
+        "line":{"zh_hans":"线路", "en": "Line", "zh_hant":"路線", "uk": "Лінія"},
+        "total_length":{"zh_hans":"线路总长", "en": "Total Length ", "zh_hant":"路線總長", "uk": "Загальна довжина "},
+        "and_total_time":{"zh_hans":"，单程用时约", "en": "; Total time about ", "zh_hant":"，單程用時約", "uk": "; Загальний час близько "},
+        "data_warning":{
+            "zh_hans":"因线网规模较大，线路图页面如不及时关闭将耗费较多流量。确定继续吗？", 
+            "en": "Due to the large scale of the network, the line map page will consume A LOT OF DATA if not closed in time. Do you want to continue?", 
+            "zh_hant":"因線網規模較大，路線圖頁面如不及时關閉將耗費較多流量。確定繼續嗎？", 
+            "uk": "У зв'язку з великими масштабами мережі, сторінка лінійної карти буде споживати БАГАТО ДАНИХ, якщо її вчасно не закрити. Хочете продовжити?"
+        },
+        "speed":{"zh_hans":"车速 ", "en": "Spd ", "zh_hant":"車速 ", "uk": "Погі́н "},
+        "speed_lost":{"zh_hans":"车速丢失", "en": "Speed lost", "zh_hant":"車速遺失", "uk": "Погі́н втрачена"},
+        "running_direction_up":{"zh_hans":"上行", "en": "Up", "zh_hant":"上行", "uk": "Вгору"},
+        "running_direction_down":{"zh_hans":"下行", "en": "Down", "zh_hant":"下行", "uk": "Вниз"},
+        "unknown_direction":{"zh_hans":"未知方向", "en": "Unknown direction", "zh_hant":"未知方向", "uk": "Невідомий напрямок"},
+        "going_backwards":{"zh_hans":"倒车运行", "en": "Running backwards", "zh_hant":"倒車運行", "uk": "Рух у зворотному напрямку"},
+        "warning_long_stop":{"zh_hans":"疑似滞留", "en": "Long stop suspected", "zh_hant":"疑似滯留", "uk": "Схоже на затримку"},
+        "warning_zero_speed":{"zh_hans":"疑似临时停车", "en": "Unscheduled stop suspected", "zh_hant":"疑似臨時停車", "uk": "Схоже на тимчасове зупинки"},
+        "warning_platform_conflict":{
+            "zh_hans":"疑似站台冲突或机外停车", 
+            "en": "Station conflict or holding suspected", 
+            "zh_hant":"疑似月臺衝突或信號前停車", 
+            "uk": "Схоже на конфлікт станції або тимчасове зупинки"
+        }
+    },
+    "ticket_calculator": {
+        "page_title": {"zh_hans": "票价计算", "en": "Fare Calculator", "zh_hant": "票價計算", "uk": "Калькулятор тарифів"},
+        "start_station": {"zh_hans": "出发站", "en": "Departure station", "zh_hant": "出發站", "uk": "Станція відправлення"},
+        "end_station": {"zh_hans": "到达站", "en": "Arrival station", "zh_hant": "到達站", "uk": "Станція прибуття"},
+        "search": {"zh_hans": "搜索", "en": "Search", "zh_hant": "搜尋", "uk": "Пошук"},
+        "clear_input": {"zh_hans": "清空", "en": "Clear", "zh_hant": "清空", "uk": "Очистити"},
+        "please_input_start_and_end": {
+            "zh_hans": "请输入起点站和终点站", 
+            "en": "Please input departure and arrival stations", 
+            "zh_hant": "請輸入起點站和終點站", 
+            "uk": "Будь ласка, введіть станції відправлення та прибуття"
+        },
+        "no_routes_found": {"zh_hans": "未找到路线", "en": "No routes found", "zh_hant": "未找到路線", "uk": "Маршрути не знайдено"},
+        "route": {"zh_hans": "路线", "en": "Route", "zh_hant": "路線", "uk": "Маршрут"},
+        "total_distance": {"zh_hans": "总距离", "en": "Total distance", "zh_hant": "總距離", "uk": "Загальна відстань"},
+        "estimated_time": {"zh_hans": "预计用时", "en": "Estimated time", "zh_hant": "預計用時", "uk": "Орієнтовний час"},
+        "station_count": {"zh_hans": "站点数", "en": "Stations", "zh_hant": "站點數", "uk": "Кількість станцій"},
+        "fare": {"zh_hans": "票价", "en": "Fare", "zh_hant": "票價", "uk": "Тариф"},
+        "board_at": {"zh_hans": "上车", "en": "Board at", "zh_hant": "上車", "uk": "Сісти на"},
+        "alight_at": {"zh_hans": "下车", "en": "Alight at", "zh_hant": "下車", "uk": "Вийти на"},
+        "pass_stations": {"zh_hans": "乘坐", "en": "for ", "zh_hant": "乘坐", "uk": "проїдьте "},
+        "stations": {"zh_hans": "站", "en": " stations", "zh_hant": "站", "uk": " станцій"},
+        "_station": {"zh_hans": "站", "en": " station", "zh_hant": "站", "uk": " станція"},
+        "transfer_at": {"zh_hans": " 换乘", "en": "Transfer at ", "zh_hant": " 換乘", "uk": "Пересісти на "},
+        "min": {"zh_hans":"分钟", "en": "min", "zh_hant":"分鐘", "uk": " хвилин"},
+        "hours": {"zh_hans": "时", "en": "h", "zh_hant": "時", "uk": " години "},
+        "depart_from": {"zh_hans": " 出发", "en": "Depart from ", "zh_hant": " 出發", "uk": "Відправлення з "},
+        "arrive_at": {"zh_hans": "到达 ", "en": "Arrive at ", "zh_hant": "到達 ", "uk": "Прибуття в "},
+        "type_and_search_to_display_results": {
+            "zh_hans": "在搜索面板中输入起点和终点并按下搜索按钮后，这里将显示搜索结果。", 
+            "en": "Type and search to display results here.", 
+            "zh_hant": "在搜尋面板中輸入起點和終點並按下搜尋按鈕后，這裏將顯示結果。", 
+            "uk": "Введіть і пошукайте, щоб відобразити результати тут."
+        },
+        "swap": {"zh_hans": "交换", "en": "Swap", "zh_hant": "交換", "uk": "Обмін"},
+        "faster": {"zh_hans": "时间短", "en": "Faster", "zh_hant": "時間短", "uk": "Швидше"},
+        "cheaper": {"zh_hans": "票价低", "en": "Cheaper", "zh_hant": "票價低", "uk": "Дешевше"},
+        "direct": {"zh_hans": "换乘少", "en": "Direct", "zh_hant": "換乘少", "uk": "Прямий"}
+    },
+    "trains_info": {
+        "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
+        "train_not_found":{"zh_hans":"未找到该列车信息", "en": "Train info not found", "zh_hant":"未找到該列車資訊", "uk": "Інформація про потяг не знайдена"},
+        "cars":{"zh_hans":"编", "en": "-car", "zh_hant":"輌", "uk": "-сіль"},
+        "km_to":{"zh_hans":"km后到达", "en": "km to ", "zh_hant":"km後到達", "uk": "km до "},
+        "platform":{"zh_hans":"站台", "en": "Platform ", "zh_hant":"月臺", "uk": "Платформа "},
+        "min_to_arrival":{"zh_hans":"分钟", "en": "min", "zh_hant":"分鐘", "uk": " хвилин"},
+        "arriving":{"zh_hans":"即将到达", "en": "Arriving", "zh_hant":"即將到達", "uk": "Прибуває"},
+        "approaching":{"zh_hans":"前往", "en": "Approaching ", "zh_hant":"前往", "uk": "Приближається "},
+        "arrived_at":{"zh_hans":"已到达", "en": "Arrived at ", "zh_hant":"已到達", "uk": "Прибув в "},
+        "stopped":{"zh_hans":"已停车", "en": "Stopped", "zh_hant":"已停車", "uk": "Зупинився"},
+        "unknown_eta":{"zh_hans":"未知", "en": "Unknown", "zh_hant":"未知", "uk": "Невідомо"},
+        "series":{"zh_hans":"型 ", "en": " Series, ", "zh_hant":"型 ", "uk": " Серія, "},
+        "line_unregistered":{"zh_hans":"未分配线路", "en": "Unregistered Line", "zh_hant":"未分配路線", "uk": "Незареєстрована лінія"},
+        "searching_for":{"zh_hans":"正在搜索", "en": "Searching for ", "zh_hant":"正在搜尋", "uk": "Пошук "},
+        "search_placeholder":{"zh_hans":"车号/站名/线路…","en": "Train/Station/Line...","zh_hant":"車號/站名/路線…","uk": "Потяг/Станція/Лінія..."}
+    }
+}

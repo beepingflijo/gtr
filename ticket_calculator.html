@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <!-- 添加视口元标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>票价计算</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="ticket_calculator.css">
+</head>
+<body>
+<div class="app-container">
+    <header>
+        <div class="title">
+            <img src="./res/gtr.png" alt="logo">
+            <h1>票价计算</h1>
+        </div>
+        <div class="language-selection selection collapsed"></div>
+        <div class="actions tabs"> 
+            <div class="icon-btn lines-btn">
+                <img src="./res/tracking.png" alt="fare" class="icon"></img>
+            </div>
+            <div class="icon-btn fare-btn">
+                <img src="./res/cash.png" alt="fare" class="icon active"></img>
+            </div>
+            <div class="icon-btn trains-btn">
+                <img src="./res/train.png" alt="fare" class="icon"></img>
+            </div>
+        </div>
+        <div class="gradient-blur"></div>
+    </header>
+    <main>
+        <div class="search-controls">
+            <div class="item search-panel selection">
+                <div class="icon-btn item-title search-title">
+                    <img src="./res/search.png" alt="search" class="icon"></img>
+                    <h4>Search</h4>
+                </div>
+                <section class="input-section">
+                    <input type="text" placeholder="出发站" id="startInput" list="start-stations"></input>
+                    <div class="icon-btn swap-btn">
+                        <img src="./res/swap.png" alt="swap" class="icon"></img>
+                        <span>Swap</span>
+                    </div>
+                    <input type="text" placeholder="到达站" id="endInput" list="end-stations"></input>
+                </section>
+                <section class="search-actions">
+                    <button id="searchBtn" class="active">搜索</button>
+                    <button id="clearBtn">清空</button>
+                </section>
+            </div>
+            <div class="item sort-selector selection segment no-collapse"> 
+                <div class="icon-btn selection-item sort-by-time active">
+                    <img src="./res/timer.png" alt="Faster" class="icon"></img>
+                    <span>Faster</span>
+                </div>
+                <div class="icon-btn selection-item sort-by-transfers">
+                    <img src="./res/sync.png" alt="Direct" class="icon"></img>
+                    <span>Direct</span>
+                </div>
+                <div class="icon-btn selection-item sort-by-price">
+                    <img src="./res/money_box.png" alt="Cheaper" class="icon"></img>
+                    <span>Cheaper</span>
+                </div>
+            </div>
+        </div>
+        <section class="search-result">
+            <!-- 通过 JavaScript 动态添加 -->
+        </section>
+    </main>
+    <footer>
+        <div class="selection search-controls">
+        </div>
+    </footer>
+</div>
+<script src="script.js"></script>
+<script src="ticket_calculator.js" type="module"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</body>
+</html>

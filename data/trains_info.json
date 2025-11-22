@@ -1,0 +1,25 @@
+{
+    "trains":[
+        { "name":"GC01", "line":"GC", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GC02", "line":"GC", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GC03", "line":"GC", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GC04", "line":"GC", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GC05", "line":"GC", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GC06", "line":"GC", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GC07", "line":"GC", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GC08", "line":"GC", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GM01", "line":"GM", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GM02", "line":"GM", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GM03", "line":"GM", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GM04", "line":"GM", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GM05", "line":"GM", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GY01", "line":"GY", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GY02", "line":"GY", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GY03", "line":"GY", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GY04", "line":"GY", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GY05", "line":"GY", "maxSpeed":160, "series":"DE134-200" },
+        { "name":"GX01", "line":"GX01", "maxSpeed":300, "series":"DE134-300" },
+        { "name":"JC17", "line":"GX01", "maxSpeed":300, "series":"DE134-280" },
+        { "name":"GX04", "line":"GX04", "maxSpeed":300, "series":"DE134-300" }
+    ]
+}

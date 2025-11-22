@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <!-- 添加视口元标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>线路信息</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="lines_info.css">
+</head>
+<body>
+<div class="app-container">
+    <header>
+        <div class="title">
+            <img src="./res/gtr.png" alt="logo">
+            <h1>线路信息</h1>
+        </div>
+        <div class="language-selection selection collapsed"> 
+            <!-- 语言选项将通过 JavaScript 动态添加 -->
+        </div>
+        <div class="actions"> 
+            <div class="icon-btn map-btn">
+                <img src="./res/route.png" alt="map" class="icon"></img>
+            </div>
+            <div class="icon-btn share-btn">
+                <img src="./res/image.png" alt="share" class="icon"></img>
+            </div>
+        </div>
+        <div class="actions tabs"> 
+            <div class="icon-btn lines-btn">
+                <img src="./res/tracking.png" alt="fare" class="icon active"></img>
+            </div>
+            <div class="icon-btn fare-btn">
+                <img src="./res/cash.png" alt="fare" class="icon"></img>
+            </div>
+            <div class="icon-btn trains-btn">
+                <img src="./res/train.png" alt="fare" class="icon"></img>
+            </div>
+        </div>
+        <div class="gradient-blur"></div>
+    </header>
+    <main>
+        <!-- <section class="line-selection">
+            线路选择按钮将会通过 JavaScript 动态添加
+        </section> -->
+        <section class="stations-display">
+            <!-- 车站信息将会通过 JavaScript 动态添加 -->
+        </section>
+    </main>
+    <footer>
+        <div class="selection line-selector"></div>
+    </footer>
+</div>
+<script src="script.js"></script>
+<script src="lines_info.js" type="module"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</body>
+</html>

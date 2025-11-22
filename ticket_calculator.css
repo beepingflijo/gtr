@@ -1,0 +1,268 @@
+.search-controls {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 12px;
+    flex-direction: column;
+}
+
+.search-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px;
+    transition: all 0.35s ease;
+    overflow: hidden;
+    gap: 8px;
+    max-width: -webkit-fill-available;
+    width: fit-content;
+    min-width: unset;
+}
+
+.search-title { 
+    padding: 0 4px;
+    min-height: fit-content;
+    cursor: default;
+}
+
+.search-panel.collapsed {
+    width: fit-content;
+    min-height: 42px;
+    padding: 0 12px;
+    background: var(--color-background-actions);
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+
+.search-panel.collapsed .input-section,
+.search-panel.collapsed .search-actions {
+    height: 0;
+    width: 0;
+    max-width: 0;
+    min-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.search-panel:not(.collapsed) .input-section,
+.search-panel:not(.collapsed) .search-actions {
+    height: auto;
+    min-height: auto;
+    margin: initial;
+    padding: initial;
+    overflow: visible;
+    width: fit-content;
+}
+
+.input-section {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    max-width: -webkit-fill-available;
+    width: fit-content;
+    min-width: unset;
+}
+
+.search-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+}
+
+.sort-selector { 
+    width: -webkit-fill-available;
+}
+
+.input-section input { 
+    min-width: 0;
+    max-width: -webkit-fill-available;
+}
+
+.search-actions { 
+    gap: 12px;
+}
+
+.arrow-btn { 
+    width: 24px;
+    height: 24px;
+}
+
+.arrow-btn img { 
+    width: 100%;
+    height: 100%;
+}
+
+.search-result {
+    width: 100%;
+    width: -webkit-fill-available;
+}
+
+.search-result p { 
+    padding: 6px;
+    line-height: 1.5;
+}
+
+.route-result {
+    border-radius: 18px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    padding: 16px;
+    min-width: 240px;
+}
+
+.route-header {
+    padding: 0 6px;
+}
+
+.route-header h3 {
+    margin: 0 0 10px 0;
+}
+
+.route-title { 
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.route-title .fare {
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 24px;
+}
+
+.route-summary {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 4px 24px;
+}
+
+.route-summary span {
+    color: var(--color-text-secondary);
+}
+
+.route-details {
+    padding: 12px;
+}
+
+.line-info {
+    display: inline-block;
+    align-items: center;
+    padding: 8px 16px;
+    border-left: 6px solid;
+    margin-left: 7px;
+    gap: 4px;
+    color: var(--color-text-secondary);
+}
+
+.line-name {
+    font-weight: 500;
+}
+
+.stations {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-left: 10px;
+}
+
+.stations span {
+    color: var(--color-text-secondary);
+}
+
+.transfer {
+    font-weight: 600;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 2px 0;
+    overflow-y: hidden;
+}
+
+.transfer span { 
+    padding: 4px 0;
+    margin: 0;
+    width: -webkit-fill-available;
+}
+
+.transfer.depart span, .transfer.arrive span { 
+    margin: 4px 0;
+    padding: 0;
+}
+
+/* 为transfer添加圆形伪元素样式 */
+.transfer::before { 
+    content: "";
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    min-height: 12px;
+    border: 4px solid var(--color-text-secondary);
+    border-radius: 50%;
+    z-index: 0;
+    margin: 3px 0;
+}
+
+.transfer::after { 
+    content: "";
+    width: 6px;
+    min-width: 6px;
+    max-width: 6px;
+    top: 20px;
+    height: -webkit-fill-available;
+    margin-bottom: 24px;
+    background-color: var(--color-text-secondary);
+    position: relative;
+    left: calc(-100% + 13px);
+}
+
+.transfer.depart::after, .transfer.arrive::after { 
+    margin-bottom: 26px;
+}
+
+.transfer.depart, .transfer.arrive { 
+    margin: 0;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.transfer.depart span, .transfer.arrive span { 
+    margin: 4px 0;
+    font-size: 18px;
+}
+
+.transfer.depart::before { 
+    background-color: var(--color-text-secondary);
+    border: 2px solid var(--color-background-card-solid);
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+}
+
+.transfer.arrive::before { 
+    background-color: var(--color-primary);
+    border: 2px solid var(--color-background-card-solid);
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+}
+
+.transfer.arrive::after { 
+    background: transparent;
+}
+
+.swap-btn img {
+    rotate: 90deg;
+    transition: all 0.3s ease;
+}
