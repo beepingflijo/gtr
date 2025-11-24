@@ -475,22 +475,20 @@ function createTrainSection(train) {
         let trainLine = null;
         let trainLineId = null;
         
-        // 根据列车名称前缀查找线路
-        for (const line of window.lines) {
-            if (train.name.startsWith(line.id)) {
-                trainLine = line;
-                trainLineId = line.id;
-                break;
-            }
+        // 优先通过trains_info.json数据获取列车线路信息
+        const lineFromData = getLineForTrain(train.name, 'id');
+        if (lineFromData) {
+            trainLine = window.lines.find(line => line.id === lineFromData);
+            trainLineId = lineFromData;
         }
         
-        // 如果是GX列车，查找它当前所在的线路
-        if (!trainLine && train.name.startsWith('GX')) {
-            // 需要通过位置信息来判断列车在哪条线路上
-            const closestTrack = findClosestTrack(position);
-            if (closestTrack) {
-                trainLine = closestTrack.line;
-                trainLineId = closestTrack.line.id;
+        // 如果trains_info.json中没有线路信息，则通过位置信息来判断列车在哪条线路上
+        // 新增逻辑：对所有线路进行检查，找出距离最近的线路
+        if (!trainLine) {
+            const closestTrackResult = findClosestTrackOnAllLines(position);
+            if (closestTrackResult) {
+                trainLine = closestTrackResult.line;
+                trainLineId = closestTrackResult.line.id;
             }
         }
         
@@ -498,12 +496,27 @@ function createTrainSection(train) {
         let isAtStation = false;
         let stationName = '';
         let platform = '';
+        let actualCarPos = null; // 记录实际位置
         
         if (trainLine) {
             // 检查列车是否在车站
+            // 新逻辑：分别检查列车头尾车厢，选择更靠近站台的一端
+            const leadingPos = train.cars[0].leading.location; // 列车头位置
+            const trailingPos = train.cars[train.cars.length - 1].trailing.location; // 列车尾位置
+            
+            let closestLeadingDistance = Infinity;
+            let closestTrailingDistance = Infinity;
+            let leadingStation = null;
+            let trailingStation = null;
+            let leadingCoord = null;
+            let trailingCoord = null;
+            let leadingNode = null;
+            let trailingNode = null;
+            
+            // 查找头车最近的车站
             for (const node of trainLine.route) {
                 if (node.type === 'station') {
-                    const stationCoords = findStationCoordinates(node.code, trainDirection);
+                    const stationCoords = findStationCoordinates(node.code);
                     for (const coord of stationCoords) {
                         // 确保坐标数据存在
                         if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
@@ -511,25 +524,65 @@ function createTrainSection(train) {
                         }
                         
                         const distance = Math.sqrt(
-                            Math.pow(position.x - coord.x, 2) + 
-                            Math.pow(position.y - coord.y, 2) + 
-                            Math.pow(position.z - coord.z, 2)
+                            Math.pow(leadingPos.x - coord.x, 2) + 
+                            Math.pow(leadingPos.y - coord.y, 2) + 
+                            Math.pow(leadingPos.z - coord.z, 2)
                         );
                         
-                        if (distance <= 200) {
-                            isAtStation = true;
-                            stationName = getStationName(node.code, lang);
-                            // 将coord.name去掉station.code作为站台名
-                            platform = coord.name.replace(node.code, "");
-                            
-                            // 如果列车未到站则去除站台编号中的字母
-                            if (train.stopped === 'false') {
-                                platform = platform.replace(/[A-Za-z]/g, '') + '…';
-                            }
-                            break;
+                        if (distance < closestLeadingDistance) {
+                            closestLeadingDistance = distance;
+                            leadingStation = getStationName(node.code, lang);
+                            leadingCoord = coord;
+                            leadingNode = node;
                         }
                     }
-                    if (isAtStation) break;
+                }
+            }
+            
+            // 查找尾车最近的车站
+            for (const node of trainLine.route) {
+                if (node.type === 'station') {
+                    const stationCoords = findStationCoordinates(node.code);
+                    for (const coord of stationCoords) {
+                        // 确保坐标数据存在
+                        if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
+                            continue;
+                        }
+                        
+                        const distance = Math.sqrt(
+                            Math.pow(trailingPos.x - coord.x, 2) + 
+                            Math.pow(trailingPos.y - coord.y, 2) + 
+                            Math.pow(trailingPos.z - coord.z, 2)
+                        );
+                        
+                        if (distance < closestTrailingDistance) {
+                            closestTrailingDistance = distance;
+                            trailingStation = getStationName(node.code, lang);
+                            trailingCoord = coord;
+                            trailingNode = node;
+                        }
+                    }
+                }
+            }
+            
+            // 比较头尾车厢哪个更接近车站（距离小于200）
+            if (closestLeadingDistance <= 200 || closestTrailingDistance <= 200) {
+                isAtStation = true;
+                if (closestLeadingDistance <= closestTrailingDistance) {
+                    // 头车更接近车站
+                    stationName = leadingStation;
+                    platform = leadingCoord.name.replace(leadingNode.code, "");
+                    actualCarPos = leadingPos; // 记录实际位置
+                } else {
+                    // 尾车更接近车站
+                    stationName = trailingStation;
+                    platform = trailingCoord.name.replace(trailingNode.code, "");
+                    actualCarPos = trailingPos; // 记录实际位置
+                }
+                
+                // 如果列车未到站则去除站台编号中的字母
+                if (train.stopped === 'false') {
+                    platform = platform.replace(/[A-Za-z]/g, '') + '…';
                 }
             }
         }
@@ -539,7 +592,8 @@ function createTrainSection(train) {
             platformElement.textContent = platform;
             
             // 如果在车站，下一站显示为终点站
-            nextStationElement.textContent = stationName;
+                nextStationElement.textContent = strings.trains_info.arrived_at[lang];
+                nextStationElement.textContent += stationName;
         } else {
             // 如果不在车站，显示下一站信息
             if (trainLine && trainDirection !== 'unknown') {
@@ -643,23 +697,24 @@ function createTrainSection(train) {
     lineElement.textContent = getLineForTrain(train.name) || strings.trains_info.line_unregistered[lang];
     lineElement.textContent += ' ' + directionText;
     if (getLineForTrain(train.name)) {
-    lineElement.href = `lines_info.html${'?lang='+lang+'&line='+getLineForTrain(train.name, 'id')}`;
+        lineElement.href = `lines_info.html${'?lang='+lang+'&line='+getLineForTrain(train.name, 'id')}`;
+        const lineColor = getLineColor(getLineForTrain(train.name, 'id'));
+        lineElement.style.color = lineColor;
+        // 获取的线路颜色做透明化处理
+        const tintedColor = (() => {
+            // 处理十六进制颜色值
+            if (lineColor.startsWith('#')) {
+                return lineColor + '10'; // 添加透明度33
+            }
+            else return 'var(--color-secondary-hover)'; // 其他情况直接返回原始颜色
+        })();
+        lineElement.style.backgroundColor = tintedColor;
+    } else {
+        // 对于未分配线路的列车，显示特殊标记
+        lineElement.textContent = strings.trains_info.line_unregistered[lang];
+        lineElement.style.color = 'var(--color-text-secondary)';
+        lineElement.style.backgroundColor = 'var(--color-secondary-hover)';
     }
-    const lineColor = getLineColor(getLineForTrain(train.name, 'id'));
-    lineElement.style.color = lineColor;
-    lineElement.style.textDecoration = 'none';
-    lineElement.style.padding = '4px 8px';
-    lineElement.style.borderRadius = '12px';
-    // 获取的线路颜色做透明化处理
-    const tintedColor = (() => {
-        // 处理十六进制颜色值
-        if (lineColor.startsWith('#')) {
-            return lineColor + '10'; // 添加透明度33
-        }
-        else return 'var(--color-secondary-hover)'; // 其他情况直接返回原始颜色
-    })();
-
-    lineElement.style.backgroundColor = tintedColor;
     
     headerElement.appendChild(nameElement);
     headerElement.appendChild(carsElement);
@@ -772,6 +827,39 @@ function findClosestTrack(position) {
             }
         }
         
+    return closestTrack;
+}
+
+// 在所有线路上查找最近的轨道（改进版本）
+function findClosestTrackOnAllLines(position) {
+    let closestTrack = null;
+    let minDistance = Infinity;
+    
+    // 遍历所有线路查找最近的轨道
+    for (const line of window.lines) {
+        for (let i = 0; i < line.route.length; i++) {
+            const segment = line.route[i];
+            if (segment.type === 'track') {
+                for (let j = 0; j < segment.nodes.length - 1; j++) {
+                    const node1 = segment.nodes[j];
+                    const node2 = segment.nodes[j + 1];
+                    const distance = distanceFromSegment(position, node1, node2);
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestTrack = {
+                            line: line,
+                            segment: segment,
+                            segmentIndex: i,
+                            nodeIndex: j,
+                            distance: distance
+                        };
+                    }
+                }
+            }
+        }
+    }
+    
     return closestTrack;
 }
 
@@ -1017,16 +1105,15 @@ function checkIfTrainAtStation(trainName, position) {
         
         // 查找列车所在的线路
         let trainLine = null;
-        for (const line of lines) {
-            if (trainName.startsWith(line.id)) {
-                trainLine = line;
-                break;
-            }
+        
+        // 优先通过trains_info.json数据获取列车线路信息
+        const lineFromData = getLineForTrain(trainName, 'id');
+        if (lineFromData) {
+            trainLine = window.lines.find(line => line.id === lineFromData);
         }
         
-        // 如果是GX列车，查找它当前所在的线路
-        if (!trainLine && trainName.startsWith('GX')) {
-            // 需要通过位置信息来判断列车在哪条线路上
+        // 如果trains_info.json中没有线路信息，才通过位置信息来判断列车在哪条线路上
+        if (!trainLine) {
             const closestTrack = findClosestTrack(position);
             if (closestTrack) {
                 trainLine = closestTrack.line;
@@ -1197,25 +1284,30 @@ function applySearchFilter(searchTerm = '') {
         }
         searchText += ` ${directionText}`;
         
+        // 添加next-station元素中的文案
+        const nextStationElement = element.querySelector('.next-station');
+        if (nextStationElement) {
+            searchText += ` ${nextStationElement.textContent.toLowerCase()}`;
+        }
+        
         // 添加车站和站台信息
         try {
-            const position = train.cars[0].leading.location;
+            const leadingPos = train.cars[0].leading.location; // 列车头位置
+            const trailingPos = train.cars[train.cars.length - 1].trailing.location; // 列车尾位置
             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
             const currentTrainData = allTrainsData[train.name];
             const trainDirection = currentTrainData && currentTrainData.direction ? currentTrainData.direction : 'unknown';
             
             let trainLine = null;
             
-            // 根据列车名称前缀查找线路
-            for (const line of window.lines) {
-                if (train.name.startsWith(line.id)) {
-                    trainLine = line;
-                    break;
-                }
+            // 优先通过trains_info.json数据获取列车线路信息
+            const lineFromData = getLineForTrain(train.name, 'id');
+            if (lineFromData) {
+                trainLine = window.lines.find(line => line.id === lineFromData);
             }
             
-            // 如果是GX列车，查找它当前所在的线路
-            if (!trainLine && train.name.startsWith('GX')) {
+            // 如果trains_info.json中没有线路信息，才通过位置信息来判断列车在哪条线路上
+            if (!trainLine) {
                 const closestTrack = findClosestTrack(position);
                 if (closestTrack) {
                     trainLine = closestTrack.line;
@@ -1223,41 +1315,127 @@ function applySearchFilter(searchTerm = '') {
             }
             
             // 查找列车所在的车站和站台
+            let isAtStation = false;
+            let stationName = '';
+            let platform = '';
+            let stationCode = ''; // 添加车站三字码
             if (trainLine) {
+                // 检查列车是否在车站
+                // 新逻辑：分别检查列车头尾车厢，选择更靠近站台的一端
+                const leadingPos = train.cars[0].leading.location; // 列车头位置
+                const trailingPos = train.cars[train.cars.length - 1].trailing.location; // 列车尾位置
+                
+                let closestLeadingDistance = Infinity;
+                let closestTrailingDistance = Infinity;
+                let leadingStation = null;
+                let trailingStation = null;
+                let leadingCoord = null;
+                let trailingCoord = null;
+                let leadingNode = null;
+                let trailingNode = null;
+                
+                // 查找头车最近的车站
                 for (const node of trainLine.route) {
                     if (node.type === 'station') {
-                        const stationCoords = findStationCoordinates(node.code, trainDirection);
+                        const stationCoords = findStationCoordinates(node.code);
                         for (const coord of stationCoords) {
+                            // 确保坐标数据存在
                             if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
                                 continue;
                             }
                             
                             const distance = Math.sqrt(
-                                Math.pow(position.x - coord.x, 2) + 
-                                Math.pow(position.y - coord.y, 2) + 
-                                Math.pow(position.z - coord.z, 2)
+                                Math.pow(leadingPos.x - coord.x, 2) + 
+                                Math.pow(leadingPos.y - coord.y, 2) + 
+                                Math.pow(leadingPos.z - coord.z, 2)
                             );
                             
-                            if (distance <= 200) {
-                                const stationName = getStationName(node.code, lang);
-                                searchText += ` ${stationName.toLowerCase()}`;
-                                
-                                // 添加站台信息
-                                let platform = coord.name.replace(node.code, "");
-                                if (train.stopped === 'false') {
-                                    platform = platform.replace(/[A-Za-z]/g, '') + '…';
-                                }
-                                searchText += ` ${platform.toLowerCase()}`;
-                                break;
+                            if (distance < closestLeadingDistance) {
+                                closestLeadingDistance = distance;
+                                leadingStation = getStationName(node.code, lang);
+                                leadingCoord = coord;
+                                leadingNode = node;
+                                stationCode = coord.name; // 保存车站三字码
                             }
+                        }
+                    }
+                }
+                
+                // 查找尾车最近的车站
+                for (const node of trainLine.route) {
+                    if (node.type === 'station') {
+                        const stationCoords = findStationCoordinates(node.code);
+                        for (const coord of stationCoords) {
+                            // 确保坐标数据存在
+                            if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
+                                continue;
+                            }
+                            
+                            const distance = Math.sqrt(
+                                Math.pow(trailingPos.x - coord.x, 2) + 
+                                Math.pow(trailingPos.y - coord.y, 2) + 
+                                Math.pow(trailingPos.z - coord.z, 2)
+                            );
+                            
+                            if (distance < closestTrailingDistance) {
+                                closestTrailingDistance = distance;
+                                trailingStation = getStationName(node.code, lang);
+                                trailingCoord = coord;
+                                trailingNode = node;
+                                stationCode = coord.name; // 保存车站三字码
+                            }
+                        }
+                    }
+                }
+                
+                // 比较头尾车厢哪个更接近车站（距离小于200）
+                if (closestLeadingDistance <= 200 || closestTrailingDistance <= 200) {
+                    isAtStation = true;
+                    if (closestLeadingDistance <= closestTrailingDistance) {
+                        // 头车更接近车站
+                        stationName = leadingStation;
+                        platform = leadingCoord.name.replace(leadingNode.code, "");
+                        actualCarPos = leadingPos; // 记录实际位置
+                    } else {
+                        // 尾车更接近车站
+                        stationName = trailingStation;
+                        platform = trailingCoord.name.replace(trailingNode.code, "");
+                        actualCarPos = trailingPos; // 记录实际位置
+                    }
+                    
+                    // 如果列车未到站则去除站台编号中的字母
+                    if (train.stopped === 'false') {
+                        platform = platform.replace(/[A-Za-z]/g, '') + '…';
+                    }
+                }
+            }
+            
+            if (isAtStation) {
+                searchText += ` ${strings.trains_info.arrived_at[lang] || 'Arrived at'} ${stationName}`;
+                searchText += ` ${platform}`;
+                searchText += ` ${stationCode}`; // 添加车站三字码到搜索文本
+            } else {
+                // 如果不在车站，显示下一站信息
+                if (trainLine && trainDirection !== 'unknown') {
+                    // 查找列车当前所在的车站或轨道位置
+                    const currentPosition = position;
+                    const closestStation = findClosestStation(trainLine, currentPosition, trainDirection);
+                    
+                    if (closestStation) {
+                        // 根据列车方向查找下一站
+                        const nextStation = findNextStation(trainLine, closestStation.station, trainDirection);
+                        
+                        if (nextStation) {
+                            searchText += ` ${strings.trains_info.approaching[lang] || 'Approaching'} ${getStationName(nextStation.code, lang)}`;
+                            searchText += ` ${nextStation.code}`; // 添加下一站三字码到搜索文本
                         }
                     }
                 }
             }
         } catch (e) {
-            console.warn('获取车站信息时出错:', e);
+            console.warn('获取列车车站和站台信息时出错:', e);
         }
-        
+
         // 添加警告信息
         try {
             const position = train.cars[0].leading.location;
@@ -1285,9 +1463,9 @@ function applySearchFilter(searchTerm = '') {
             console.warn('获取警告信息时出错:', e);
         }
         
-        // 根据搜索词显示或隐藏列车信息
-        if (searchTerm === '' || searchText.includes(searchTerm)) {
-            element.style.display = '';
+        // 检查搜索词是否在搜索文本中
+        if (searchText.includes(searchTerm)) {
+            element.style.display = 'block';
         } else {
             element.style.display = 'none';
         }

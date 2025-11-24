@@ -47,16 +47,19 @@ main .item {
 }
 
 .train-line { 
+    display: flex;
     text-decoration: none;
     border-radius: 12px;
     padding: 4px 8px;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     width: fit-content;
+    text-decoration: none;
+    background-color: var(--color-secondary-hover);
 }
 
 .train-line:hover {
     transform: scale(1.05);
-    filter: brightness(1.1) saturate(1.05) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    filter: brightness(1.1) saturate(1.05) contrast(1.2) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .train-info-number {

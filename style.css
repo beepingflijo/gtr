@@ -152,6 +152,7 @@ header .gradient-blur {
     left: 0;
     z-index: 996;
     backdrop-filter: blur(7px);
+    -webkit-mask-image: -webkit-linear-gradient(white 30%, transparent 60%);
     mask-image: linear-gradient(white 30%, transparent 60%);
 }
 
@@ -163,6 +164,7 @@ header .gradient-blur {
     left: 0;
     z-index: 997;
     backdrop-filter: blur(3px);
+    -webkit-mask-image: -webkit-linear-gradient(white 50%, transparent 80%);
     mask-image: linear-gradient(white 50%, transparent 80%);
 }
 
@@ -174,6 +176,7 @@ header .gradient-blur {
     left: 0;
     z-index: 998;
     backdrop-filter: blur(1px);
+    -webkit-mask-image: -webkit-linear-gradient(white 75%, transparent 90%);
     mask-image: linear-gradient(white 75%, transparent 90%);
 }
 
