@@ -220,7 +220,7 @@ header * {
     font-weight: normal;
     box-shadow: inset 0 -3px 3px rgba(255, 255, 255, 0.15);    
     backdrop-filter: blur(6px) saturate(140%) contrast(160%) brightness(90%);
-    max-width: 80vw;
+    max-width: 90vw;
 }
 
 .title { 

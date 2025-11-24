@@ -67,8 +67,20 @@ function init() {
         setTimeout(() => {
             // 获取所有车站数据，查找匹配的车站
             const allStations = getAllStations();
-            const startStation = allStations.find(station => station.endsWith(startParam));
-            const endStation = allStations.find(station => station.endsWith(endParam));
+            // 对参数进行大写处理以确保匹配（车站代码都是大写的）
+            const startCode = startParam.toUpperCase();
+            const endCode = endParam.toUpperCase();
+            
+            // 查找匹配的车站（精确匹配车站代码）
+            const startStation = allStations.find(station => {
+                const parts = station.split(' ');
+                return parts.length > 1 && parts[parts.length - 1] === startCode;
+            });
+            
+            const endStation = allStations.find(station => {
+                const parts = station.split(' ');
+                return parts.length > 1 && parts[parts.length - 1] === endCode;
+            });
             
             if (startStation && endStation) {
                 startInput.value = startStation;
@@ -135,11 +147,11 @@ function init() {
         
         handleSearch(sortBy); // 传递排序参数
         // 更新URL参数
-        const startParts = startInput.value.split(' ');
-        const endParts = endInput.value.split(' ');
-        const startCode = startParts.length > 1 ? startParts[startParts.length - 1] : '';
-        const endCode = endParts.length > 1 ? endParts[endParts.length - 1] : '';
-        updateURLParams(startCode, endCode, sortBy);
+        const startCode = parseStationInput(startInput.value);
+        const endCode = parseStationInput(endInput.value);
+        if (startCode && endCode) {
+            updateURLParams(startCode, endCode, sortBy);
+        }
     });
 
     const searchResult = document.querySelector('.search-result');
@@ -209,11 +221,11 @@ function init() {
         handleSearch(sortBy);
         
         // 更新URL参数
-        const startParts = startInput.value.split(' ');
-        const endParts = endInput.value.split(' ');
-        const startCode = startParts.length > 1 ? startParts[startParts.length - 1] : '';
-        const endCode = endParts.length > 1 ? endParts[endParts.length - 1] : '';
-        updateURLParams(startCode, endCode, sortBy);
+        const startCode = parseStationInput(startInput.value);
+        const endCode = parseStationInput(endInput.value);
+        if (startCode && endCode) {
+            updateURLParams(startCode, endCode, sortBy);
+        }
     });
 
     window.addEventListener('resize', handleWindowResize);
@@ -227,31 +239,31 @@ function init() {
         sortByTimeBtn.addEventListener('click', () => {
             setActiveSortButton(sortByTimeBtn);
             handleSearch('time');
-            updateURLParams(
-                getStationCode(startInput.value),
-                getStationCode(endInput.value),
-                'time'
-            );
+            const startCode = parseStationInput(startInput.value);
+            const endCode = parseStationInput(endInput.value);
+            if (startCode && endCode) {
+                updateURLParams(startCode, endCode, 'time');
+            }
         });
         
         sortByTransfersBtn.addEventListener('click', () => {
             setActiveSortButton(sortByTransfersBtn);
             handleSearch('transfer');
-            updateURLParams(
-                getStationCode(startInput.value),
-                getStationCode(endInput.value),
-                'transfer'
-            );
+            const startCode = parseStationInput(startInput.value);
+            const endCode = parseStationInput(endInput.value);
+            if (startCode && endCode) {
+                updateURLParams(startCode, endCode, 'transfer');
+            }
         });
         
         sortByPriceBtn.addEventListener('click', () => {
             setActiveSortButton(sortByPriceBtn);
             handleSearch('price');
-            updateURLParams(
-                getStationCode(startInput.value),
-                getStationCode(endInput.value),
-                'price'
-            );
+            const startCode = parseStationInput(startInput.value);
+            const endCode = parseStationInput(endInput.value);
+            if (startCode && endCode) {
+                updateURLParams(startCode, endCode, 'price');
+            }
         });
     }
 }
@@ -322,8 +334,60 @@ function initDatalist(type) {
 
 // 为start-station和end-station提供输入建议
 function filterStations(query, type) {
+    // 获取当前语言设置
+    var urlParams = new URLSearchParams(window.location.search);
+    var currentLang = urlParams.get('lang');
+    if (currentLang === null) {
+        currentLang = 'zh_hans';
+    }
+    
     query = query.toLowerCase();
-    const filteredStations = getAllStations().filter(stationName => stationName.toLowerCase().includes(query));
+    let filteredStations = [];
+    
+    if (currentLang.startsWith('zh')) {
+        // 对于中文，支持繁简体匹配
+        const allStations = getAllStations();
+        filteredStations = allStations.filter(stationItem => {
+            // 分离车站名称和三字码
+            const parts = stationItem.split(' ');
+            const stationName = parts.slice(0, -1).join(' ');
+            const stationCode = parts[parts.length - 1];
+            
+            // 检查是否匹配查询（不区分大小写）
+            if (stationItem.toLowerCase().includes(query)) {
+                return true;
+            }
+            
+            // 检查繁简体中文匹配
+            if (window.strings && window.strings.station_names) {
+                // 遍历所有车站的中文名称
+                for (const [code, names] of Object.entries(window.strings.station_names)) {
+                    if (code === stationCode) {
+                        // 检查简体和繁体是否匹配查询
+                        if (names.zh_hans && names.zh_hans.includes(query)) {
+                            return true;
+                        }
+                        if (names.zh_hant && names.zh_hant.includes(query)) {
+                            return true;
+                        }
+                        // 也检查小写匹配
+                        if (names.zh_hans && names.zh_hans.toLowerCase().includes(query)) {
+                            return true;
+                        }
+                        if (names.zh_hant && names.zh_hant.toLowerCase().includes(query)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            return false;
+        });
+    } else {
+        // 对于非中文语言，使用原有逻辑
+        filteredStations = getAllStations().filter(stationName => stationName.toLowerCase().includes(query));
+    }
+    
     console.log(`过滤后的站点列表 (${type}):`, filteredStations); // 调试信息
 
     const datalist = document.getElementById(`${type}-stations`);
@@ -348,12 +412,19 @@ function filterStations(query, type) {
 
 // 获取所有车站（用于搜索）
 function getAllStations() {
+    // 获取当前语言设置
+    var urlParams = new URLSearchParams(window.location.search);
+    var currentLang = urlParams.get('lang');
+    if (currentLang === null) {
+        currentLang = 'zh_hans';
+    }
+    
     const stations = new Set();
     Object.values(lines).forEach(line => {
         line.route.forEach(step => {
             if (step.type === 'station') {
                 //将车站名称和三字码绑定在一起添加到集合中
-                stations.add(`${getStationName(step.code,lang)} ${step.code}`);
+                stations.add(`${getStationName(step.code, currentLang)} ${step.code}`);
             }
         });
     });
@@ -372,10 +443,18 @@ function handleSearch(sortBy = 'time') {
     }
 
     // 解析输入的站点名称和代码
-    const startParts = startStation.split(' ');
-    const endParts = endStation.split(' ');
-    const startStationCode = startParts[startParts.length - 1];
-    const endStationCode = endParts[endParts.length - 1];
+    const startStationCode = parseStationInput(startStation);
+    const endStationCode = parseStationInput(endStation);
+
+    if (!startStationCode) {
+        showToast(strings.ticket_calculator.invalid_start_station[lang] || '起点站无效');
+        return;
+    }
+
+    if (!endStationCode) {
+        showToast(strings.ticket_calculator.invalid_end_station[lang] || '终点站无效');
+        return;
+    }
 
     const routes = findShortestRoutes(startStationCode, endStationCode);
     
@@ -386,6 +465,87 @@ function handleSearch(sortBy = 'time') {
     const resultsContainer = document.querySelector('.search-result');
     renderSearchResults(routes, resultsContainer);
     handleWindowResize();
+}
+
+// 解析车站输入，支持仅输入车站名称或三字码
+function parseStationInput(input) {
+    // 检查是否已加载线路数据
+    if (!window.lines) {
+        console.warn('线路数据尚未加载完成');
+        return null;
+    }
+
+    // 如果输入的是三字码（全大写字母，长度为3）
+    if (/^[A-Z]{3}$/i.test(input)) {
+        const inputCode = input.toUpperCase();
+        // 检查该三字码是否存在于线路数据中
+        for (const line of window.lines) {
+            for (const step of line.route) {
+                if (step.type === 'station' && step.code === inputCode) {
+                    return inputCode;
+                }
+            }
+        }
+        return null; // 未找到匹配的三字码
+    }
+    
+    // 如果输入包含车站名称和三字码（用空格分隔）
+    const parts = input.split(' ');
+    if (parts.length > 1) {
+        const code = parts[parts.length - 1].toUpperCase();
+        // 验证三字码是否有效
+        for (const line of window.lines) {
+            for (const step of line.route) {
+                if (step.type === 'station' && step.code === code) {
+                    return code;
+                }
+            }
+        }
+    }
+    
+    // 如果输入的是车站名称（中文或其他语言）
+    // 获取当前语言设置
+    var urlParams = new URLSearchParams(window.location.search);
+    var currentLang = urlParams.get('lang');
+    if (currentLang === null) {
+        currentLang = 'zh_hans';
+    }
+    
+    const inputLower = input.toLowerCase();
+    
+    for (const line of window.lines) {
+        for (const step of line.route) {
+            if (step.type === 'station') {
+                const stationName = getStationName(step.code, currentLang);
+                // 检查完全匹配
+                if (stationName === input) {
+                    return step.code;
+                }
+                // 检查小写匹配（不区分大小写）
+                if (stationName.toLowerCase() === inputLower) {
+                    return step.code;
+                }
+                
+                // 对于中文，检查繁简体匹配
+                if (currentLang.startsWith('zh')) {
+                    // 确保strings已加载
+                    if (window.strings && window.strings.station_names && window.strings.station_names[step.code]) {
+                        // 检查所有中文翻译
+                        const zhNames = [
+                            window.strings.station_names[step.code]['zh_hans'],
+                            window.strings.station_names[step.code]['zh_hant']
+                        ];
+                        
+                        if (zhNames.some(name => name && (name === input || name.toLowerCase() === inputLower))) {
+                            return step.code;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return null; // 未找到匹配的车站
 }
 
 // 根据指定的排序方式对路线进行排序
@@ -1399,5 +1559,4 @@ function handleWindowResize() {
             header.appendChild(tabs);
         }
     }
-    // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作
 }

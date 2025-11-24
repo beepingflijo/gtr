@@ -127,7 +127,19 @@
         "swap": {"zh_hans": "交换", "en": "Swap", "zh_hant": "交換", "uk": "Обмін"},
         "faster": {"zh_hans": "时间短", "en": "Faster", "zh_hant": "時間短", "uk": "Швидше"},
         "cheaper": {"zh_hans": "票价低", "en": "Cheaper", "zh_hant": "票價低", "uk": "Дешевше"},
-        "direct": {"zh_hans": "换乘少", "en": "Direct", "zh_hant": "換乘少", "uk": "Прямий"}
+        "direct": {"zh_hans": "换乘少", "en": "Direct", "zh_hant": "換乘少", "uk": "Прямий"},
+        "invalid_start_station": {
+            "zh_hans": "未找到该起点站信息", 
+            "en": "Start station info not found", 
+            "zh_hant": "未找到該起點站資訊", 
+            "uk": "Інформація про початкову станцію не знайдена"
+        },
+        "invalid_end_station": {
+            "zh_hans": "未找到该终点站信息", 
+            "en": "End station info not found", 
+            "zh_hant": "未找到該終點站資訊", 
+            "uk": "Інформація про кінцеву станцію не знайдена"
+        }
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
