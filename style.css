@@ -192,7 +192,6 @@ footer {
     padding-bottom: 40px;
     text-align: center;
     position: fixed;
-    top: calc(100dvh - 80px);
     bottom: 0lvh;
     display: flex;
     flex-direction: column-reverse;

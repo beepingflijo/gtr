@@ -282,7 +282,10 @@ document.querySelectorAll('header .actions').forEach(actions => {
 });
 
 function initSearchBar() {
-    document.querySelectorAll('.search-bar').forEach(searchBar => { 
+    // 获取所有的搜索栏
+    const searchBars = document.querySelectorAll('.search-bar');
+    
+    searchBars.forEach(searchBar => { 
         searchBar.title = strings.ticket_calculator.search[lang] || '搜索';
         // 获取搜索栏中的input元素
         const searchInput = searchBar.querySelector('input');
@@ -331,9 +334,20 @@ function initSearchBar() {
             
             // 监听搜索输入框的内容变化
             searchInput.addEventListener('input', function() {
-                if (this.value.trim()) {
-                    // 如果有内容，移除collapsed类
-                    searchBar.classList.remove('collapsed');
+                // 同步所有搜索框的内容
+                const inputValue = this.value.trim();
+                searchBars.forEach(bar => {
+                    const input = bar.querySelector('input');
+                    if (input !== this) {  // 不更新当前正在输入的搜索框
+                        input.value = this.value;
+                    }
+                });
+                
+                if (inputValue) {
+                    // 如果有内容，移除所有搜索框的collapsed类
+                    searchBars.forEach(bar => {
+                        bar.classList.remove('collapsed');
+                    });
                 } else {
                     // 如果没有内容，检查鼠标是否悬停在其他元素上
                     const isHoveringOtherElements = otherElements.some(element => 
@@ -341,12 +355,16 @@ function initSearchBar() {
                     );
                     
                     if (isHoveringOtherElements) {
-                        searchBar.classList.add('collapsed');
+                        searchBars.forEach(bar => {
+                            if (!bar.querySelector('input').value.trim()) {
+                                bar.classList.add('collapsed');
+                            }
+                        });
                     }
                 }
                 
                 // 更新URL参数
-                updateSearchURLParameter(this.value.trim());
+                updateSearchURLParameter(inputValue);
             });
             
             // 页面加载时从URL参数中获取搜索词
@@ -354,7 +372,13 @@ function initSearchBar() {
             const searchQuery = urlSearchParams.get('q') || '';
             if (searchQuery) {
                 searchInput.value = searchQuery;
-                searchBar.classList.remove('collapsed');
+                searchBars.forEach(bar => {
+                    const input = bar.querySelector('input');
+                    if (input !== searchInput) {
+                        input.value = searchQuery;
+                    }
+                    bar.classList.remove('collapsed');
+                });
             }
         }
     });

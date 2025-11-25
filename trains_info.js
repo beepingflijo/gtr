@@ -322,8 +322,10 @@ function displayTrains(trains, container) {
             window.history.replaceState({}, '', newUrl);
 
             // 清空搜索输入框
-            const searchInput = document.querySelector('.search-input');
-            searchInput.value = '';
+            const searchInputs = document.querySelectorAll('.search-input');
+            searchInputs.forEach(input => {
+                input.value = '';
+            });
             
             // 重新加载数据
             fetchTrainData();
@@ -1355,7 +1357,7 @@ function applySearchFilter(searchTerm = '') {
             
             // 如果trains_info.json中没有线路信息，才通过位置信息来判断列车在哪条线路上
             if (!trainLine) {
-                const closestTrack = findClosestTrack(position);
+                const closestTrack = findClosestTrack(leadingPos);
                 if (closestTrack) {
                     trainLine = closestTrack.line;
                 }
@@ -1366,6 +1368,7 @@ function applySearchFilter(searchTerm = '') {
             let stationName = '';
             let platform = '';
             let stationCode = ''; // 添加车站三字码
+            let actualCarPos = null; // 定义 actualCarPos 变量
             if (trainLine) {
                 // 检查列车是否在车站
                 // 新逻辑：分别检查列车头尾车厢，选择更靠近站台的一端
@@ -1463,6 +1466,7 @@ function applySearchFilter(searchTerm = '') {
                 searchText += ` ${stationCode}`; // 添加车站三字码到搜索文本
             } else {
                 // 如果不在车站，显示下一站信息
+                const position = actualCarPos || leadingPos; // 使用定义过的变量替代未定义的 position
                 if (trainLine && trainDirection !== 'unknown') {
                     // 查找列车当前所在的车站或轨道位置
                     const currentPosition = position;
@@ -1485,7 +1489,7 @@ function applySearchFilter(searchTerm = '') {
 
         // 添加警告信息
         try {
-            const position = train.cars[0].leading.location;
+            const position = train.cars[0].leading.location; // 定义 position 变量
             checkAndUpdateTrainWarnings(train, position);
             
             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
