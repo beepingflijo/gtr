@@ -156,7 +156,8 @@
             "en": "End station info not found", 
             "zh_hant": "未找到該終點站資訊", 
             "uk": "Інформація про кінцеву станцію не знайдена"
-        }
+        },
+        "searching": {"zh_hans": "正在搜索…", "en": "Searching...", "zh_hant": "正在搜尋…", "uk": "Пошук..."}
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},

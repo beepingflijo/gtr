@@ -299,6 +299,7 @@ function displayTrains(trains, container) {
     
     // 如果有搜索词，添加标题显示搜索内容
     if (searchTerm) {
+        //showToast(strings.trains_info.searching[lang], 30000);
         const searchHeader = document.createElement('div');
         searchHeader.className = 'search-header';
         const searchTitle = document.createElement('h3');
@@ -332,6 +333,7 @@ function displayTrains(trains, container) {
         });
         searchHeader.appendChild(clearBtn);
         container.appendChild(searchHeader);
+        //removeToast(strings.trains_info.searching[lang]);
     } else {
         const searchHeader = document.querySelector('.search-header');
         if (searchHeader) {
@@ -1212,7 +1214,9 @@ function handleSearch(event) {
     
     // 设置新的timeout
     searchTimeout = setTimeout(() => {
+        console.log('处理搜索输入:', event.target.value);
         const searchTerm = event.target.value.toLowerCase().trim();
+        //if (searchTerm) showToast(strings.trains_info.searching[lang], 30000);
         
         // 更新URL参数
         const url = new URL(window.location);
@@ -1225,6 +1229,8 @@ function handleSearch(event) {
         
         // 应用搜索过滤
         applySearchFilter(searchTerm);
+        //removeToast(strings.trains_info.searching[lang]);
+
         
         // 如果搜索词为空，移除搜索标题
         if (!searchTerm) {
@@ -1238,6 +1244,7 @@ function handleSearch(event) {
 
 // 应用搜索过滤条件
 function applySearchFilter(searchTerm = '') {
+    console.log('应用搜索过滤条件:', searchTerm);
     const trainElements = document.querySelectorAll('.train-info.item');
     
     // 处理搜索标题
@@ -1268,8 +1275,8 @@ function applySearchFilter(searchTerm = '') {
             window.history.replaceState({}, '', newUrl);
 
             // 清空搜索输入框
-            const searchInput = document.querySelector('.search-input');
-            searchInput.value = '';
+            const searchInput = document.querySelectorAll('.search-input');
+            searchInput.forEach(input => input.value = '');
             
             // 重新加载数据
             fetchTrainData();
