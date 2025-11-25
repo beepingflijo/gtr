@@ -372,7 +372,7 @@ header * {
     flex-direction: row;
     width: -webkit-fill-available;
     border-radius: 36px;
-    padding: 4px 8px;;
+    padding: 4px 8px;
 }
 
 .tabs .tab-item { 
@@ -424,7 +424,7 @@ header * {
 .selection.segment, .tabs { 
     flex-direction: row;
     padding: 4px;
-    gap: 2px;
+    gap: 0;
 }
 
 .actions, .side-bar.collapsed { 
@@ -664,7 +664,7 @@ input, input#endInput {
     color: var(--color-text);
     font-size: 14px;
     font-family: var(--font-family);
-    background-color: var(--color-background-card-transparent);
+    background-color: var(--color-background-card);
 }
 
 datalist { 

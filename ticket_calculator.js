@@ -109,11 +109,10 @@ function init() {
                         };
                         
                         const buttonSelector = sortButtons[sortParam];
+                        console.log('buttonSelector:', buttonSelector);
                         if (buttonSelector) {
-                            const buttons = document.querySelectorAll(buttonSelector);
-                            buttons.forEach(button => {
-                                button.classList.add('active');
-                            });
+                            const sortButton = document.querySelector(buttonSelector);
+                            setActiveSortButton(sortButton);
                         }
                     }, 200);
                 }
@@ -382,7 +381,20 @@ function setActiveSortButton(activeButton) {
     sortButtons.forEach(button => {
         button.classList.remove('active');
     });
-    activeButton.classList.add('active');
+    // 查找activeButton中以'sort-by-'开头的类名
+    let activeSortClass = '';
+    for (const className of activeButton.classList) {
+        if (className.startsWith('sort-by-')) {
+            activeSortClass = className;
+            break;
+        }
+    }
+    if (activeSortClass) {
+        const activeSortButtons = document.querySelectorAll(`.sort-selector .${activeSortClass}`);
+        activeSortButtons.forEach(button => {
+            button.classList.add('active');
+        });
+    }
 }
 
 // 从输入值中提取车站代码
@@ -577,6 +589,11 @@ function handleSearch(sortBy = 'time') {
 
 // 解析车站输入，支持仅输入车站名称或三字码
 function parseStationInput(input) {
+    // 检查输入是否有效
+    if (!input || typeof input !== 'string') {
+        return null;
+    }
+    
     // 检查是否已加载线路数据
     if (!window.lines) {
         console.warn('线路数据尚未加载完成');
@@ -598,14 +615,16 @@ function parseStationInput(input) {
     }
     
     // 如果输入包含车站名称和三字码（用空格分隔）
-    const parts = input.split(' ');
-    if (parts.length > 1) {
-        const code = parts[parts.length - 1].toUpperCase();
-        // 验证三字码是否有效
-        for (const line of window.lines) {
-            for (const step of line.route) {
-                if (step.type === 'station' && step.code === code) {
-                    return code;
+    if (input.includes(' ')) {
+        const parts = input.split(' ');
+        if (parts.length > 1) {
+            const code = parts[parts.length - 1].toUpperCase();
+            // 验证三字码是否有效
+            for (const line of window.lines) {
+                for (const step of line.route) {
+                    if (step.type === 'station' && step.code === code) {
+                        return code;
+                    }
                 }
             }
         }
@@ -1635,6 +1654,7 @@ function handleWindowResize() {
         footer.style.opacity = 1;
 
         if (searchItem.length <= 0) footerPanel.classList.add('no-collapse');
+        else footerPanel.classList.remove('no-collapse');
     } else {
         // 移除collapsed类
         footer.style.opacity = 0;
