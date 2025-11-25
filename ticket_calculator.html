@@ -12,25 +12,112 @@
 <body>
 <div class="app-container">
     <header>
+        <div class="item side-bar" style="opacity: 0;"> 
+            <div class="side-bar-header">
+                <div class="icon-btn side-bar-btn">
+                    <img src="/res/indent.png" alt="collapse" class="icon"></img>
+                </div>
+            </div>
+            <div class="side-bar-list side-bar-navigation">
+                <div class="side-bar-item">
+                    <div class="icon-btn lines-btn">
+                        <img src="./res/tracking.png" alt="line" class="icon"></img>
+                        <span>线路信息</span>
+                    </div>
+                </div>
+                <div class="side-bar-item active">
+                    <div class="icon-btn fare-btn active">
+                        <img src="./res/cash.png" alt="fare" class="icon active"></img>
+                        <span>票价计算</span>
+                    </div>
+                    <div class="search-controls">
+                        <div class="item search-panel selection no-collapse">
+                            <div class="icon-btn item-title search-title">
+                                <img src="./res/search.png" alt="search" class="icon"></img>
+                                <h4>Search</h4>
+                            </div>
+                            <section class="input-section">
+                                <input type="text" placeholder="出发站" id="startInput" list="start-stations"></input>
+                                <div class="icon-btn swap-btn">
+                                    <img src="./res/swap.png" alt="swap" class="icon"></img>
+                                    <span>Swap</span>
+                                </div>
+                                <input type="text" placeholder="到达站" id="endInput" list="end-stations"></input>
+                            </section>
+                            <section class="search-actions">
+                                <button id="searchBtn" class="active">搜索</button>
+                                <button id="clearBtn">清空</button>
+                            </section>
+                        </div>
+                        <div class="item sort-selector selection no-collapse"> 
+                            <div class="icon-btn selection-item sort-by-time active">
+                                <img src="./res/timer.png" alt="Faster" class="icon"></img>
+                                <span>Faster</span>
+                            </div>
+                            <div class="icon-btn selection-item sort-by-transfers">
+                                <img src="./res/sync.png" alt="Direct" class="icon"></img>
+                                <span>Direct</span>
+                            </div>
+                            <div class="icon-btn selection-item sort-by-price">
+                                <img src="./res/money_box.png" alt="Cheaper" class="icon"></img>
+                                <span>Cheaper</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="side-bar-item">
+                    <div class="icon-btn trains-btn">
+                        <img src="./res/train.png" alt="train" class="icon"></img>
+                        <span>列车信息</span>
+                    </div>
+                </div>
+            </div>
+            <div class="side-bar-list">
+                <div class="side-bar-item"> 
+                    <div class="icon-btn preferences-btn">
+                        <img src="./res/profile.png" alt="preferences" class="icon"></img>
+                        <span>偏好设置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="title">
             <img src="./res/gtr.png" alt="logo">
             <h1>票价计算</h1>
         </div>
-        <div class="language-selection selection collapsed"></div>
-        <div class="actions tabs"> 
-            <div class="icon-btn lines-btn">
-                <img src="./res/tracking.png" alt="fare" class="icon"></img>
-            </div>
-            <div class="icon-btn fare-btn">
-                <img src="./res/cash.png" alt="fare" class="icon active"></img>
-            </div>
-            <div class="icon-btn trains-btn">
-                <img src="./res/train.png" alt="fare" class="icon"></img>
+        <div class="actions pref-actions"> 
+            <div class="icon-btn preferences-btn">
+                <img src="./res/profile.png" alt="preferences" class="icon"></img>
             </div>
         </div>
         <div class="gradient-blur"></div>
     </header>
     <main>
+        <section class="search-result">
+            <!-- 通过 JavaScript 动态添加 -->
+        </section>
+    </main>
+    <footer>
+        <div class="actions tabs"> 
+            <div class="tab-item">
+                <div class="icon-btn lines-btn">
+                    <img src="./res/tracking.png" alt="line" class="icon"></img>
+                    <span class="tab-text">线路信息</span>
+                </div>
+            </div>
+            <div class="tab-item active">
+                <div class="icon-btn fare-btn active">
+                    <img src="./res/cash.png" alt="fare" class="icon active"></img>
+                    <span class="tab-text">票价计算</span>
+                </div>
+            </div>
+            <div class="tab-item">
+                <div class="icon-btn trains-btn">
+                    <img src="./res/train.png" alt="train" class="icon"></img>
+                    <span class="tab-text">列车信息</span>
+                </div>
+            </div>
+        </div>
         <div class="search-controls">
             <div class="item search-panel selection">
                 <div class="icon-btn item-title search-title">
@@ -64,13 +151,6 @@
                     <span>Cheaper</span>
                 </div>
             </div>
-        </div>
-        <section class="search-result">
-            <!-- 通过 JavaScript 动态添加 -->
-        </section>
-    </main>
-    <footer>
-        <div class="selection search-controls">
         </div>
     </footer>
 </div>

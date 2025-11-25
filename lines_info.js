@@ -84,30 +84,34 @@ function init() {
     lineSelection.appendChild(buttonGroup);*/
 
     // 为selection.line-selector也添加线路选项selection-item
-    const lineSelector = document.querySelector('.line-selector');
+    const lineSelectors = document.querySelectorAll('.line-selector');
     window.lines.forEach(line => {
-        const item = document.createElement('div');
-        item.className = `selection-item ${line.id}`;
-        item.innerHTML = `
-        <div class="line-name-container">
-            ${line.name[lang]}
-            <span class="line-name-original">${!lang.startsWith('zh') ? line.name['zh_hans'] : ''}</span>
-        </div>
-        `;
-        item.addEventListener('click', () => {
-            //displayStations(line);
-            //displayTrains();
-            // 点击后添加对应的url参数
-            window.location.href = `?line=${line.id}&lang=${lang}`;
-        })
-        lineSelector.appendChild(item);
-        if (line.id === getActiveLineId()) {
-            item.classList.add('active');
-        }
-    })
+        lineSelectors.forEach(lineSelector => {
+            const item = document.createElement('div');
+            item.className = `selection-item ${line.id}`;
+            item.innerHTML = `
+            <div class="line-name-container">
+                ${line.name[lang]}
+                <span class="line-name-original">${!lang.startsWith('zh') ? line.name['zh_hans'] : ''}</span>
+            </div>
+            `;
+            item.addEventListener('click', () => {
+                //displayStations(line);
+                //displayTrains();
+                // 点击后添加对应的url参数
+                window.location.href = `?line=${line.id}&lang=${lang}`;
+            })
+            lineSelector.appendChild(item);
+            if (line.id === getActiveLineId()) {
+                item.classList.add('active');
+            }
+        });
+    });
 
-    // 调整lineSelector样式
-    lineSelector.setAttribute('style', `--color-primary: ${window.lines.find(line => line.id === getActiveLineId()).color}`);
+    // 调整所有lineSelector样式
+    lineSelectors.forEach(lineSelector => {
+        lineSelector.setAttribute('style', `--color-primary: ${window.lines.find(line => line.id === getActiveLineId()).color}`);
+    });
 
     //const divider = document.createElement('div');
     //divider.className = 'divider';
@@ -120,30 +124,65 @@ function init() {
             window.open('https://track.nitrogen.hydcraft.cn', '_blank');
         }
     });
-    const fareBtn = document.querySelector('.fare-btn');
-    fareBtn.title = strings.ticket_calculator.page_title[lang];
-    fareBtn.addEventListener('click', () => {
-            window.open(`ticket_calculator.html${'?lang='+lang}`, '_self');
-    });
-    const trainsBtn = document.querySelector('.trains-btn');
-    trainsBtn.title = strings.trains_info.page_title[lang];
-    trainsBtn.addEventListener('click', () => {
-            window.open(`trains_info.html${'?lang='+lang}`, '_self');
-    });
-    const linesBtn = document.querySelector('.lines-btn');
-    linesBtn.title = strings.lines_info.page_title[lang];
-    linesBtn.addEventListener('click', () => {
-        // 获取用户最后访问的线路
-        const lastVisitedLine = localStorage.getItem('lastVisitedLine');
-        let targetLine = lines[0].id; // 默认线路
-        
-        // 如果有最后访问的线路且该线路存在，则使用该线路
-        if (lastVisitedLine && window.lines.some(line => line.id === lastVisitedLine)) {
-            targetLine = lastVisitedLine;
+    
+    // 修改以下代码以处理多个按钮实例
+    const fareBtns = document.querySelectorAll('.fare-btn');
+    fareBtns.forEach(fareBtn => {
+        const fareBtnText = fareBtn.querySelector('span');
+        if (fareBtnText) {
+            fareBtnText.textContent = strings.ticket_calculator[fareBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+            fareBtn.title = strings.ticket_calculator.page_title[lang];
         }
-        
-        window.open(`lines_info.html?line=${targetLine}&lang=${lang}`, '_self');
+        fareBtn.addEventListener('click', () => {
+            window.open(`ticket_calculator.html${'?lang='+lang}`, '_self');
+        });
     });
+    
+    const trainsBtns = document.querySelectorAll('.trains-btn');
+    trainsBtns.forEach(trainsBtn => {
+        const trainsBtnText = trainsBtn.querySelector('span');
+        if (trainsBtnText) {
+            trainsBtnText.textContent = strings.trains_info[trainsBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+            trainsBtn.title = strings.trains_info.page_title[lang];
+        }
+        trainsBtn.addEventListener('click', () => {
+            window.open(`trains_info.html${'?lang='+lang}`, '_self');
+        });
+    });
+    
+    const linesBtns = document.querySelectorAll('.lines-btn');
+    linesBtns.forEach(linesBtn => {
+        const linesBtnText = linesBtn.querySelector('span');
+        if (linesBtnText) {
+            linesBtnText.textContent = strings.lines_info[linesBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+            linesBtn.title = strings.lines_info.page_title[lang];
+        }
+        linesBtn.addEventListener('click', () => {
+            // 获取用户最后访问的线路
+            const lastVisitedLine = localStorage.getItem('lastVisitedLine');
+            let targetLine = lines[0].id; // 默认线路
+            
+            // 如果有最后访问的线路且该线路存在，则使用该线路
+            if (lastVisitedLine && window.lines.some(line => line.id === lastVisitedLine)) {
+                targetLine = lastVisitedLine;
+            }
+            
+            window.open(`lines_info.html?line=${targetLine}&lang=${lang}`, '_self');
+        });
+    });
+
+    const prefBtns = document.querySelectorAll('.preferences-btn');
+    prefBtns.forEach(prefBtn => {
+        const prefBtnText = prefBtn.querySelector('span');
+        if (prefBtnText) {
+            prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+            prefBtn.title = strings.preferences.page_title[lang];
+        }
+    })
 
     const lineId = getActiveLineId();
     // 获取lineId对应的线路数据、
@@ -1704,51 +1743,57 @@ function shareRouteMap() {
 }
 
 function handleWindowResize() {
-    const lineSelector = document.querySelector('.line-selector');
+    const lineSelectors = document.querySelectorAll('.line-selector');
     const footer = document.querySelector('footer');
     const header = document.querySelector('header');
     const stationsDisplay = document.querySelector('.stations-display');
     const main = document.querySelector('main');
     const tabs = document.querySelector('.tabs');
+    const sideBar = document.querySelector('.side-bar');
+    const activeItem = sideBar.querySelector('.side-bar-item.active');
+    const activeTab = tabs.querySelector('.tab-item.active');
+    const prefActions = document.querySelector('.pref-actions');
+    if (header.contains(tabs)) { 
+        header.removeChild(tabs);
+    }
+    while (activeTab && activeTab.children.length > 1) {
+        activeTab.removeChild(activeTab.children[1]);
+    }
     
-    if (window.innerWidth < 512) {
-        // 添加collapsed类
-        lineSelector.classList.remove('no-collapse');
-        lineSelector.classList.add('collapsed');
-        //lineSelector.style.zIndex = 1100;
-        lineSelector.style.position = 'relative';
-        lineSelector.style.top = 'unset';
-        lineSelector.style.left = 'unset';
+    if (window.innerWidth < 600) {
+        sideBar.style.opacity = 0;
+        sideBar.style.position = 'fixed';
+        sideBar.style.right = '100%';
+        sideBar.style.display = 'none';
+        prefActions.style.display = 'flex';
         stationsDisplay.style.marginLeft = '0';
+        main.style.paddingBottom = `144px`;
 
         footer.style.opacity = 1;
-        // 确保line-selector在footer中
-        if (!footer.contains(lineSelector) || !footer.contains(tabs)) {
-            footer.appendChild(lineSelector);
-            footer.appendChild(tabs);
-        }
+        tabs.style.marginLeft = '6px';
     } else {
-        // 移除collapsed类
-        lineSelector.classList.add('no-collapse');
-        lineSelector.classList.remove('collapsed');
         //lineSelector.style.zIndex = 1100;
-        lineSelector.style.position = 'fixed';
-        lineSelector.style.top = '66px';
-        const lineSelectorWidth = lineSelector.getBoundingClientRect().width;
-        const mainWidth = main.getBoundingClientRect().width;
-        stationsDisplay.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
-        lineSelector.style.left = `calc(${window.innerWidth > 920 ? '50vw + ' + mainWidth / 2  + 'px' : '88vw'} - ${mainWidth}px)`;
-
+        //lineSelector.style.position = 'fixed';
+        //lineSelector.style.top = '66px';
+        //lineSelector.style.left = `calc(${window.innerWidth > 920 ? '50vw + ' + mainWidth / 2  + 'px' : '88vw'} - ${mainWidth}px)`;
+        // 移除collapsed类
         footer.style.opacity = 0;
-        // 将line-selector移动到main中
-        if (!header.contains(lineSelector)) {
-            header.insertBefore(lineSelector, header.firstChild);
-        }
-        if (!header.contains(tabs)) {
-            header.insertBefore(tabs, header.lastChild);
-        }
+        sideBar.style.opacity = 1;
+        sideBar.style.display = 'flex';
+        sideBar.style.right = '0';
+        sideBar.style.position = 'relative';
+        prefActions.style.display = 'none';
+        main.style.paddingBottom = '36px';
+        setTimeout(() => {
+            const lineSelectorWidth = sideBar.getBoundingClientRect().width <= 60 ? 0 : sideBar.getBoundingClientRect().width;
+            const mainWidth = main.getBoundingClientRect().width;
+            stationsDisplay.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
+            tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
+        }, 100);
     }
 }
+
+window.handleWindowResize = handleWindowResize;
 
 // 更新已存在的列车元素上的方向箭头
 function updateTrainDirectionArrows() {

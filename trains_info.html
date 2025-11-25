@@ -12,6 +12,41 @@
 <body>
 <div class="app-container">
     <header>
+        <div class="item side-bar" style="opacity: 0;"> 
+            <div class="side-bar-header">
+                <div class="icon-btn side-bar-btn">
+                    <img src="/res/indent.png" alt="collapse" class="icon"></img>
+                </div>
+            </div>
+            <div class="side-bar-list side-bar-navigation">
+                <div class="side-bar-item">
+                    <div class="icon-btn lines-btn">
+                        <img src="./res/tracking.png" alt="line" class="icon"></img>
+                        <span>线路信息</span>
+                    </div>
+                </div>
+                <div class="side-bar-item">
+                    <div class="icon-btn fare-btn">
+                        <img src="./res/cash.png" alt="fare" class="icon"></img>
+                        <span>票价计算</span>
+                    </div>
+                </div>
+                <div class="side-bar-item active">
+                    <div class="icon-btn trains-btn active">
+                        <img src="./res/train.png" alt="train" class="icon active"></img>
+                        <span>列车信息</span>
+                    </div>
+                </div>
+            </div>
+            <div class="side-bar-list">
+                <div class="side-bar-item"> 
+                    <div class="icon-btn preferences-btn">
+                        <img src="./res/profile.png" alt="preferences" class="icon"></img>
+                        <span>偏好设置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="title">
             <img src="./res/gtr.png" alt="logo">
             <h1>列车信息</h1>
@@ -22,18 +57,9 @@
             </div>
             <input type="text" class="search-input" placeholder="车号/站名/线路…"></input>
         </div>
-        <div class="language-selection selection collapsed"> 
-            <!-- 语言选项将通过 JavaScript 动态添加 -->
-        </div>
-        <div class="actions tabs"> 
-            <div class="icon-btn lines-btn">
-                <img src="./res/tracking.png" alt="fare" class="icon"></img>
-            </div>
-            <div class="icon-btn fare-btn">
-                <img src="./res/cash.png" alt="fare" class="icon"></img>
-            </div>
-            <div class="icon-btn trains-btn">
-                <img src="./res/train.png" alt="fare" class="icon active"></img>
+        <div class="actions pref-actions"> 
+            <div class="icon-btn preferences-btn">
+                <img src="./res/profile.png" alt="preferences" class="icon"></img>
             </div>
         </div>
         <div class="gradient-blur"></div>
@@ -42,6 +68,33 @@
         <!-- 列车信息将会通过 JavaScript 动态添加 -->
     </main>
     <footer>
+        <div class="actions tabs"> 
+            <div class="tab-item active">
+                <div class="icon-btn lines-btn">
+                    <img src="./res/tracking.png" alt="line" class="icon"></img>
+                    <span class="tab-text">线路信息</span>
+                </div>
+                <div class="selection line-selector"></div>
+            </div>
+            <div class="tab-item">
+                <div class="icon-btn fare-btn">
+                    <img src="./res/cash.png" alt="fare" class="icon"></img>
+                    <span class="tab-text">票价计算</span>
+                </div>
+            </div>
+            <div class="tab-item">
+                <div class="icon-btn trains-btn active">
+                    <img src="./res/train.png" alt="train" class="icon active"></img>
+                    <span class="tab-text">列车信息</span>
+                </div>
+            </div>
+        </div>
+        <div class="actions search-bar collapsed"> 
+            <div class="icon-btn search-btn">
+                <img src="./res/search.png" alt="search" class="icon"></img>
+            </div>
+            <input type="text" class="search-input" placeholder="车号/站名/线路…"></input>
+        </div>
     </footer>
 </div>
 <script src="script.js"></script>

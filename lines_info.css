@@ -69,6 +69,7 @@
     height: fit-content;
     max-width: 600px;
     border-radius: 18px;
+    transition: all 0.3s ease;
 }
 
 .compact .stations-display {
@@ -252,7 +253,6 @@
         width: 80vw;
         max-width: 720px;
         min-width: 460px;
-        justify-content: flex-start;
     }
 
     .line-selection {

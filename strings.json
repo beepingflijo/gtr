@@ -13,13 +13,28 @@
         "unknown":{"zh_hans":"未知", "en": "Unknown", "zh_hant":"未知", "uk": "Невідомо"}
     },
     "mainpage":{
-        "title":{"zh_hans":"主页","zh_hant":"主頁","en": "Home","uk": "Головна"},
+        "page_title":{"zh_hans":"主页","zh_hant":"主頁","en": "Home","uk": "Головна"},
         "slogan":{
             "zh_hans":"从运输出发 \n探索智慧生活的各种可能",
             "zh_hant":"從運輸出發 \n探索智慧生活的各種可能",
             "en": "From transport, \nExploring more for a smarter life",
             "uk": "Від транспорту, \nБільше можливостей для розумнішого життя.",
             "pt": "Do setor dos transportes, \nExplorando mais para uma vida \nmais inteligente."
+        }
+    },
+    "preferences":{
+        "page_title":{"zh_hans":"偏好设置", "en": "Preferences", "zh_hant":"偏好設定", "uk": "Уподобання"},
+        "language":{"zh_hans":"语言", "en": "Language", "zh_hant":"語言", "uk": "Мова"},
+        "theme":{"zh_hans":"主题", "en": "Theme", "zh_hant":"主題", "uk": "Тема"},
+        "theme_light":{"zh_hans":"浅色", "en": "Light", "zh_hant":"淺色", "uk": "Світлий"},
+        "theme_dark":{"zh_hans":"深色", "en": "Dark", "zh_hant":"深色", "uk": "Темний"},
+        "theme_system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟隨系統", "uk": "Системою"},
+        "reset":{"zh_hans":"重置", "en": "Reset", "zh_hant":"重置", "uk": "Зворот"},
+        "reset_confirm":{
+            "zh_hans":"确定要重置所有设置吗？", 
+            "en": "Are you sure to reset all preferences?", 
+            "zh_hant":"確定要重置所有設定嗎？", 
+            "uk": "Ви впевнені, що хочете зворот?"
         }
     },
     "station_names":{
@@ -42,6 +57,7 @@
     },
     "lines_info":{
         "page_title":{"zh_hans":"线路信息", "en": "Lines Info", "zh_hant":"路線資訊", "uk": "Інформація про лінії"},
+        "page_title_short":{"zh_hans":"线路", "en": "Lines", "zh_hant":"路線", "uk": "Лінії"},
         "updated_at":{"zh_hans":"更新于", "en": "Updated at ", "zh_hant":"更新於", "uk": "Оновлено о "},
         "offline":{"zh_hans":"无法加载列车数据", "en": "Trains data not found", "zh_hant":"列車數據無法加載", "uk": "Дані про потяги не знайдено"},
         "json_parse_error":{"zh_hans":"JSON解析错误", "en": "JSON parse error", "zh_hant":"JSON解析錯誤", "uk": "Помилка аналізу JSON"},
@@ -92,6 +108,7 @@
     },
     "ticket_calculator": {
         "page_title": {"zh_hans": "票价计算", "en": "Fare Calculator", "zh_hant": "票價計算", "uk": "Калькулятор тарифів"},
+        "page_title_short": {"zh_hans": "票价", "en": "Fare", "zh_hant": "票價", "uk": "Тариф"},
         "start_station": {"zh_hans": "出发站", "en": "Departure station", "zh_hant": "出發站", "uk": "Станція відправлення"},
         "end_station": {"zh_hans": "到达站", "en": "Arrival station", "zh_hant": "到達站", "uk": "Станція прибуття"},
         "search": {"zh_hans": "搜索", "en": "Search", "zh_hant": "搜尋", "uk": "Пошук"},
@@ -143,6 +160,7 @@
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
+        "page_title_short": {"zh_hans":"列车", "en": "Trains", "zh_hant":"列車", "uk": "Потяги"},
         "train_not_found":{"zh_hans":"未找到该列车信息", "en": "Train info not found", "zh_hant":"未找到該列車資訊", "uk": "Інформація про потяг не знайдена"},
         "cars":{"zh_hans":"编", "en": "-car", "zh_hant":"輌", "uk": "-сіль"},
         "km_to":{"zh_hans":"km后到达", "en": "km to ", "zh_hant":"km後到達", "uk": "km до "},

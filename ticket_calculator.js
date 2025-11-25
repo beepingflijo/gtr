@@ -44,16 +44,23 @@ function init() {
     initDatalist('start');
     initDatalist('end');
     
-    const headerTitle = document.querySelector('header h1');
-    const pageTitle = document.querySelector('title');
-    console.log(pageTitle.textContent);
-    headerTitle.textContent = strings.ticket_calculator.page_title[lang];
-    pageTitle.textContent = strings.ticket_calculator.page_title[lang];
+    const headerTitles = document.querySelectorAll('header h1');
+    const pageTitles = document.querySelectorAll('title');
+    headerTitles.forEach(headerTitle => {
+        headerTitle.textContent = strings.ticket_calculator.page_title[lang];
+    });
+    pageTitles.forEach(pageTitle => {
+        pageTitle.textContent = strings.ticket_calculator.page_title[lang];
+    });
 
-    const startInput = document.getElementById('startInput');
-    const endInput = document.getElementById('endInput');
-    startInput.placeholder = strings.ticket_calculator.start_station[lang];
-    endInput.placeholder = strings.ticket_calculator.end_station[lang];
+    const startInputs = document.querySelectorAll('#startInput');
+    const endInputs = document.querySelectorAll('#endInput');
+    startInputs.forEach(startInput => {
+        startInput.placeholder = strings.ticket_calculator.start_station[lang];
+    });
+    endInputs.forEach(endInput => {
+        endInput.placeholder = strings.ticket_calculator.end_station[lang];
+    });
 
     // 检查URL参数中的start和end值
     const urlParams = new URLSearchParams(window.location.search);
@@ -83,8 +90,12 @@ function init() {
             });
             
             if (startStation && endStation) {
-                startInput.value = startStation;
-                endInput.value = endStation;
+                startInputs.forEach(startInput => {
+                    startInput.value = startStation;
+                });
+                endInputs.forEach(endInput => {
+                    endInput.value = endStation;
+                });
                 // 触发搜索
                 handleSearch(sortParam || 'time'); // 传递排序参数，默认为time
                 
@@ -99,10 +110,10 @@ function init() {
                         
                         const buttonSelector = sortButtons[sortParam];
                         if (buttonSelector) {
-                            const button = document.querySelector(buttonSelector);
-                            if (button) {
-                                setActiveSortButton(button);
-                            }
+                            const buttons = document.querySelectorAll(buttonSelector);
+                            buttons.forEach(button => {
+                                button.classList.add('active');
+                            });
                         }
                     }, 200);
                 }
@@ -110,48 +121,78 @@ function init() {
         }, 100);
     }
 
-    startInput.addEventListener('input', () => { 
-        filterStations(startInput.value, 'start');
+    startInputs.forEach(startInput => {
+        startInput.addEventListener('input', () => { 
+            // 同步所有startInput的值
+            const value = startInput.value;
+            startInputs.forEach(si => {
+                if (si !== startInput) {
+                    si.value = value;
+                }
+            });
+            filterStations(value, 'start');
+        });
     });
-    endInput.addEventListener('input', () => { 
-        filterStations(endInput.value, 'end');
+    endInputs.forEach(endInput => {
+        endInput.addEventListener('input', () => { 
+            // 同步所有endInput的值
+            const value = endInput.value;
+            endInputs.forEach(ei => {
+                if (ei !== endInput) {
+                    ei.value = value;
+                }
+            });
+            filterStations(value, 'end');
+        });
     });
 
-    const searchBtn = document.getElementById('searchBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    searchBtn.textContent = strings.ticket_calculator.search[lang];
-    clearBtn.textContent = strings.ticket_calculator.clear_input[lang];
+    const searchBtns = document.querySelectorAll('#searchBtn');
+    const clearBtns = document.querySelectorAll('#clearBtn');
+    searchBtns.forEach(searchBtn => {
+        searchBtn.textContent = strings.ticket_calculator.search[lang];
+    });
+    clearBtns.forEach(clearBtn => {
+        clearBtn.textContent = strings.ticket_calculator.clear_input[lang];
+    });
 
-    clearBtn.addEventListener('click', () => { 
-        startInput.value = '';
-        endInput.value = '';
-        // 清除URL中的start和end参数
-        updateURLParams('', '');
+    clearBtns.forEach(clearBtn => {
+        clearBtn.addEventListener('click', () => { 
+            startInputs.forEach(startInput => {
+                startInput.value = '';
+            });
+            endInputs.forEach(endInput => {
+                endInput.value = '';
+            });
+            // 清除URL中的start和end参数
+            updateURLParams('', '');
+        });
     });
     
     // 添加搜索按钮事件监听器
-    searchBtn.addEventListener('click', () => {
-        // 获取当前激活的排序方式
-        let sortBy = 'time'; // 默认排序方式
-        const activeSortButton = document.querySelector('.sort-selector .icon-btn.active');
-        
-        if (activeSortButton) {
-            if (activeSortButton.classList.contains('sort-by-time')) {
-                sortBy = 'time';
-            } else if (activeSortButton.classList.contains('sort-by-transfers')) {
-                sortBy = 'transfer';
-            } else if (activeSortButton.classList.contains('sort-by-price')) {
-                sortBy = 'price';
+    searchBtns.forEach(searchBtn => {
+        searchBtn.addEventListener('click', () => {
+            // 获取当前激活的排序方式
+            let sortBy = 'time'; // 默认排序方式
+            const activeSortButton = document.querySelector('.sort-selector .icon-btn.active');
+            
+            if (activeSortButton) {
+                if (activeSortButton.classList.contains('sort-by-time')) {
+                    sortBy = 'time';
+                } else if (activeSortButton.classList.contains('sort-by-transfers')) {
+                    sortBy = 'transfer';
+                } else if (activeSortButton.classList.contains('sort-by-price')) {
+                    sortBy = 'price';
+                }
             }
-        }
-        
-        handleSearch(sortBy); // 传递排序参数
-        // 更新URL参数
-        const startCode = parseStationInput(startInput.value);
-        const endCode = parseStationInput(endInput.value);
-        if (startCode && endCode) {
-            updateURLParams(startCode, endCode, sortBy);
-        }
+            
+            handleSearch(sortBy); // 传递排序参数
+            // 更新URL参数
+            const startCode = parseStationInput(startInput.value);
+            const endCode = parseStationInput(endInput.value);
+            if (startCode && endCode) {
+                updateURLParams(startCode, endCode, sortBy);
+            }
+        });
     });
 
     const searchResult = document.querySelector('.search-result');
@@ -161,109 +202,176 @@ function init() {
     inputHint.textContent = strings.ticket_calculator.type_and_search_to_display_results[lang];
     searchResult.appendChild(inputHint);
     
-    const linesBtn = document.querySelector('.lines-btn');
-    linesBtn.title = strings.lines_info.page_title[lang];
-    linesBtn.addEventListener('click', () => {
-            window.open(`lines_info.html${'?lang='+lang}`, '_self');
+    
+    // 修改以下代码以处理多个按钮实例
+    const fareBtns = document.querySelectorAll('.fare-btn');
+    fareBtns.forEach(fareBtn => {
+        const fareBtnText = fareBtn.querySelector('span');
+        if (fareBtnText) {
+            fareBtnText.textContent = strings.ticket_calculator[fareBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+        fareBtn.title = strings.ticket_calculator.page_title[lang];
+        }
+        fareBtn.addEventListener('click', () => {
+            window.open(`ticket_calculator.html${'?lang='+lang}`, '_self');
+        });
     });
-    const trainsBtn = document.querySelector('.trains-btn');
-    trainsBtn.title = strings.trains_info.page_title[lang];
-    trainsBtn.addEventListener('click', () => {
+    
+    const trainsBtns = document.querySelectorAll('.trains-btn');
+    trainsBtns.forEach(trainsBtn => {
+        const trainsBtnText = trainsBtn.querySelector('span');
+        if (trainsBtnText) {
+            trainsBtnText.textContent = strings.trains_info[trainsBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+        trainsBtn.title = strings.trains_info.page_title[lang];
+        }
+        trainsBtn.addEventListener('click', () => {
             window.open(`trains_info.html${'?lang='+lang}`, '_self');
+        });
     });
-    const fareBtn = document.querySelector('.fare-btn');
-    fareBtn.title = strings.ticket_calculator.page_title[lang];
+    
+    const linesBtns = document.querySelectorAll('.lines-btn');
+    linesBtns.forEach(linesBtn => {
+        const linesBtnText = linesBtn.querySelector('span');
+        if (linesBtnText) {
+            linesBtnText.textContent = strings.lines_info[linesBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+        linesBtn.title = strings.lines_info.page_title[lang];
+        }
+        linesBtn.addEventListener('click', () => {
+            // 获取用户最后访问的线路
+            const lastVisitedLine = localStorage.getItem('lastVisitedLine');
+            let targetLine = lines[0].id; // 默认线路
+            
+            // 如果有最后访问的线路且该线路存在，则使用该线路
+            if (lastVisitedLine && window.lines.some(line => line.id === lastVisitedLine)) {
+                targetLine = lastVisitedLine;
+            }
+            
+            window.open(`lines_info.html?line=${targetLine}&lang=${lang}`, '_self');
+        });
+    });
 
-    const swapBtn = document.querySelector('.swap-btn');
-    swapBtn.title = strings.ticket_calculator.swap[lang];
-    const swapText = swapBtn.querySelector('span');
-    swapText.textContent = strings.ticket_calculator.swap[lang];
+    const prefBtns = document.querySelectorAll('.preferences-btn');
+    prefBtns.forEach(prefBtn => {
+        const prefBtnText = prefBtn.querySelector('span');
+        if (prefBtnText) {
+            prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+        prefBtn.title = strings.preferences.page_title[lang];
+        }
+    })
 
-    const sortByTimeText = document.querySelector('.sort-by-time span');
-    sortByTimeText.textContent = strings.ticket_calculator.faster[lang];
-    sortByTimeText.parentElement.title = strings.ticket_calculator.faster[lang];
-    const sortByTransfersText = document.querySelector('.sort-by-transfers span');
-    sortByTransfersText.textContent = strings.ticket_calculator.direct[lang];
-    sortByTransfersText.parentElement.title = strings.ticket_calculator.direct[lang];
-    const sortByPriceText = document.querySelector('.sort-by-price span');
-    sortByPriceText.textContent = strings.ticket_calculator.cheaper[lang];
-    sortByPriceText.parentElement.title = strings.ticket_calculator.cheaper[lang];
+    const swapBtns = document.querySelectorAll('.swap-btn');
+    swapBtns.forEach(swapBtn => {
+        swapBtn.title = strings.ticket_calculator.swap[lang];
+        const swapText = swapBtn.querySelector('span');
+        swapText.textContent = strings.ticket_calculator.swap[lang];
+    });
+
+    const sortByTimeTexts = document.querySelectorAll('.sort-by-time span');
+    sortByTimeTexts.forEach(sortByTimeText => {
+        sortByTimeText.textContent = strings.ticket_calculator.faster[lang];
+        sortByTimeText.parentElement.title = strings.ticket_calculator.faster[lang];
+    });
+    
+    const sortByTransfersTexts = document.querySelectorAll('.sort-by-transfers span');
+    sortByTransfersTexts.forEach(sortByTransfersText => {
+        sortByTransfersText.textContent = strings.ticket_calculator.direct[lang];
+        sortByTransfersText.parentElement.title = strings.ticket_calculator.direct[lang];
+    });
+    
+    const sortByPriceTexts = document.querySelectorAll('.sort-by-price span');
+    sortByPriceTexts.forEach(sortByPriceText => {
+        sortByPriceText.textContent = strings.ticket_calculator.cheaper[lang];
+        sortByPriceText.parentElement.title = strings.ticket_calculator.cheaper[lang];
+    });
 
     // 添加交换按钮点击事件处理程序
     let rotation = 0;
-    swapBtn.addEventListener('click', () => {
-        // 交换起始站和终点站输入框的内容
-        const tempValue = startInput.value;
-        startInput.value = endInput.value;
-        endInput.value = tempValue;
-        
-        // 旋转图标180度
-        rotation += 180;
-        const swapIcon = swapBtn.querySelector('img');
-        swapIcon.style.transform = `rotate(${rotation}deg)`;
-        swapIcon.style.transition = 'transform 0.3s ease-in-out';
-        
-        // 获取当前激活的排序方式
-        let sortBy = 'time'; // 默认排序方式
-        const activeSortButton = document.querySelector('.sort-selector .icon-btn.active');
-        
-        if (activeSortButton) {
-            if (activeSortButton.classList.contains('sort-by-time')) {
-                sortBy = 'time';
-            } else if (activeSortButton.classList.contains('sort-by-transfers')) {
-                sortBy = 'transfer';
-            } else if (activeSortButton.classList.contains('sort-by-price')) {
-                sortBy = 'price';
+        swapBtns.forEach(swapBtn => {
+        swapBtn.addEventListener('click', () => {
+            // 交换起始站和终点站输入框的内容
+            const tempValue = startInputs[0].value;
+            startInputs.forEach(input => input.value = endInputs[0].value);
+            endInputs.forEach(input => input.value = tempValue);
+            
+            // 旋转图标180度
+            rotation += 180;
+            const swapIcons = swapBtn.querySelectorAll('img');
+            swapIcons.forEach(swapIcon => {
+                swapIcon.style.transform = `rotate(${rotation}deg)`;
+                swapIcon.style.transition = 'transform 0.3s ease-in-out';
+            });
+            
+            // 获取当前激活的排序方式
+            let sortBy = 'time'; // 默认排序方式
+            const activeSortButton = document.querySelector('.sort-selector .icon-btn.active');
+            
+            if (activeSortButton) {
+                if (activeSortButton.classList.contains('sort-by-time')) {
+                    sortBy = 'time';
+                } else if (activeSortButton.classList.contains('sort-by-transfers')) {
+                    sortBy = 'transfer';
+                } else if (activeSortButton.classList.contains('sort-by-price')) {
+                    sortBy = 'price';
+                }
             }
-        }
-        
-        // 触发搜索并传递当前排序方式
-        handleSearch(sortBy);
-        
-        // 更新URL参数
-        const startCode = parseStationInput(startInput.value);
-        const endCode = parseStationInput(endInput.value);
-        if (startCode && endCode) {
-            updateURLParams(startCode, endCode, sortBy);
-        }
+            
+            // 触发搜索并传递当前排序方式
+            handleSearch(sortBy);
+            
+            // 更新URL参数
+            const startCode = parseStationInput(startInputs[0].value);
+            const endCode = parseStationInput(endInputs[0].value);
+            if (startCode && endCode) {
+                updateURLParams(startCode, endCode, sortBy);
+            }
+        });
     });
 
     window.addEventListener('resize', handleWindowResize);
 
     // 添加排序按钮的事件监听器
-    const sortByTimeBtn = document.querySelector('.sort-by-time');
-    const sortByTransfersBtn = document.querySelector('.sort-by-transfers');
-    const sortByPriceBtn = document.querySelector('.sort-by-price');
+    const sortByTimeBtns = document.querySelectorAll('.sort-by-time');
+    const sortByTransfersBtns = document.querySelectorAll('.sort-by-transfers');
+    const sortByPriceBtns = document.querySelectorAll('.sort-by-price');
     
-    if (sortByTimeBtn && sortByTransfersBtn && sortByPriceBtn) {
-        sortByTimeBtn.addEventListener('click', () => {
-            setActiveSortButton(sortByTimeBtn);
-            handleSearch('time');
-            const startCode = parseStationInput(startInput.value);
-            const endCode = parseStationInput(endInput.value);
-            if (startCode && endCode) {
-                updateURLParams(startCode, endCode, 'time');
-            }
+    if (sortByTimeBtns && sortByTransfersBtns && sortByPriceBtns) {
+        sortByTimeBtns.forEach(sortByTimeBtn => {
+            sortByTimeBtn.addEventListener('click', () => {
+                setActiveSortButton(sortByTimeBtn);
+                handleSearch('time');
+                const startCode = parseStationInput(startInput.value);
+                const endCode = parseStationInput(endInput.value);
+                if (startCode && endCode) {
+                    updateURLParams(startCode, endCode, 'time');
+                }
+            });
         });
         
-        sortByTransfersBtn.addEventListener('click', () => {
-            setActiveSortButton(sortByTransfersBtn);
-            handleSearch('transfer');
-            const startCode = parseStationInput(startInput.value);
-            const endCode = parseStationInput(endInput.value);
-            if (startCode && endCode) {
-                updateURLParams(startCode, endCode, 'transfer');
-            }
+        sortByTransfersBtns.forEach(sortByTransfersBtn => {
+            sortByTransfersBtn.addEventListener('click', () => {
+                setActiveSortButton(sortByTransfersBtn);
+                handleSearch('transfer');
+                const startCode = parseStationInput(startInput.value);
+                const endCode = parseStationInput(endInput.value);
+                if (startCode && endCode) {
+                    updateURLParams(startCode, endCode, 'transfer');
+                }
+            });
         });
         
-        sortByPriceBtn.addEventListener('click', () => {
-            setActiveSortButton(sortByPriceBtn);
-            handleSearch('price');
-            const startCode = parseStationInput(startInput.value);
-            const endCode = parseStationInput(endInput.value);
-            if (startCode && endCode) {
-                updateURLParams(startCode, endCode, 'price');
-            }
+        sortByPriceBtns.forEach(sortByPriceBtn => {
+            sortByPriceBtn.addEventListener('click', () => {
+                setActiveSortButton(sortByPriceBtn);
+                handleSearch('price');
+                const startCode = parseStationInput(startInput.value);
+                const endCode = parseStationInput(endInput.value);
+                if (startCode && endCode) {
+                    updateURLParams(startCode, endCode, 'price');
+                }
+            });
         });
     }
 }
@@ -1461,15 +1569,27 @@ function hasMultipleTransfersAtSameStation(route) {
 function handleWindowResize() {
     const searchPanel = document.querySelector('.search-controls');
     const searchPanelElement = searchPanel.querySelector('.search-panel');
+    const footerPanel = document.querySelector('footer .search-panel');
     const sortSelector = searchPanel.querySelector('.sort-selector');
     const footer = document.querySelector('footer');
     const header = document.querySelector('header');
     const searchResult = document.querySelector('.search-result');
     const searchItem = searchResult.querySelectorAll('.route-result');
     const main = document.querySelector('main');
+    const tabs = document.querySelector('.tabs');
+    const sideBar = document.querySelector('.side-bar');
+    const activeItem = sideBar.querySelector('.side-bar-item.active');
+    const activeTab = tabs.querySelector('.tab-item.active');
+    const prefActions = document.querySelector('.pref-actions');
+    if (header.contains(tabs)) { 
+        header.removeChild(tabs);
+    }
+    while (activeTab && activeTab.children.length > 1) {
+        activeTab.removeChild(activeTab.children[1]);
+    }
 
-    const searchTitle = searchPanel.querySelector('.search-title h4');
-    searchTitle.textContent = strings.ticket_calculator.search[lang];
+    const searchTitle = document.querySelectorAll('.search-title h4');
+    searchTitle.forEach(title => title.textContent = strings.ticket_calculator.search[lang]);
     
     // 检查是否是由于虚拟键盘弹出导致的窗口大小变化
     // 通过检测窗口宽度没有变化而高度发生变化来判断
@@ -1497,66 +1617,40 @@ function handleWindowResize() {
     const startInput = document.getElementById('startInput');
     const endInput = document.getElementById('endInput');
     const isInputFocused = (startInput && startInput === document.activeElement) || (endInput && endInput === document.activeElement);
-    const tabs = document.querySelector('.tabs');
 
     if (isVirtualKeyboardOpen || isInputFocused) return;
     
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
     if (window.innerWidth < 600) {
-        // 添加collapsed类
-        searchPanelElement.classList.remove('no-collapse');
-        searchPanelElement.classList.add('collapsed');
-        const searchPanelHeight = searchPanel.getBoundingClientRect().height;
-        searchPanel.style.zIndex = 1100;
-        searchPanel.style.position = 'unset';
-        searchPanel.style.top = 'none';
-        searchPanel.style.bottom = '40px';
-        searchPanel.style.left = 'unset';
-        searchPanel.style.width = '-webkit-fill-available';
-        searchPanel.style.maxWidth = 'calc(100vw - 156px)';
-        sortSelector.style.width = '-webkit-fill-available';
-        sortSelector.style.maxWidth = '244px';
-        sortSelector.style.minWidth = 'unset';
-        searchResult.style.marginLeft = '0';
+        sideBar.style.opacity = 0;
+        sideBar.style.position = 'fixed';
+        sideBar.style.right = '100%';
+        sideBar.style.display = 'none';
+        prefActions.style.display = 'flex';
+        main.style.paddingLeft = '24px';
+        main.style.paddingBottom = `144px`;
+
         footer.style.opacity = 1;
-        if (searchItem.length === 0) {
-            searchPanelElement.classList.add('no-collapse');
-            searchPanelElement.classList.remove('collapsed');
-        } else { 
-            searchPanelElement.classList.remove('no-collapse');
-            searchPanelElement.classList.add('collapsed');
-        }
-        // 先移除footer中现有search-panel
-        footer.querySelectorAll('.search-controls').forEach(panel => footer.removeChild(panel));
-        main.querySelectorAll('.search-controls').forEach(panel => main.removeChild(panel));
-        footer.insertBefore(searchPanel, footer.firstChild);
-        // 确保tabs在footer中
-        if (!footer.contains(tabs)) {
-            footer.appendChild(tabs);
-        }
+        tabs.style.marginLeft = '6px';
+        footer.style.opacity = 1;
+
+        if (searchItem.length <= 0) footerPanel.classList.add('no-collapse');
     } else {
         // 移除collapsed类
-        searchPanelElement.classList.remove('collapsed');
-        searchPanelElement.classList.add('no-collapse');
-        searchPanel.style.zIndex = 1100;
-        searchPanel.style.position = 'fixed';
-        searchPanel.style.top = '66px';
-        searchPanel.style.width = '30%';
-        searchPanel.style.maxWidth = 'max-content';
-        const searchPanelWidth = searchPanel.getBoundingClientRect().width;
-        sortSelector.style.width = searchPanelWidth - 16 + 'px';
-        sortSelector.style.maxWidth = '244px';
-        sortSelector.style.minWidth = 'unset';
-        const mainWidth = main.getBoundingClientRect().width;
-        searchResult.style.marginLeft = `calc(${searchPanelWidth}px + 12px)`;
-        searchPanel.style.left = `calc(${'50vw + ' + mainWidth / 2  + 'px'} - ${mainWidth}px)`;
-
         footer.style.opacity = 0;
-        
-        main.querySelectorAll('.search-controls').forEach(panel => main.removeChild(panel));
-        main.insertBefore(searchPanel, main.firstChild);
-        if (!header.contains(tabs)) {
-            header.appendChild(tabs);
-        }
+        sideBar.style.opacity = 1;
+        sideBar.style.display = 'flex';
+        sideBar.style.right = '0';
+        sideBar.style.position = 'relative';
+        prefActions.style.display = 'none';
+        main.style.paddingBottom = '36px';
+        setTimeout(() => {
+            const lineSelectorWidth = sideBar.getBoundingClientRect().width <= 60 ? 0 : sideBar.getBoundingClientRect().width;
+            const mainWidth = main.getBoundingClientRect().width;
+            main.style.paddingLeft = `calc(${lineSelectorWidth}px + 4vw)`;
+            tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
+        }, 100);
     }
 }
+
+window.handleWindowResize = handleWindowResize;

@@ -1,14 +1,14 @@
 :root { 
     --color-primary: #e77000;
     --color-primary-transparent: #e7700080;
-    --color-primary-hover: #a64e06;
+    --color-primary-hover: #e7700040;
     --color-background: #f5f5f5;
     --color-background-actions: #fffffff0;
     --color-background-card: #ffffffa0;
     --color-background-card-transparent: #ffffff10;
     --color-background-card-solid: #fbfbfb;
     --color-secondary: #00000010;
-    --color-secondary-hover: #00000010;
+    --color-secondary-hover: #0000000a;
     --color-toast-background: #000000b0;
     --input-shadow-inset: inset 0 3px 3px rgba(0, 0, 0, 0.05);
     --item-shadow-inset: inset 0 -3px 3px rgba(0, 0, 0, 0.05);
@@ -17,11 +17,14 @@
     --active-icon-btn-hover: radial-gradient(#ffc88ed0 8px, transparent 80%);
     --icon-filter-active: invert(39%) sepia(83%) saturate(7493%) hue-rotate(395deg) brightness(130%) contrast(101%);
     --background-filter-transparent: blur(12px) saturate(130%) contrast(110%) brightness(110%);
+    --background-filter-transparent-invert: blur(12px) saturate(140%) contrast(110%) brightness(90%);
     --color-border: #ddd;
     --color-text: #333;
     --color-text-secondary: #666;
     --color-text-on-primary: #fff;
     --font-family: "Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-text-secondary) var(--color-background-card-solid);
 }
 
 @font-face {
@@ -43,7 +46,7 @@
         --color-background-card-transparent: #21212110;
         --color-background-card-solid: #161616;
         --color-secondary: #222;
-        --color-secondary-hover: #ffffff10;
+        --color-secondary-hover: #ffffff0a;
         --color-toast-background: #00000080;
         --input-shadow-inset: inset 0 -3px 3px rgba(255, 255, 255, 0.08);
         --item-shadow-inset: inset 0 3px 3px rgba(255, 255, 255, 0.05);
@@ -51,6 +54,7 @@
         --active-icon-btn-hover: radial-gradient(#ff840020 8px, transparent 80%);
         --icon-btn-hover: radial-gradient(#ffffff20 8px, transparent 80%);
         --background-filter-transparent: blur(12px) saturate(140%) contrast(110%) brightness(90%);
+        --background-filter-transparent-invert: blur(12px) saturate(130%) contrast(110%) brightness(110%);
         --color-border: #888;
         --color-text: #eee;
         --color-text-secondary: #888;
@@ -191,10 +195,23 @@ footer {
     top: calc(100dvh - 80px);
     bottom: 0lvh;
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+    flex-direction: column-reverse;
+    justify-content: flex-start;
     align-items: flex-end;
     transition: all 0.2s ease-in-out;
+    overflow: visible;
+    gap: 8px;
+}
+
+@media (width > 480px) {
+    footer { 
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 0;
+    }    
+    footer .tabs {
+        width: fit-content;
+    }
 }
 
 header * {
@@ -231,6 +248,7 @@ header * {
     width: 100%;
     padding: 0 12px;
     min-height: 42px;
+    transition: all 0.2s ease-in-out;
 }
 
 .title img {
@@ -240,8 +258,156 @@ header * {
     display: none;
 }
 
+.side-bar { 
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    transition: all 0.2s ease-in-out;
+    min-width: fit-content;
+}
+
+.side-bar:not(.collapsed) {
+    background: var(--color-background-card-transparent);
+    height: calc(100dvh - 36px);
+    width: 100vw;
+    backdrop-filter: var(--background-filter-transparent);
+    padding: 8px;
+    margin-right: 8px;
+    max-width: 240px;
+}
+
+.side-bar .side-bar-header { 
+    display: flex;
+    flex-direction: row;
+    width: -webkit-fill-available;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.side-bar .side-bar-list { 
+    display: flex;
+    padding: 8px;
+    margin-bottom: 4px;
+    width: -webkit-fill-available;
+    min-width: fit-content;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.side-bar:not(.collapsed) .side-bar-navigation { 
+    height: -webkit-fill-available;
+}
+
+.side-bar .side-bar-item { 
+    display: flex;
+    padding: 0 8px;
+    border-radius: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.side-bar .side-bar-item.active { 
+    padding: 8px;
+    background: var(--color-secondary-hover);
+    width: -webkit-fill-available;
+    min-width: fit-content;
+    margin: 6px 0;
+}
+
+/*仅作用于.side-bar .side-bar-item.active的子元素，不作用于子元素的子元素*/
+.side-bar .side-bar-item.active > *:not(.icon-btn) { 
+    margin: 0;
+    padding: 0;
+    margin-left: 24px;
+    margin-bottom: 8px;
+}
+
+.side-bar .icon-btn.active:hover { 
+    background: unset;
+}
+
+.side-bar .selection, .side-bar .selection.no-collapse { 
+    background-color: transparent;
+    background: transparent;
+    backdrop-filter: unset;
+    position: relative;
+    width: -webkit-fill-available;
+    height: fit-content;
+    top: unset;
+    left: unset;
+    margin: 0;
+    padding: 0;
+    margin-left: 24px;
+    margin-bottom: 8px;
+    overflow: visible;
+}
+
+.side-bar.collapsed {
+    width: fit-content;
+    height: fit-content;
+    gap: 0;
+    background: var(--color-background-actions);
+    overflow: hidden;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.2));
+}
+
+.side-bar.collapsed .side-bar-header { 
+    width: fit-content;
+}
+
+.side-bar.collapsed .side-bar-list { 
+    width: 0;
+    min-width: 0;
+    height: 0;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.tabs {
+    display: flex;
+    flex-direction: row;
+    width: -webkit-fill-available;
+    border-radius: 36px;
+    padding: 4px 8px;;
+}
+
+.tabs .tab-item { 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: -webkit-fill-available;
+    border-radius: 36px;
+    padding: 4px 16px;
+}
+
+.tabs .tab-item.active { 
+    background-color: var(--color-secondary-hover);
+}
+
+.tabs .tab-item.active:hover { 
+    background-color: var(--color-background-actions);
+}
+
+.tabs .icon-btn.active:hover { 
+    background: transparent;
+}
+
+.tabs .tab-item .icon-btn { 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    width: fit-content;
+    padding: 2px;
+}
+
 .actions, .selection { 
-    display: flex !important;
+    display: flex;
     flex-wrap: nowrap;
     background: var(--color-background-actions);
     border-radius: 24px;
@@ -255,13 +421,13 @@ header * {
     backdrop-filter: blur(6px);
 }
 
-.selection.segment { 
+.selection.segment, .tabs { 
     flex-direction: row;
     padding: 4px;
     gap: 2px;
 }
 
-.actions { 
+.actions, .side-bar.collapsed { 
     flex-direction: row;
     justify-content: center;
     padding: 2px 4px;
@@ -274,18 +440,22 @@ header * {
     background-color: var(--color-background-card);
 }
 
-.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .tooltip { 
+.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .tooltip, .side-bar.collapsed:hover { 
     box-shadow: var(--item-shadow-inset-hover);
 }
 
-.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .tooltip, button:hover { 
+.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .tooltip, button:hover, .side-bar.collapsed:hover { 
     filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.2));
     backdrop-filter: var(--background-filter-transparent);
     border-radius: 24px;
 }
 
-.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .search-bar.collapsed:hover { 
+.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .search-bar.collapsed:hover, .side-bar.collapsed:hover { 
     background: var(--color-background-card-transparent);
+}
+
+.actions.tabs { 
+    border-radius: 36px;
 }
 
 .tooltip { 
@@ -302,6 +472,7 @@ header * {
     text-wrap: nowrap;
     min-width: max-content;
     height: fit-content;
+    min-height: fit-content;
 }
 
 .selection .selection-item { 
@@ -348,13 +519,16 @@ header * {
     margin-right: 4px;
 }
 
-.selection.segment .selection-item {
+.selection.segment .selection-item, .tabs .tab-item {
     overflow: hidden;
-    padding: 4px 8px;
     justify-content: center;
     min-width: unset;
     width: -webkit-fill-available;
     transition: all 0.2s ease;
+}
+
+.selection.segment .selection-item { 
+    padding: 4px 8px;
 }
 
 .selection.segment .selection-item.active span { 
@@ -366,7 +540,7 @@ header * {
     width: fit-content;
 }
 
-.selection .icon-btn.selection-item:not(.active) span {
+.selection.segment .icon-btn.selection-item:not(.active) span {
     width: 0;
     opacity: 0;
 }
@@ -375,7 +549,7 @@ header * {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
-.selection:not(.collapsed) .selection-item.active {
+.selection:not(.collapsed) .selection-item.active, .icon-btn:has(.active) {
     color: var(--color-primary);
     font-weight: bold;
 }
@@ -383,6 +557,7 @@ header * {
 .selection.collapsed { 
     width: fit-content;
     max-width: max-content;
+    min-height: fit-content;
     padding: 0;
     background:transparent;
 }
@@ -416,6 +591,7 @@ header * {
     transition: all 0.2s ease;
     background: transparent;
     cursor: pointer;
+    gap: 4px;
 }
 
 .icon-btn:hover {
@@ -440,13 +616,15 @@ header * {
 
 main { 
     padding: 66px 0;
-    width: calc(100% - 36px);
-    max-width: 720px;
+    width: calc(100% - 48px);
+    max-width: 600px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
     gap: 12px;
+    padding-bottom: 144px;
+    transition: all 0.3s ease;
 }
 
 button {
@@ -551,4 +729,18 @@ header .search-bar:not(.collapsed) input {
 footer .search-bar:not(.collapsed) input { 
     width: -webkit-fill-available;
     max-width: calc(100vw - 240px);
+}
+
+footer .selection.collapsed .selection-item.active, footer .search-bar.collapsed { 
+    padding: 12px 18px;
+    min-height: 30px;
+    border-radius: 36px;
+    max-width: unset;
+    max-height: 30px;
+    align-items: center;
+    justify-content: center;
+}
+
+footer .search-bar.collapsed { 
+    padding: 12px 10px;
 }

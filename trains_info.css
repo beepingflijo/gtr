@@ -1,6 +1,8 @@
 main {
     display: flex;
     flex-direction: column;
+    width: -webkit-fill-available;
+    padding: 72px 24px;
 }
 
 main .item { 

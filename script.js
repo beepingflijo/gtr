@@ -105,14 +105,26 @@ function removeToast(message) {
     }
 }
 
-// 添加语言选择功能
-const languageSelector = document.querySelector('.language-selection');
-const selectionElement = languageSelector.querySelector('.selection');
-const selectionItems = languageSelector.querySelectorAll('.selection-item');
-
+// 切换侧边栏显示状态
+function toggleSidebar() {
+    const sidebar = document.querySelector('.side-bar');
+    if (sidebar) {
+        sidebar.classList.toggle('collapsed');
+        // 在已加载的脚本中查找handleWindowResize
+        const handleWindowResize = window.handleWindowResize;
+        if (handleWindowResize) {
+            handleWindowResize();
+        }
+    }
+}
 
 // 初始化语言选择器
 function initLanguageSelector() {
+    if (!document.querySelector('.language-selection')) return;
+    // 添加语言选择功能
+    const languageSelector = document.querySelector('.language-selection');
+    const selectionElement = languageSelector.querySelector('.selection');
+    const selectionItems = languageSelector.querySelectorAll('.selection-item');
     const languageSelection = document.querySelector('.language-selection');
 
     // 从URL获取当前显示的页面以决定启用哪部分语言，并去掉后缀名
@@ -134,7 +146,7 @@ function initLanguageSelector() {
     }
 
     // 轮询页面宽度
-    const isMobile = window.innerWidth < 480;
+    const isMobile = window.innerWidth < 720;
 
     // 如果有选项则清空之前的选项
     if (languageSelection.children.length > 0) {
@@ -168,6 +180,36 @@ function initLanguageSelector() {
     // 添加展开/收起功能
     languageSelection.addEventListener('click', function() {
         this.classList.toggle('collapsed');
+    });
+
+    // 为每个语言选项添加点击事件
+    selectionItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // 移除所有选项的active类
+            selectionItems.forEach(el => el.classList.remove('active'));
+            
+            // 为当前点击的选项添加active类
+            this.classList.add('active');
+            
+            // 获取选择的语言并更新页面
+            const selectedLang = this.classList[1].replace('lang-', '').replace('-', '_');
+            changeLanguage(selectedLang);
+            
+            // 收起语言选择
+            selectionElement.classList.add('collapsed');
+        });
+    });
+
+    // 根据当前语言设置active状态
+    selectionItems.forEach(item => {
+        const itemLang = item.classList[1].replace('lang-', '').replace('-', '_');
+        if (itemLang === lang) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
     });
 }
 
@@ -223,26 +265,6 @@ selectionElements.forEach(selectionElement => {
     });
 });
 
-// 为每个语言选项添加点击事件
-selectionItems.forEach(item => {
-    item.addEventListener('click', function(e) {
-        e.stopPropagation();
-        
-        // 移除所有选项的active类
-        selectionItems.forEach(el => el.classList.remove('active'));
-        
-        // 为当前点击的选项添加active类
-        this.classList.add('active');
-        
-        // 获取选择的语言并更新页面
-        const selectedLang = this.classList[1].replace('lang-', '').replace('-', '_');
-        changeLanguage(selectedLang);
-        
-        // 收起语言选择
-        selectionElement.classList.add('collapsed');
-    });
-});
-
 // 语言切换函数
 function changeLanguage(newLang) {
     // 更新URL参数
@@ -253,19 +275,9 @@ function changeLanguage(newLang) {
     window.location.href = url.toString();
 }
 
-// 根据当前语言设置active状态
-selectionItems.forEach(item => {
-    const itemLang = item.classList[1].replace('lang-', '').replace('-', '_');
-    if (itemLang === lang) {
-        item.classList.add('active');
-    } else {
-        item.classList.remove('active');
-    }
-});
-
 // 调整actions样式
-document.querySelectorAll('.actions').forEach(actions => { 
-    if (actions.classList.contains('search-bar') && actions.classList.contains('collapsed')) actions.style.padding = '2px 4px';
+document.querySelectorAll('header .actions').forEach(actions => { 
+    if (actions.classList.contains('tabs') || actions.classList.contains('search-bar') && actions.classList.contains('collapsed')) actions.style.padding = '2px 4px';
     else if (actions.children.length >= 2 ) actions.style.padding = '2px 8px';
 });
 
@@ -515,4 +527,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 使用setTimeout确保在其他DOM操作完成后执行
     //setTimeout(hideNonActiveSelectionItems, 0);
     initBlurLayers();
+    
+    // 为侧边栏按钮添加点击事件监听器
+    const sidebarButtons = document.querySelectorAll('.side-bar-btn');
+    sidebarButtons.forEach(button => {
+        button.addEventListener('click', toggleSidebar);
+    });
 });

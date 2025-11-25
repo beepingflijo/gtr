@@ -59,18 +59,65 @@ function init() {
     headerTitle.textContent = strings.trains_info.page_title[lang];
     pageTitle.textContent = strings.trains_info.page_title[lang];
     
-    const linesBtn = document.querySelector('.lines-btn');
-    linesBtn.title = strings.lines_info.page_title[lang];
-    linesBtn.addEventListener('click', () => {
-            window.open(`lines_info.html${'?lang='+lang}`, '_self');
-    });
-    const fareBtn = document.querySelector('.fare-btn');
-    fareBtn.title = strings.ticket_calculator.page_title[lang];
-    fareBtn.addEventListener('click', () => {
+    
+    // 修改以下代码以处理多个按钮实例
+    const fareBtns = document.querySelectorAll('.fare-btn');
+    fareBtns.forEach(fareBtn => {
+        const fareBtnText = fareBtn.querySelector('span');
+        if (fareBtnText) {
+            fareBtnText.textContent = strings.ticket_calculator[fareBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+            fareBtn.title = strings.ticket_calculator.page_title[lang];
+        }
+        fareBtn.addEventListener('click', () => {
             window.open(`ticket_calculator.html${'?lang='+lang}`, '_self');
+        });
     });
-    const trainsBtn = document.querySelector('.trains-btn');
-    trainsBtn.title = strings.trains_info.page_title[lang];
+    
+    const trainsBtns = document.querySelectorAll('.trains-btn');
+    trainsBtns.forEach(trainsBtn => {
+        const trainsBtnText = trainsBtn.querySelector('span');
+        if (trainsBtnText) {
+            trainsBtnText.textContent = strings.trains_info[trainsBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+            trainsBtn.title = strings.trains_info.page_title[lang];
+        }
+        trainsBtn.addEventListener('click', () => {
+            window.open(`trains_info.html${'?lang='+lang}`, '_self');
+        });
+    });
+    
+    const linesBtns = document.querySelectorAll('.lines-btn');
+    linesBtns.forEach(linesBtn => {
+        const linesBtnText = linesBtn.querySelector('span');
+        if (linesBtnText) {
+            linesBtnText.textContent = strings.lines_info[linesBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+            linesBtn.title = strings.lines_info.page_title[lang];
+        }
+        linesBtn.addEventListener('click', () => {
+            // 获取用户最后访问的线路
+            const lastVisitedLine = localStorage.getItem('lastVisitedLine');
+            let targetLine = lines[0].id; // 默认线路
+            
+            // 如果有最后访问的线路且该线路存在，则使用该线路
+            if (lastVisitedLine && window.lines.some(line => line.id === lastVisitedLine)) {
+                targetLine = lastVisitedLine;
+            }
+            
+            window.open(`lines_info.html?line=${targetLine}&lang=${lang}`, '_self');
+        });
+    });
+
+    const prefBtns = document.querySelectorAll('.preferences-btn');
+    prefBtns.forEach(prefBtn => {
+        const prefBtnText = prefBtn.querySelector('span');
+        if (prefBtnText) {
+            prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+        } else {
+            prefBtn.title = strings.preferences.page_title[lang];
+        }
+    })
 
     // 添加搜索功能
     const searchInput = document.querySelector('.search-input');
@@ -1473,11 +1520,22 @@ function applySearchFilter(searchTerm = '') {
 }
 
 function handleWindowResize() {
-    const searchBar = document.querySelector('.search-bar');
+    const searchBar = document.querySelector('header .search-bar');
     const footer = document.querySelector('footer');
     const header = document.querySelector('header');
     const main = document.querySelector('main');
     const languageSelector = document.querySelector('.language-selection');
+    const tabs = document.querySelector('.tabs');
+    const sideBar = document.querySelector('.side-bar');
+    const activeItem = sideBar.querySelector('.side-bar-item.active');
+    const activeTab = tabs.querySelector('.tab-item.active');
+    const prefActions = document.querySelector('.pref-actions');
+    if (header.contains(tabs)) { 
+        header.removeChild(tabs);
+    }
+    while (activeTab && activeTab.children.length > 1) {
+        activeTab.removeChild(activeTab.children[1]);
+    }
     
     // 检查是否是由于虚拟键盘弹出导致的窗口大小变化
     // 通过检测窗口宽度没有变化而高度发生变化来判断
@@ -1504,36 +1562,45 @@ function handleWindowResize() {
     // 检查输入框是否处于焦点状态
     const input = document.querySelector('.search-input');
     const isInputFocused = input && input === document.activeElement;
-    const tabs = document.querySelector('.tabs');
 
     if (isVirtualKeyboardOpen || isInputFocused) return;
     
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
     if (window.innerWidth < 640) {
-        // 添加collapsed类
-        //searchBar.classList.remove('no-collapse');
-        //searchBar.classList.add('collapsed');
+        sideBar.style.opacity = 0;
+        sideBar.style.position = 'fixed';
+        sideBar.style.right = '100%';
+        sideBar.style.display = 'none';
+        prefActions.style.display = 'flex';
+        main.style.paddingLeft = '24px';
+        main.style.paddingBottom = `144px`;
+        searchBar.style.display = 'none';
+
         footer.style.opacity = 1;
-        // 先移除footer中现有search-panel
-        footer.querySelectorAll('.search-bar').forEach(e => footer.removeChild(e));
-        main.querySelectorAll('.search-bar').forEach(e => main.removeChild(e));
-        footer.insertBefore(searchBar, footer.firstChild);
-        // 确保tabs在footer中
-        if (!footer.contains(tabs)) {
-            footer.appendChild(tabs);
-        }
+        tabs.style.marginLeft = '6px';
+        footer.style.opacity = 1;
     } else {
         // 移除collapsed类
-        //searchBar.classList.remove('collapsed');
-        //searchBar.classList.add('no-collapse');
-
         footer.style.opacity = 0;
-        
-        header.querySelectorAll('.search-bar').forEach(e => header.removeChild(e));
-        header.insertBefore(searchBar, languageSelector);
-        if (!header.contains(tabs)) {
-            header.appendChild(tabs);
+        sideBar.style.opacity = 1;
+        sideBar.style.display = 'flex';
+        sideBar.style.right = '0';
+        sideBar.style.position = 'relative';
+        prefActions.style.display = 'none';
+        main.style.paddingBottom = '36px';
+        searchBar.style.display = 'flex';
+        if (activeItem) {
+            activeItem.style.padding = '0 8px';
+            activeItem.style.borderRadius = '36px';
         }
+        setTimeout(() => {
+            const lineSelectorWidth = sideBar.getBoundingClientRect().width <= 60 ? 0 : sideBar.getBoundingClientRect().width;
+            const mainWidth = main.getBoundingClientRect().width;
+            main.style.paddingLeft = `calc(${lineSelectorWidth}px + 3vw)`;
+            tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
+        }, 100);
     }
     // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作
 }
+
+window.handleWindowResize = handleWindowResize;
