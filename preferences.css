@@ -58,6 +58,7 @@ button {
 .pref-value { 
     color:var(--color-text-secondary);
     margin-right: 6px;
+    min-width: fit-content;
 }
 
 .storage-list {
@@ -127,7 +128,6 @@ button {
     padding: 16px;
     text-align: center;
     color: var(--color-text-secondary);
-    font-style: italic;
 }
 
 #moreLinkPref {

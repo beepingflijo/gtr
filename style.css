@@ -117,8 +117,8 @@
 
     .effect-reduced {
         --color-background-actions: #212121;
-        --color-secondary: #333;
-        --color-secondary-hover: #444;
+        --color-secondary: #282828;
+        --color-secondary-hover: #333;
         --color-toast-background: #000000;
     }
 }
@@ -132,8 +132,8 @@
 
 .effect-reduced.dark {
     --color-background-actions: #212121;
-    --color-secondary: #333;
-    --color-secondary-hover: #444;
+    --color-secondary: #282828;
+    --color-secondary-hover: #333;
     --color-toast-background: #000000;
 }
 

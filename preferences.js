@@ -157,6 +157,7 @@ function initStorageList() {
             descElement.style.color = 'crimson';
             descElement.style.fontWeight = 'bold';
             itemHeader.appendChild(descElement);
+            item.style.background = 'linear-gradient(to right,rgba(255, 0, 0, 0.1) ,rgba(255, 0, 0, 0.05) 20%, rgba(255, 0, 0, 0.02) 80%, rgba(255, 0, 0, 0.05) 95%, rgba(255, 0, 0, 0.1))';
         }
 
         item.appendChild(itemHeader);
@@ -233,6 +234,7 @@ function removeFromStorage(key, element) {
         }
         // 显示提示
         showToast(`${strings.preferences.item_removed[lang] || '已移除'} "${key}"`, 2000);
+        initStorageList();
     }
 }
 

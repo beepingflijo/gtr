@@ -127,6 +127,12 @@
             "en":"Force refresh marker",
             "zh_hant":"強制刷新標記",
             "uk":"Примусове оновлення маркера"
+        },
+        "lang":{
+            "zh_hans": "保存的语言设置",
+            "en": "Saved language setting",
+            "zh_hant": "存儲的语言設定",
+            "uk": "Збережені налаштування мови"
         }
     },
     "station_names":{
