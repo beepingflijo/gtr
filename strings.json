@@ -29,6 +29,12 @@
             "zh_hant":"通運鐵路信息",
             "en": "GTR Info",
             "uk": "Інформація про GTR"
+        },
+        "gt":{
+            "zh_hans":"通运",
+            "zh_hant":"通運",
+            "en": "GT",
+            "uk": "GT"
         }
     },
     "preferences":{

@@ -28,6 +28,8 @@ button {
     gap: 6px;
     padding: 4px;
     height: 30px;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
 }
 
 .pref-item .selection { 
@@ -88,7 +90,7 @@ button {
     margin: 0;
 }
 
-.storage-item:hover {
+.storage-item:hover, .pref-item:hover {
     background-color: var(--color-secondary-hover);
 }
 

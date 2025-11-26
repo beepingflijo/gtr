@@ -64,6 +64,10 @@ function init() {
     aboutPref.textContent = strings.preferences.about_[lang] + strings.mainpage.gtr_info[lang];
     const versionPref = document.getElementById('versionPref');
     versionPref.textContent = strings.preferences.version[lang];
+    const versionPrefContainer = versionPref.parentElement;
+    versionPrefContainer.addEventListener('click', () => {
+        window.open('https://github.com/beepingflijo/gtr/commits', '_blank');
+    });
     const refreshPref = document.getElementById('refreshPref');
     refreshPref.textContent = strings.preferences.refresh_all_files[lang];
     
@@ -339,8 +343,8 @@ function initFontSelector() {
     
     // 创建字体选项
     const fonts = [
-        { id: 'inter', label: 'Inter + MiSans' },
-        { id: 'harmonyos', label: 'HarmonyOS Sans' },
+        { id: 'inter', label: 'HydCraft (Inter/MiSans)' },
+        { id: 'harmonyos', label: strings.mainpage.gt[lang]+' (HarmonyOS Sans)' },
         { id: 'sans-serif', label: strings.preferences.sans_serif },
         { id: 'system', label: strings.preferences.system }
     ];
@@ -354,6 +358,27 @@ function initFontSelector() {
         item.className = 'selection-item';
         item.textContent = font.label[lang] || font.label;
         item.dataset.font = font.id;
+
+        let fontFamily;    
+        switch (font.id) {
+            case 'inter':
+                fontFamily = '"Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif';
+                break;
+            case 'harmonyos':
+                fontFamily = '"HarmonyOS Sans SC", "HarmonyOS Sans", "MiSans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", "Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", Arial, sans-serif';
+                break;
+            case 'sans-serif':
+                fontFamily = 'sans-serif';
+                break;
+            case 'system':
+                fontFamily = 'none';
+                break;
+            default:
+                // 默认使用 Inter 字体
+                fontFamily = '"Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif';
+                break;
+        }
+        item.setAttribute('style', `font-family: ${fontFamily};`);
         
         // 添加点击事件
         item.addEventListener('click', function(e) {
@@ -416,7 +441,7 @@ function applyFont(font) {
             fontFamily = 'sans-serif';
             break;
         case 'system':
-            fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif';
+            fontFamily = 'unset';
             break;
         default:
             // 默认使用 Inter 字体
