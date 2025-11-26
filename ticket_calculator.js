@@ -50,7 +50,7 @@ function init() {
         headerTitle.textContent = strings.ticket_calculator.page_title[lang];
     });
     pageTitles.forEach(pageTitle => {
-        pageTitle.textContent = strings.ticket_calculator.page_title[lang];
+        pageTitle.textContent = strings.ticket_calculator.page_title[lang] + ' - ' + strings.mainpage.gtr_info[lang];
     });
 
     const startInputs = document.querySelectorAll('#startInput');
@@ -259,6 +259,9 @@ function init() {
         } else {
         prefBtn.title = strings.preferences.page_title[lang];
         }
+        prefBtn.addEventListener('click', () => { 
+            window.open(`preferences.html${'?lang='+lang}`, '_self');
+        });
     })
 
     const swapBtns = document.querySelectorAll('.swap-btn');

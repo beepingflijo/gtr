@@ -21,14 +21,37 @@
         redirectParams = lastVisitedParams || '';
     }
     
-    // 获取当前URL参数并传递
+    // 获取当前URL参数
     const urlParams = new URLSearchParams(window.location.search);
     const currentParams = urlParams.toString();
     
-    // 合并存储的参数和当前URL参数
-    let finalParams = redirectParams;
     if (currentParams) {
-        finalParams = redirectParams ? `${redirectParams}&${currentParams}` : currentParams;
+        // 创建URLSearchParams对象以便操作参数
+        const finalParamsObj = new URLSearchParams();
+        
+        // 先添加URL中的所有参数
+        urlParams.forEach((value, key) => {
+            finalParamsObj.set(key, value);
+        });
+        
+        // 如果localStorage中有参数，则覆盖URL中的参数（localStorage优先）
+        if (lastVisitedParams) {
+            const localStorageUrlParams = new URLSearchParams(lastVisitedParams);
+            localStorageUrlParams.forEach((value, key) => {
+                finalParamsObj.set(key, value);
+            });
+        }
+
+        const lang = urlParams.get('lang');
+
+        // lang参数以目前语言为准
+        finalParamsObj.set('lang', lang);
+        
+        // 转换回字符串
+        finalParams = finalParamsObj.toString();
+    } else if (lastVisitedParams) {
+        // 如果URL中没有参数但localStorage中有参数，则使用localStorage的参数
+        finalParams = lastVisitedParams;
     }
     
     // 构造跳转URL

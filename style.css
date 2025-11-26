@@ -1,6 +1,7 @@
-:root { 
+:root, .light { 
     --color-primary: #e77000;
     --color-primary-transparent: #e7700080;
+    --color-primary-tinted: #f0be8f;
     --color-primary-hover: #e7700040;
     --color-background: #f5f5f5;
     --color-background-actions: #fffffff0;
@@ -37,6 +38,55 @@
     src: url(https://h2-wiki-1254268741.cos.ap-shanghai.myqcloud.com/font/Inter.woff2) format('woff2')
 }
 
+@font-face {
+    font-family: 'HarmonyOS Sans SC';
+    src: url('/UI/fonts/HARMONYOS_SANS_SC_REGULAR.TTF') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'HarmonyOS Sans SC';
+    src: url('/UI/fonts/HARMONYOS_SANS_SC_MEDIUM.TTF') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'HarmonyOS Sans SC';
+    src: url('/UI/fonts/HARMONYOS_SANS_SC_BOLD.TTF') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+.dark {
+    --color-primary-transparent: #a64e0680;
+    --color-primary-tinted: #914600;
+    --color-background: #111;
+    --color-background-actions: #212121f0;
+    --color-background-card: #1a1a1aa0;
+    --color-background-card-transparent: #21212110;
+    --color-background-card-solid: #161616;
+    --color-secondary: #222;
+    --color-secondary-hover: #ffffff0a;
+    --color-toast-background: #00000080;
+    --input-shadow-inset: inset 0 -3px 3px rgba(255, 255, 255, 0.08);
+    --item-shadow-inset: inset 0 3px 3px rgba(255, 255, 255, 0.05);
+    --item-shadow-inset-hover: inset 0 -3px 3px rgba(255, 255, 255, 0.1);
+    --active-icon-btn-hover: radial-gradient(#ff840020 8px, transparent 80%);
+    --icon-btn-hover: radial-gradient(#ffffff20 8px, transparent 80%);
+    --background-filter-transparent: blur(12px) saturate(140%) contrast(110%) brightness(90%);
+    --background-filter-transparent-invert: blur(12px) saturate(130%) contrast(110%) brightness(110%);
+    --color-border: #888;
+    --color-text: #eee;
+    --color-text-secondary: #888;
+    --color-text-on-primary: #fff;
+}
+
+.dark .icon { 
+    filter: invert(1);
+}
+
 @media (prefers-color-scheme: dark) { 
     :root { 
         --color-primary-transparent: #a64e0680;
@@ -64,6 +114,42 @@
     .icon {
         filter: invert(1);
     }
+
+    .effect-reduced {
+        --color-background-actions: #212121;
+        --color-secondary: #333;
+        --color-secondary-hover: #444;
+        --color-toast-background: #000000;
+    }
+}
+
+.effect-reduced {
+    --color-background-actions: #ffffff;
+    --color-secondary: #111111;
+    --color-secondary-hover: #eee;
+    --color-toast-background: #000000;
+}
+
+.effect-reduced.dark {
+    --color-background-actions: #212121;
+    --color-secondary: #333;
+    --color-secondary-hover: #444;
+    --color-toast-background: #000000;
+}
+
+.effect-reduced *:not(.icon) { 
+    filter: none !important;
+}
+
+.effect-reduced *, .effect-reduced *::before, .effect-reduced *::after { 
+    box-shadow: none !important;
+    transition: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    --color-background-card: var(--color-background-card-solid);
+    --color-background-card-transparent: var(--color-secondary-hover);
+    --icon-btn-hover: var(--color-secondary-hover);
+    --active-icon-btn-hover: var(--color-primary-tinted);
 }
 
 body {
@@ -577,6 +663,49 @@ header * {
     overflow: visible;
     opacity: 0;
     line-height: 0;
+}
+
+/* 开关样式 */
+.switch {
+    width: 36px;
+    min-width: 36px;
+    height: 24px;
+    border-radius: 12px;
+    background-color: var(--color-secondary);
+    position: relative;
+    cursor: pointer;
+    margin: 0 4px;
+    box-shadow: var(--item-shadow-inset-hover);
+    transition: all 0.2s ease;
+}
+
+.switch::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: white;
+    top: 2px;
+    left: 2px;
+    transition: all 0.2s ease;
+    box-shadow: var(--item-shadow-inset);
+}
+
+.switch:hover { 
+    filter: contrast(1.2);
+}
+
+.switch:hover::before { 
+    transform: scale(1.1);
+}
+
+.switch.active {
+    background-color: var(--color-primary);
+}
+
+.switch.active::before {
+    transform: translateX(100%) translateX(-8px);
 }
 
 .icon-btn { 

@@ -1,16 +1,3 @@
-// 修改文件内容
-// 解析url参数确定页面语言
-var urlParams = new URLSearchParams(window.location.search);
-var lang = urlParams.get('lang');
-if (lang === null) {
-    lang = 'zh_hans';
-}
-console.log('lang:', lang);
-if (lang.startsWith('zh')) {
-    document.documentElement.lang = 'zh';
-} else {
-    document.documentElement.lang = lang;
-}
 
 // 页面加载完成后执行初始化函数
 document.addEventListener('DOMContentLoaded', function () {
@@ -57,7 +44,7 @@ function init() {
     const pageTitle = document.querySelector('title');
     console.log(pageTitle.textContent);
     headerTitle.textContent = strings.trains_info.page_title[lang];
-    pageTitle.textContent = strings.trains_info.page_title[lang];
+    pageTitle.textContent = strings.trains_info.page_title[lang] + ' - ' + strings.mainpage.gtr_info[lang];
     
     
     // 修改以下代码以处理多个按钮实例
@@ -117,6 +104,9 @@ function init() {
         } else {
             prefBtn.title = strings.preferences.page_title[lang];
         }
+        prefBtn.addEventListener('click', () => { 
+            window.open(`preferences.html${'?lang='+lang}`, '_self');
+        });
     })
 
     // 添加搜索功能

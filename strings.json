@@ -10,7 +10,10 @@
             "en": "This site is partially AI-generated. Icons from <a href=\"icons8.com\">Icons8<\/a>.",
             "uk": "Цей сайт частково створено за допомогою ШІ. Іконки з <a href=\"icons8.com\">Icons8<\/a>."
         },
-        "unknown":{"zh_hans":"未知", "en": "Unknown", "zh_hant":"未知", "uk": "Невідомо"}
+        "unknown":{"zh_hans":"未知", "en": "Unknown", "zh_hant":"未知", "uk": "Невідомо"},
+        "reset":{"zh_hans":"重置", "en": "Reset", "zh_hant":"重置", "uk": "Скинути"},
+        "back":{"zh_hans":"返回", "en": "Back", "zh_hant":"返回", "uk": "Назад"},
+        "back_to":{"zh_hans":"返回", "en": "Back to ", "zh_hant":"返回", "uk": "Назад до "}
     },
     "mainpage":{
         "page_title":{"zh_hans":"主页","zh_hant":"主頁","en": "Home","uk": "Головна"},
@@ -20,21 +23,110 @@
             "en": "From transport, \nExploring more for a smarter life",
             "uk": "Від транспорту, \nБільше можливостей для розумнішого життя.",
             "pt": "Do setor dos transportes, \nExplorando mais para uma vida \nmais inteligente."
+        },
+        "gtr_info":{
+            "zh_hans":"通运铁路信息",
+            "zh_hant":"通運鐵路信息",
+            "en": "GTR Info",
+            "uk": "Інформація про GTR"
         }
     },
     "preferences":{
         "page_title":{"zh_hans":"偏好设置", "en": "Preferences", "zh_hant":"偏好設定", "uk": "Уподобання"},
+        "search_placeholder":{"zh_hans":"搜索设置项…", "en": "Search preferences…", "zh_hant":"搜索設定…", "uk": "Пошук налаштувань…"},
+        "general":{"zh_hans":"通用设置", "en": "General", "zh_hant":"一般設定", "uk": "Загальні"},
         "language":{"zh_hans":"语言", "en": "Language", "zh_hant":"語言", "uk": "Мова"},
-        "theme":{"zh_hans":"主题", "en": "Theme", "zh_hant":"主題", "uk": "Тема"},
-        "theme_light":{"zh_hans":"浅色", "en": "Light", "zh_hant":"淺色", "uk": "Світлий"},
-        "theme_dark":{"zh_hans":"深色", "en": "Dark", "zh_hant":"深色", "uk": "Темний"},
-        "theme_system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟隨系統", "uk": "Системою"},
-        "reset":{"zh_hans":"重置", "en": "Reset", "zh_hant":"重置", "uk": "Зворот"},
-        "reset_confirm":{
-            "zh_hans":"确定要重置所有设置吗？", 
-            "en": "Are you sure to reset all preferences?", 
-            "zh_hant":"確定要重置所有設定嗎？", 
-            "uk": "Ви впевнені, що хочете зворот?"
+        "theme_mode":{"zh_hans":"主题模式", "en": "Theme mode", "zh_hant":"主題模式", "uk": "Тема"},
+        "theme_mode_light":{"zh_hans":"浅色", "en": "Light", "zh_hant":"淺色", "uk": "Світлий"},
+        "theme_mode_dark":{"zh_hans":"深色", "en": "Dark", "zh_hant":"深色", "uk": "Темний"},
+        "system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системний"},
+        "font":{"zh_hans":"字体", "en": "Font", "zh_hant":"字體", "uk": "Шрифт"},
+        "sans_serif":{"zh_hans":"无衬线字体", "en": "Sans-serif", "zh_hant":"無襯線字體", "uk": "Без засічок"},
+        "reduce_motion_and_transparency":{"zh_hans":"减弱特效", "en": "Reduce effects", "zh_hant":"減少特效", "uk": "Зменшити ефекти"},
+        "storage":{"zh_hans":"本地存储", "en": "Storage", "zh_hant":"保存的資料", "uk": "Збережені дані"},
+        "manage_storage":{"zh_hans":"管理存储", "en": "Manage storage", "zh_hant":"管理保存的資料", "uk": "Керувати збереженими даними"},
+        "reset_all_data":{"zh_hans":"重置所有数据", "en": "Reset all data", "zh_hant":"重置所有資料", "uk": "Зкинути всі дані"},
+        "reset_all_data_confirm":{"zh_hans":"确定要重置所有数据吗？", "en": "Are you sure you want to reset all data?", "zh_hant":"確定要重置所有資料嗎？", "uk": "Ви впевнені, що хочете скинути всі дані?"},
+        "reset_all_data_success":{"zh_hans":"重置成功！", "en": "Reset successful!", "zh_hant":"重置成功！", "uk": "Зкидання успішне!"},
+        "about_":{"zh_hans":"关于", "en": "About ", "zh_hant":"關於", "uk": "Про "},
+        "version":{"zh_hans":"版本", "en": "Version", "zh_hant":"版本", "uk": "Версія"},
+        "refresh_all_files":{"zh_hans":"刷新所有文件", "en": "Refresh all files", "zh_hant":"刷新所有檔案", "uk": "Оновіть всі файли"},
+        "refresh_all_files_success":{"zh_hans":"刷新标记已设置，下次访问相关页面时将强制刷新", "en": "Refresh flag set. Related pages will be force-refreshed on next visit.", "zh_hant":"刷新標記已設置，下次訪問相關頁面時將強制刷新", "uk": "Встановлено прапор оновлення. Пов'язані сторінки будуть примусово оновлені під час наступного відвідування."},
+        "about_gt":{"zh_hans":"关于通运", "en": "About General Transit (in Chinese)", "zh_hant":"關於通運", "uk": "Про GT (китайською)"},
+        "yct":{"zh_hans":"雨城通", "en": "yct.shangxiaoguan.top (in Chinese)", "zh_hant":"雨城通（簡體）", "uk": "yct.shangxiaoguan.top (китайською)"},
+        "disclaimer_text":{
+            "zh_hans":"本站提及的各类地名、组织名、品牌名均为虚构，部分代码使用AI生成，图标来自",
+            "en": "Places, organizations and brands mentioned are fictional. This site is partially AI-generated. Icons from ",
+            "zh_hant":"本站提及的各类地名、组织名、品牌名為虛构，部分代碼使用AI生成，圖標來自",
+            "uk": "Назва станції, організації та бренди, які зазначені тут, є зафальованими. Ця сторінка частинно генерується AI. Icons from "
+        },
+        "last_visited_page": {"zh_hans": "最后访问页面", "en": "Last visited page", "zh_hant": "最後訪問頁面", "uk": "Остання відвідана сторінка"},
+        "last_visited_params": {"zh_hans": "最后访问参数", "en": "Last visited parameters", "zh_hant": "最後訪問參數", "uk": "Параметри останнього візиту"},
+        "no_storage_items": {"zh_hans": "暂无存储项", "en": "No storage items", "zh_hant": "暫無存儲項", "uk": "Немає елементів зберігання"},
+        "array_with_items": {"zh_hans": "数组包含", "en": "Array with", "zh_hant": "數組包含", "uk": "Масив із"},
+        "items": {"zh_hans": "个项目", "en": "items", "zh_hant": "個項目", "uk": "елементи"},
+        "object_with_keys": {"zh_hans": "对象包含", "en": "Object with", "zh_hant": "對象包含", "uk": "Об'єкт із"},
+        "keys": {"zh_hans": "个键", "en": "keys", "zh_hant": "個鍵", "uk": "ключі"},
+        "string_value": {"zh_hans": "字符串", "en": "String value", "zh_hant": "字符串", "uk": "Рядкове значення"},
+        "characters": {"zh_hans": "个字符", "en": "characters", "zh_hant": "個字符", "uk": "символи"},
+        "confirm_remove_item": {"zh_hans": "确定要移除", "en": "Are you sure you want to remove", "zh_hant": "確定要移除", "uk": "Ви впевнені, що хочете видалити"},
+        "confirm_remove_item_end": {"zh_hans": "吗？", "en": "?", "zh_hant": "嗎？", "uk": "?"},
+        "item_removed": {"zh_hans": "已移除", "en": "Item removed", "zh_hant": "已移除", "uk": "Елемент видалено"}
+    },
+    "storage_descriptions": {
+        "warning":{
+            "zh_hans": "同源的其他站点可能使用这一条目",
+            "en": "This entry may be used by other sites in the same origin",
+            "zh_hant": "同源的其他站點可能使用此條目",
+            "uk": "Цей запис може бути використаний іншими сайтами в тому ж джерелі"
+        },
+        "theme": {
+            "zh_hans": "保存的主题模式设置",
+            "en": "Theme mode settings saved",
+            "zh_hant": "存儲的主題模式設定",
+            "uk": "Збережені налаштування теми"
+        },
+        "lastVisitedPage": {
+            "zh_hans": "最后访问的页面，用于自动跳转",
+            "en": "Last visited page, used for auto-redirect",
+            "zh_hant": "最後訪問的頁面，用於從index.html自動跳轉",
+            "uk": "Останній відвіданий сторінку, використовується для автоматичного перенаправлення"
+        },
+        "lastVisitedParams": {
+            "zh_hans": "最后使用的URL参数，用于自动跳转",
+            "en": "Last used URL parameters, used to auto-redirect",
+            "zh_hant": "最後使用的URL參數，用於自動跳轉",
+            "uk": "Останні використані параметри URL, використовується для автоматичного перенаправлення"
+        },
+        "reduceMotion": {
+            "zh_hans": "保存的减弱特效设置",
+            "en": "Saved reduce motion setting",
+            "zh_hant": "存儲的減弱特效設定",
+            "uk": "Збережені налаштування зменшення ефекту"
+        },
+        "all_trains_positions": {
+            "zh_hans": "列车位置缓存，用于测算速度",
+            "en": "Train positions cache, used for calculating speed",
+            "zh_hant": "臨時存儲的車輛位置，用於計算速度",
+            "uk": "Кеш позицій поїзда, використовується для обчислення швидкості"
+        },
+        "lastVisitedLine": {
+            "zh_hans": "最后访问的线路，用于自动跳转",
+            "en": "Last visited line, used for auto-redirect",
+            "zh_hant": "最後訪問的線路，用於自動跳轉",
+            "uk": "Останній відвіданий маршрут, використовується для автоматичного перенаправлення"
+        },
+        "font":{
+            "zh_hans":"保存的字体设置",
+            "en":"Saved font setting",
+            "zh_hant":"存儲的字體設定",
+            "uk":"Збережені налаштування шрифту"
+        },
+        "forceRefresh":{
+            "zh_hans":"强制刷新标记",
+            "en":"Force refresh marker",
+            "zh_hant":"強制刷新標記",
+            "uk":"Примусове оновлення маркера"
         }
     },
     "station_names":{

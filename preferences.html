@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <!-- 添加视口元标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>偏好设置 - 通运铁路信息</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="preferences.css">
+</head>
+<body>
+<div class="app-container">
+    <header>
+        <div class="actions"> 
+            <div class="icon-btn back-btn">
+                <img src="./res/back.png" alt="back" class="icon"></img>
+            </div>
+        </div>
+        <div class="title">
+            <img src="./res/gtr.png" alt="logo">
+            <h1>偏好设置</h1>
+        </div>
+        <div class="actions search-bar collapsed"> 
+            <div class="icon-btn search-btn">
+                <img src="./res/search.png" alt="search" class="icon"></img>
+            </div>
+            <input type="text" class="search-input" placeholder="搜索设置项…"></input>
+        </div>
+        <div class="gradient-blur"></div>
+    </header>
+    <main>
+        <div class="item pref-list">
+            <div class="item-title icon-btn">
+                <img src="./res/settings.png" alt="profile" class="icon"></img>
+                <h3 id="generalPref">通用设置</h3>
+            </div>
+            <div class="pref-item"> 
+                <span id="languagePref">语言</span>
+                <div class="selection language-selection collapsed"></div>
+            </div>
+            <div class="pref-item"> 
+                <span id="themePref">主题模式</span>
+                <div class="selection theme-selector collapsed"></div>
+            </div>
+            <div class="pref-item"> 
+                <span id="fontPref">字体</span>
+                <div class="selection font-selector collapsed"></div>
+            </div>
+            <div class="pref-item"> 
+                <span id="reduceMotionPref">减弱透明度及动态效果</span>
+                <div class="switch reduce-motion"></div>
+            </div>
+        </div>
+        <div class="item pref-list"> 
+            <div class="item-title icon-btn">
+                <img src="./res/stack.png" alt="storage" class="icon"></img>
+                <h3 id="storagePref">本地存储</h3>
+            </div>
+            <div class="pref-item storage-list"> 
+                <span id="storageManagePref">管理存储数据</span>
+            </div>
+            <div class="icon-btn reset-btn" style="color:crimson">
+                <span id="resetPref">重置所有数据</span>
+            </div>
+        </div>
+        <div class="item pref-list"> 
+            <div class="item-title icon-btn">
+                <img src="./res/info.png" alt="about" class="icon"></img>
+                <h3 id="aboutPref">关于</h3>
+            </div>
+            <div class="pref-item"> 
+                <span id="versionPref">版本</span>
+                <span class="pref-value" id="version">20251126</span>
+            </div>
+            <div class="icon-btn">
+                <a id="refreshPref">刷新所有文件</a>
+            </div>
+            <div class="pref-item" id="moreLinkPref"> 
+                <a href="">GitHub</a>
+                <a href="https://wiki.hydcraft.cn/%E9%80%9A%E8%BF%90%E4%BA%A4%E9%80%9A%E7%89%A9%E6%B5%81%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8" id="aboutGtLink">关于通运</a>
+                <a href="https://yct.shangxiaoguan.top/" id="yctLink">雨城通</a>
+            </div>
+        </div>
+        <div class="disclaimer"> 
+            <span id="disclaimerText">免责声明</span>
+            <a href="https://icons8.com/">Icons8</a>
+        </div>
+    </main>
+    <footer style="opacity: 0;">
+        <div class="actions search-bar collapsed"> 
+            <div class="icon-btn search-btn">
+                <img src="./res/search.png" alt="search" class="icon"></img>
+            </div>
+            <input type="text" class="search-input" placeholder="搜索设置项…"></input>
+        </div>
+    </footer>
+</div>
+<script src="preferences.js" type="module"></script>
+<script src="script.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</body>
+</html>

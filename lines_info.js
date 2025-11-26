@@ -59,7 +59,7 @@ function init() {
     const pageTitle = document.querySelector('title');
     console.log(pageTitle.textContent);
     headerTitle.textContent = strings.lines_info.page_title[lang];
-    pageTitle.textContent = strings.lines_info.page_title[lang];
+    pageTitle.textContent = strings.lines_info.page_title[lang] + ' - ' + strings.mainpage.gtr_info[lang];
     
     // 获取线路选择和车站显示的DOM元素
     //const lineSelection = document.querySelector('.line-selection');
@@ -182,6 +182,9 @@ function init() {
         } else {
             prefBtn.title = strings.preferences.page_title[lang];
         }
+        prefBtn.addEventListener('click', () => { 
+            window.open(`preferences.html${'?lang='+lang}`, '_self');
+        });
     })
 
     const lineId = getActiveLineId();

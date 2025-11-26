@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(stringsData => {
             strings = stringsData;
             initSearchBar();
+            applySavedTheme(); // 应用保存的主题设置
+            checkForceRefresh(); // 检查是否需要强制刷新
         })
     .catch(error => console.error('Error loading Language data:', error));
 });
@@ -21,7 +23,23 @@ function recordLastVisitedPage() {
     if (allowedPages.includes(currentPage)) {
         // 获取当前URL参数
         const urlParams = new URLSearchParams(window.location.search);
-        const paramsString = urlParams.toString();
+        let paramsString = urlParams.toString();
+        
+        // 如果localStorage中有参数，则优先使用localStorage中的参数
+        const storedParams = localStorage.getItem('lastVisitedParams');
+        if (storedParams) {
+            // 解析并合并参数，localStorage优先
+            const storedParamsObj = new URLSearchParams(storedParams);
+            
+            // 将URL参数添加到存储参数对象中（URL参数不会覆盖已存在的localStorage参数）
+            urlParams.forEach((value, key) => {
+                if (!storedParamsObj.has(key)) {
+                    storedParamsObj.set(key, value);
+                }
+            });
+            
+            paramsString = storedParamsObj.toString();
+        }
         
         // 存储到localStorage
         localStorage.setItem('lastVisitedPage', currentPage);
@@ -64,14 +82,61 @@ function hideNonActiveSelectionItems() {
     });
 }
 
+// 检查是否需要强制刷新
+function checkForceRefresh() {
+    // 检查是否存在强制刷新标记
+    const forceRefresh = localStorage.getItem('forceRefresh');
+    
+    // 获取当前页面
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    // 定义需要强制刷新的页面
+    const refreshPages = ['lines_info.html', 'ticket_calculator.html', 'trains_info.html', 'preferences.html'];
+    
+    // 检查是否是preferences.html页面
+    const isPreferencesPage = currentPage === 'preferences.html';
+    
+    if (forceRefresh === 'true' && (refreshPages.includes(currentPage) || isPreferencesPage)) {
+        // 清除强制刷新标记
+        localStorage.removeItem('forceRefresh');
+        
+        // 如果当前页面在需要刷新的列表中，则刷新页面
+        if (refreshPages.includes(currentPage)) {
+            // 显示提示信息
+            showToast('正在强制刷新数据...', 2000);
+            
+            // 刷新页面，添加时间戳参数避免缓存
+            const url = new URL(window.location);
+            url.searchParams.set('_refresh', Date.now());
+            window.location.href = url.toString();
+        }
+        // 对于preferences.html页面，我们直接刷新但不添加参数
+        else if (isPreferencesPage) {
+            // 显示提示信息
+            showToast('正在刷新偏好设置页面...', 2000);
+            
+            // 刷新页面
+            window.location.reload();
+        }
+    }
+}
+
 // 获取当前页面语言
 function getCurrentLanguage() {
+    // 从URL参数获取语言（优先使用）
     const urlParams = new URLSearchParams(window.location.search);
-    // 如果没有参数默认输出简体中文
-    if (!urlParams.has('lang')) {
-        return 'zh_hans';
+    if (urlParams.has('lang')) {
+        return urlParams.get('lang');
     }
-    return urlParams.get('lang') || navigator.language || navigator.userLanguage;
+    
+    // 如果URL参数中没有，则从localStorage中获取上次使用的语言
+    const storedLang = localStorage.getItem('lang');
+    if (storedLang) {
+        return storedLang;
+    }
+    
+    // 如果都没有，则默认使用zh_hans
+    return 'zh_hans';
 }
 
 let lang = getCurrentLanguage();
@@ -118,6 +183,67 @@ function toggleSidebar() {
     }
 }
 
+// 应用保存的主题设置
+function applySavedTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'system';
+    const html = document.documentElement;
+    
+    if (savedTheme === 'light') {
+        html.setAttribute('data-theme', 'light');
+        html.classList.remove('dark');
+    } else if (savedTheme === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+        html.classList.add('dark');
+    } else {
+        // 跟随系统
+        html.removeAttribute('data-theme');
+        html.classList.remove('dark');
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) {
+            html.classList.add('dark');
+        }
+    }
+
+    const reduceMotion = localStorage.getItem('reduceMotion') === 'true';
+    if (reduceMotion) {
+        html.classList.add('effect-reduced');
+    } else {
+        html.classList.remove('effect-reduced');
+    }
+
+    const savedFont = localStorage.getItem('font');
+    if (savedFont) {
+        applyFont(savedFont);
+    }
+}
+
+// 应用字体
+function applyFont(font) {
+    const root = document.documentElement;
+    let fontFamily;
+    
+    switch (font) {
+        case 'inter':
+            fontFamily = '"Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif';
+            break;
+        case 'harmonyos':
+            fontFamily = '"HarmonyOS Sans SC", "HarmonyOS Sans", "MiSans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", "Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", Arial, sans-serif';
+            break;
+        case 'sans-serif':
+            fontFamily = 'sans-serif';
+            break;
+        case 'system':
+            fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif';
+            break;
+        default:
+            // 默认使用 Inter 字体
+            fontFamily = '"Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif';
+            break;
+    }
+    
+    root.style.setProperty('--font-family', fontFamily);
+}
+
 // 初始化语言选择器
 function initLanguageSelector() {
     if (!document.querySelector('.language-selection')) return;
@@ -146,7 +272,7 @@ function initLanguageSelector() {
     }
 
     // 轮询页面宽度
-    const isMobile = window.innerWidth < 720;
+    let isMobile = window.innerWidth < 720;
 
     // 如果有选项则清空之前的选项
     if (languageSelection.children.length > 0) {
@@ -155,6 +281,8 @@ function initLanguageSelector() {
     
     // 为每个语言创建选项
     languages.forEach(langObj => {
+        // 如果在preferences.html则仅使用lang不用lang_short
+        if (window.location.href.includes('preferences.html')) isMobile = false;
         const item = document.createElement('div');
         item.className = `selection-item ${langObj.class}`;
         item.textContent = isMobile ? strings.general.lang_short[langObj.textKey] : strings.general.lang[langObj.textKey];
@@ -221,6 +349,9 @@ window.addEventListener('resize', () => {
 
 // 语言切换函数
 function selectLanguage(newLang) {
+    // 更新localStorage中的语言设置
+    localStorage.setItem('lang', newLang);
+    
     // 更新URL参数
     const url = new URL(window.location);
     url.searchParams.set('lang', newLang);
@@ -267,6 +398,9 @@ selectionElements.forEach(selectionElement => {
 
 // 语言切换函数
 function changeLanguage(newLang) {
+    // 更新localStorage中的语言设置
+    localStorage.setItem('lang', newLang);
+    
     // 更新URL参数
     const url = new URL(window.location);
     url.searchParams.set('lang', newLang);
