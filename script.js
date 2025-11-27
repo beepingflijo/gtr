@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeColor = document.createElement('meta');
     themeColor.name = 'theme-color';
     // 转为十六进制颜色
-    const hexColor = getComputedStyle(document.body).getPropertyValue('--color-primary-tinted').trim();
+    const hexColor = getComputedStyle(document.body).getPropertyValue('--color-primary').trim();
     themeColor.content = hexColor;
     document.head.appendChild(themeColor);
     
