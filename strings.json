@@ -48,6 +48,7 @@
         "system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системний"},
         "font":{"zh_hans":"字体", "en": "Font", "zh_hant":"字體", "uk": "Шрифт"},
         "sans_serif":{"zh_hans":"无衬线字体", "en": "Sans-serif", "zh_hant":"無襯線字體", "uk": "Без засічок"},
+        "collapse_sidebar":{"zh_hans":"宽屏模式下收起侧边栏", "en": "Collapse side bar in wide screen", "zh_hant":"寬屏模式下折疊側欄", "uk": "Згорнути бічну панель на широкому екрані"},
         "reduce_motion_and_transparency":{"zh_hans":"减弱特效", "en": "Reduce effects", "zh_hant":"減少特效", "uk": "Зменшити ефекти"},
         "storage":{"zh_hans":"本地存储", "en": "Storage", "zh_hant":"保存的資料", "uk": "Збережені дані"},
         "manage_storage":{"zh_hans":"管理存储", "en": "Manage storage", "zh_hant":"管理保存的資料", "uk": "Керувати збереженими даними"},
@@ -80,6 +81,12 @@
         "item_removed": {"zh_hans": "已移除", "en": "Item removed", "zh_hant": "已移除", "uk": "Елемент видалено"}
     },
     "storage_descriptions": {
+        "preferences":{
+            "zh_hans":"保存的全部设置项",
+            "en":"All saved preferences",
+            "zh_hant":"存儲的全部設置項",
+            "uk":"Всі збережені налаштування"
+        },
         "warning":{
             "zh_hans": "同源的其他站点可能使用这一条目",
             "en": "This entry may be used by other sites in the same origin",
@@ -87,10 +94,10 @@
             "uk": "Цей запис може бути використаний іншими сайтами в тому ж джерелі"
         },
         "theme": {
-            "zh_hans": "保存的主题模式设置",
-            "en": "Theme mode settings saved",
-            "zh_hant": "存儲的主題模式設定",
-            "uk": "Збережені налаштування теми"
+            "zh_hans": "旧版本所保存的设置项，可放心重置",
+            "en": "Preference saved in old versions, safe to reset",
+            "zh_hant": "舊版本所存儲的設置項，可放心重置",
+            "uk": "Сьогоднішній запис, безпечно можна скинути"
         },
         "lastVisitedPage": {
             "zh_hans": "最后访问的页面，用于自动跳转",
@@ -105,10 +112,10 @@
             "uk": "Останні використані параметри URL, використовується для автоматичного перенаправлення"
         },
         "reduceMotion": {
-            "zh_hans": "保存的减弱特效设置",
-            "en": "Saved reduce motion setting",
-            "zh_hant": "存儲的減弱特效設定",
-            "uk": "Збережені налаштування зменшення ефекту"
+            "zh_hans": "旧版本所保存的设置项，可放心重置",
+            "en": "Preference saved in old versions, safe to reset",
+            "zh_hant": "舊版本所存儲的設置項，可放心重置",
+            "uk": "Сьогоднішній запис, безпечно можна скинути"
         },
         "all_trains_positions": {
             "zh_hans": "列车位置缓存，用于测算速度",
@@ -123,16 +130,16 @@
             "uk": "Останній відвіданий маршрут, використовується для автоматичного перенаправлення"
         },
         "font":{
-            "zh_hans":"保存的字体设置",
-            "en":"Saved font setting",
-            "zh_hant":"存儲的字體設定",
-            "uk":"Збережені налаштування шрифту"
+            "zh_hans": "旧版本所保存的设置项，可放心重置",
+            "en": "Preference saved in old versions, safe to reset",
+            "zh_hant": "舊版本所存儲的設置項，可放心重置",
+            "uk": "Сьогоднішній запис, безпечно можна скинути"
         },
         "forceRefresh":{
-            "zh_hans":"强制刷新标记",
-            "en":"Force refresh marker",
-            "zh_hant":"強制刷新標記",
-            "uk":"Примусове оновлення маркера"
+            "zh_hans": "旧版本所保存的设置项，可放心重置",
+            "en": "Preference saved in old versions, safe to reset",
+            "zh_hant": "舊版本所存儲的設置項，可放心重置",
+            "uk": "Сьогоднішній запис, безпечно можна скинути"
         },
         "lang":{
             "zh_hans": "保存的语言设置",

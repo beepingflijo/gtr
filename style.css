@@ -125,7 +125,7 @@
 
 .effect-reduced {
     --color-background-actions: #ffffff;
-    --color-secondary: #111111;
+    --color-secondary: #fafafa;
     --color-secondary-hover: #eee;
     --color-toast-background: #000000;
 }
@@ -139,6 +139,23 @@
 
 .effect-reduced header { 
     background: var(--color-primary-tinted);
+    height: 42px;
+}
+
+.effect-reduced footer { 
+    background: transparent;
+}
+
+.effect-reduced footer > *:not(.search-controls), .effect-reduced .selection:not(.collapsed), .effect-reduced .tooltip { 
+    border: 2px solid var(--color-border);
+}
+
+.effect-reduced .side-bar .selection:not(.collapsed) { 
+    border: none;
+}
+
+.effect-reduced main { 
+    padding-top: 84px;
 }
 
 .effect-reduced *:not(.icon) { 
@@ -150,8 +167,9 @@
     transition: none !important;
     backdrop-filter: none !important;
     box-shadow: none !important;
+    text-shadow: none !important;
     --color-background-card: var(--color-background-card-solid);
-    --color-background-card-transparent: var(--color-secondary-hover);
+    --color-background-card-transparent: var(--color-secondary);
     --icon-btn-hover: var(--color-secondary-hover);
     --active-icon-btn-hover: var(--color-primary-tinted);
 }

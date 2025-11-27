@@ -85,7 +85,7 @@ function hideNonActiveSelectionItems() {
 // 检查是否需要强制刷新
 function checkForceRefresh() {
     // 检查是否存在强制刷新标记
-    const forceRefresh = localStorage.getItem('forceRefresh');
+    const forceRefresh = prefs.forceRefresh;
     
     // 获取当前页面
     const currentPage = window.location.pathname.split('/').pop();
@@ -182,10 +182,22 @@ function toggleSidebar() {
         }
     }
 }
+// 获取偏好设置
+let prefs = {};
+try {
+    const prefsStr = localStorage.getItem('preferences');
+    if (prefsStr) {
+        prefs = JSON.parse(prefsStr);
+    }
+} catch (e) {
+    console.error('Error parsing preferences:', e);
+}
+window.prefs = prefs;
 
 // 应用保存的主题设置
 function applySavedTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'system';
+    
+    const savedTheme = prefs.theme || 'system';
     const html = document.documentElement;
     
     if (savedTheme === 'light') {
@@ -204,14 +216,14 @@ function applySavedTheme() {
         }
     }
 
-    const reduceMotion = localStorage.getItem('reduceMotion') === 'true';
+    const reduceMotion = prefs.reduceMotion || false;
     if (reduceMotion) {
         html.classList.add('effect-reduced');
     } else {
         html.classList.remove('effect-reduced');
     }
 
-    const savedFont = localStorage.getItem('font');
+    const savedFont = prefs.font;
     if (savedFont) {
         applyFont(savedFont);
     }
@@ -233,7 +245,7 @@ function applyFont(font) {
             fontFamily = 'sans-serif';
             break;
         case 'system':
-            fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif';
+            fontFamily = 'none';
             break;
         default:
             // 默认使用 Inter 字体

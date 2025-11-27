@@ -12,6 +12,8 @@ if (lang.startsWith('zh')) {
     document.documentElement.lang = lang;
 }
 
+let sidebarCollapseDone = false;
+
 // 页面加载完成后执行初始化函数
 document.addEventListener('DOMContentLoaded', function () {
     
@@ -1792,6 +1794,14 @@ function handleWindowResize() {
             const mainWidth = main.getBoundingClientRect().width;
             stationsDisplay.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
+            if (!sidebarCollapseDone) { 
+                if (prefs.collapseSideBar) { 
+                    if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
+                } else { 
+                    if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');
+                }
+            }
+            sidebarCollapseDone = true;
         }, 100);
     }
 }

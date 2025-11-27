@@ -8,12 +8,36 @@ document.addEventListener('DOMContentLoaded', function () {
             initLanguageSelector();
             initThemeSelector();
             initFontSelector();
+            initCollapseSwitch();
             initReduceMotionSwitch();
             initStorageList();
             handleWindowResize();
         })
     .catch(error => console.error('Error loading Language data:', error));
 });
+
+// 获取偏好设置
+function getPreferences() {
+    const prefs = localStorage.getItem('preferences');
+    if (prefs) {
+        try {
+            return JSON.parse(prefs);
+        } catch (e) {
+            console.error('Error parsing preferences:', e);
+            return {};
+        }
+    }
+    return {};
+}
+
+// 保存偏好设置
+function savePreferences(prefs) {
+    try {
+        localStorage.setItem('preferences', JSON.stringify(prefs));
+    } catch (e) {
+        console.error('Error saving preferences:', e);
+    }
+}
 
 // 初始化函数
 function init() {
@@ -48,6 +72,8 @@ function init() {
     themePref.textContent = strings.preferences.theme_mode[lang];
     const fontPref = document.getElementById('fontPref');
     fontPref.textContent = strings.preferences.font[lang];
+    const collapsePref = document.getElementById('collapseSideBarPref');
+    collapsePref.textContent = strings.preferences.collapse_sidebar[lang];
     const reduceMotionPref = document.getElementById('reduceMotionPref');
     reduceMotionPref.textContent = strings.preferences.reduce_motion_and_transparency[lang];
     const storagePref = document.getElementById('storagePref');
@@ -94,7 +120,9 @@ function init() {
 // 强制刷新功能
 function forceRefresh() {
     // 设置强制刷新标记
-    localStorage.setItem('forceRefresh', 'true');
+    const prefs = getPreferences();
+    prefs.forceRefresh = true;
+    savePreferences(prefs);
     
     // 显示提示信息
     showToast(strings.preferences.refresh_all_files_success[lang] || '刷新标记已设置，下次访问相关页面时将强制刷新', 3000);
@@ -231,7 +259,12 @@ function getStorageDescription(key, value) {
 function removeFromStorage(key, element) {
     // 确认对话框
     if (confirm(`${strings.preferences.confirm_remove_item[lang] || '确定要移除'} "${key}" ${strings.preferences.confirm_remove_item_end[lang] || '吗？'}`)) {
-        localStorage.removeItem(key);
+        if (key === 'preferences') {
+            // 如果移除的是preferences项，则清空所有偏好设置
+            localStorage.removeItem('preferences');
+        } else {
+            localStorage.removeItem(key);
+        }
         // 从DOM中移除元素
         if (element && element.parentNode) {
             element.parentNode.removeChild(element);
@@ -247,8 +280,9 @@ function initThemeSelector() {
     const themeSelector = document.querySelector('.theme-selector');
     if (!themeSelector) return;
 
-    // 从 localStorage 获取保存的主题设置，默认为 'system'
-    const savedTheme = localStorage.getItem('theme') || 'system';
+    // 从偏好设置中获取保存的主题设置，默认为 'system'
+    const prefs = getPreferences();
+    const savedTheme = prefs.theme || 'system';
     
     // 创建主题选项
     const themes = [
@@ -293,8 +327,10 @@ function initThemeSelector() {
 
 // 选择主题
 function selectTheme(theme) {
-    // 保存到 localStorage
-    localStorage.setItem('theme', theme);
+    // 保存到偏好设置
+    const prefs = getPreferences();
+    prefs.theme = theme;
+    savePreferences(prefs);
     
     // 更新 UI
     const themeSelector = document.querySelector('.theme-selector');
@@ -338,8 +374,9 @@ function initFontSelector() {
     const fontSelector = document.querySelector('.font-selector');
     if (!fontSelector) return;
 
-    // 从 localStorage 获取保存的字体设置，默认为 'inter'
-    const savedFont = localStorage.getItem('font') || 'inter';
+    // 从偏好设置中获取保存的字体设置，默认为 'inter'
+    const prefs = getPreferences();
+    const savedFont = prefs.font || 'inter';
     
     // 创建字体选项
     const fonts = [
@@ -406,8 +443,10 @@ function initFontSelector() {
 
 // 选择字体
 function selectFont(font) {
-    // 保存到 localStorage
-    localStorage.setItem('font', font);
+    // 保存到偏好设置
+    const prefs = getPreferences();
+    prefs.font = font;
+    savePreferences(prefs);
     
     // 更新 UI
     const fontSelector = document.querySelector('.font-selector');
@@ -452,13 +491,32 @@ function applyFont(font) {
     root.style.setProperty('--font-family', fontFamily);
 }
 
+function initCollapseSwitch() { 
+    const collapseSwitch = document.querySelector('.collapse-sidebar');
+    if (!collapseSwitch) return;
+
+    const prefs = getPreferences();
+    if (prefs.collapseSidebar) { 
+        collapseSwitch.classList.add('active');
+    } else { 
+        collapseSwitch.classList.remove('active');
+    }
+
+    collapseSwitch.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        prefs.collapseSidebar = isActive;
+        savePreferences(prefs);
+    });
+}
+
 // 初始化减弱特效开关
 function initReduceMotionSwitch() {
     const reduceMotionSwitch = document.querySelector('.reduce-motion');
     if (!reduceMotionSwitch) return;
 
-    // 从 localStorage 获取保存的设置，默认为 false（关闭）
-    const reduceMotion = localStorage.getItem('reduceMotion') === 'true';
+    // 从偏好设置中获取保存的设置，默认为 false（关闭）
+    const prefs = getPreferences();
+    const reduceMotion = prefs.reduceMotion || false;
     
     // 设置开关状态
     if (reduceMotion) {
@@ -473,7 +531,9 @@ function initReduceMotionSwitch() {
     // 添加点击事件
     reduceMotionSwitch.addEventListener('click', function() {
         const isActive = this.classList.toggle('active');
-        localStorage.setItem('reduceMotion', isActive);
+        const prefs = getPreferences();
+        prefs.reduceMotion = isActive;
+        savePreferences(prefs);
         applyReduceMotion(isActive);
     });
 }

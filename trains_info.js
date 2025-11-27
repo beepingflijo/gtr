@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // 存储上次列车位置信息用于速度计算
 let trainPositions = new Map();
 let displayedTrains = []; // 存储当前显示的列车数据
+let sidebarCollapseDone = false;
 
 // 初始化函数
 function init() {
@@ -1599,6 +1600,14 @@ function handleWindowResize() {
             const mainWidth = main.getBoundingClientRect().width;
             main.style.paddingLeft = `calc(${lineSelectorWidth}px + 3vw)`;
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
+            if (!sidebarCollapseDone) { 
+                if (prefs.collapseSideBar) { 
+                    if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
+                } else { 
+                    if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');
+                }
+            }
+            sidebarCollapseDone = true;
         }, 100);
     }
     // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作

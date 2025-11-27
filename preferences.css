@@ -17,7 +17,7 @@ button {
 }
 
 .language-selection { 
-    margin: 6px;
+    margin: 0;
 }
 
 .pref-item {
@@ -35,6 +35,8 @@ button {
 .pref-item .selection { 
     filter: none;
     box-shadow: none;
+    max-width: -webkit-fill-available;
+    margin: 0;
 }
 
 .pref-item .selection.collapsed, .pref-item .selection.no-collapse { 
