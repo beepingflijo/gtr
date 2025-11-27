@@ -688,7 +688,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const themeColor = document.createElement('meta');
     themeColor.name = 'theme-color';
-    themeColor.content = 'var(--color-primary-tinted)';
+    // 转为十六进制颜色
+    const hexColor = getComputedStyle(document.body).getPropertyValue('--color-primary-tinted').trim();
+    themeColor.content = hexColor;
     document.head.appendChild(themeColor);
     
     // 为侧边栏按钮添加点击事件监听器
