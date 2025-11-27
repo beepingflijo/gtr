@@ -685,6 +685,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 使用setTimeout确保在其他DOM操作完成后执行
     //setTimeout(hideNonActiveSelectionItems, 0);
     initBlurLayers();
+
+    const themeColor = document.createElement('meta');
+    themeColor.name = 'theme-color';
+    themeColor.content = 'var(--color-primary-tinted)';
+    document.head.appendChild(themeColor);
     
     // 为侧边栏按钮添加点击事件监听器
     const sidebarButtons = document.querySelectorAll('.side-bar-btn');

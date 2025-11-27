@@ -1,7 +1,7 @@
 :root, .light { 
     --color-primary: #e77000;
     --color-primary-transparent: #e7700080;
-    --color-primary-tinted: #f0be8f;
+    --color-primary-tinted: #eeb885;
     --color-primary-hover: #e7700040;
     --color-background: #f5f5f5;
     --color-background-actions: #fffffff0;
@@ -61,7 +61,7 @@
 
 .dark {
     --color-primary-transparent: #a64e0680;
-    --color-primary-tinted: #914600;
+    --color-primary-tinted: #502b0c;
     --color-background: #111;
     --color-background-actions: #212121f0;
     --color-background-card: #1a1a1aa0;
@@ -135,6 +135,10 @@
     --color-secondary: #282828;
     --color-secondary-hover: #333;
     --color-toast-background: #000000;
+}
+
+.effect-reduced header { 
+    background: var(--color-primary-tinted);
 }
 
 .effect-reduced *:not(.icon) { 
