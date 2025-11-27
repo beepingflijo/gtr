@@ -253,6 +253,7 @@
         width: 80vw;
         max-width: 720px;
         min-width: 460px;
+        min-height: fit-content;
     }
 
     .line-selection {

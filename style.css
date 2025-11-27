@@ -116,6 +116,7 @@
     }
 
     .effect-reduced {
+        --color-background-card-solid: #212121;
         --color-background-actions: #212121;
         --color-secondary: #282828;
         --color-secondary-hover: #333;
@@ -125,12 +126,14 @@
 
 .effect-reduced {
     --color-background-actions: #ffffff;
-    --color-secondary: #fafafa;
+    --color-background-card: #fff;
+    --color-secondary: #f5f5f5;
     --color-secondary-hover: #eee;
     --color-toast-background: #000000;
 }
 
 .effect-reduced.dark {
+    --color-background-card-solid: #212121;
     --color-background-actions: #212121;
     --color-secondary: #282828;
     --color-secondary-hover: #333;
@@ -146,20 +149,34 @@
     background: transparent;
 }
 
-.effect-reduced footer > *:not(.search-controls), .effect-reduced .selection:not(.collapsed), .effect-reduced .tooltip, .effect-reduced .switch { 
+.effect-reduced footer > *:not(.search-controls), 
+.effect-reduced .selection:not(.collapsed), 
+.effect-reduced .tooltip, .effect-reduced .side-bar:not(.collapsed),
+.effect-reduced footer .selection.collapsed .selection-item.active,
+.effect-reduced footer .search-panel.collapsed { 
     border: 2px solid var(--color-border);
 }
 
 .effect-reduced .switch:not(.active) { 
-    background: silver;
+    background: gray;
 }
 
-.effect-reduced .side-bar .selection:not(.collapsed) { 
+.effect-reduced .side-bar .selection:not(.collapsed),
+.effect-reduced footer .selection.collapsed:not(.search-panel) { 
     border: none;
 }
 
 .effect-reduced main { 
     padding-top: 84px;
+}
+
+.effect-reduced .icon-btn:hover,
+.effect-reduced .selection-item:hover,
+.effect-reduced .tab-item:hover,
+.effect-reduced button:hover,
+.effect-reduced a:hover,
+.effect-reduced .train-item:hover { 
+    text-decoration: underline;
 }
 
 .effect-reduced *:not(.icon) { 

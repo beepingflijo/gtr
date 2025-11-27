@@ -73,7 +73,7 @@ button {
     border: none;
     display: flex;
     flex-direction: column;
-    background-color: var(--color-secondary-hover);
+    background-color: var(--color-secondary);
     border-radius: 12px;
     transition: all 0.2s ease-in-out;
 }
@@ -92,7 +92,7 @@ button {
     margin: 0;
 }
 
-.storage-item:hover, .pref-item:hover {
+.storage-item:hover, .pref-item:not(.storage-list):hover {
     background-color: var(--color-secondary-hover);
 }
 

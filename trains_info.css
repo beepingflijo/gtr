@@ -59,6 +59,11 @@ main .item {
     background-color: var(--color-secondary-hover);
 }
 
+.effect-reduced .train-line { 
+    background-color: transparent !important;
+    padding: 0 8px;
+}
+
 .train-line:hover {
     transform: scale(1.05);
     filter: brightness(1.1) saturate(1.05) contrast(1.2) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
@@ -81,6 +86,14 @@ main .item {
     border-radius: 0 0 12px 12px;
     padding: 6px 12px;
     padding-bottom: 8px;
+}
+
+.effect-reduced .train-warning {
+    background: transparent;
+    border-top: 2px solid crimson;
+    border-radius: 0;
+    padding-bottom: 0;
+    margin-top: 6px;
 }
 
 .train-cars, .next-station { 

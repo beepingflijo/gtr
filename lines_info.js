@@ -1114,12 +1114,13 @@ function sortTrainsOnTracks() {
                 
                 // 更新已存在的列车方向箭头
                 updateTrainDirectionArrows();
-            } else {
-                console.error('数据结构无效，无法处理列车信息');
-                // 即使列车数据无效，也更新线路信息
-                const activeLineId = getActiveLineId();
-                updateLineInfoDisplay(activeLineId);
             }
+        } else {
+            console.error('数据结构无效，无法处理列车信息');
+            // 即使列车数据无效，也更新线路信息
+            const activeLineId = getActiveLineId();
+            updateLineInfoDisplay(activeLineId);
+            loadSegmentInfo();
         }
     };
     xhr.send();
@@ -1133,7 +1134,7 @@ function updateLineInfoDisplay(activeLineId) {
     
     let updateTime = stationsDisplay.querySelector('.update-time');
     if (!updateTime) {
-         updateTime = document.createElement('div');
+        updateTime = document.createElement('div');
         updateTime.className = 'update-time';
         stationsDisplay.appendChild(updateTime);
         console.log('Adding update-time element');
@@ -1361,7 +1362,7 @@ function loadSegmentInfo() {
         element.addEventListener('mouseout', function() { 
             const segmentLength = element.querySelector('.segmentLength');
             if (segmentLength) {
-                segmentLength.remove();
+                element.removeChild(segmentLength);
             }
         });
     });
