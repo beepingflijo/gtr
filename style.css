@@ -146,8 +146,12 @@
     background: transparent;
 }
 
-.effect-reduced footer > *:not(.search-controls), .effect-reduced .selection:not(.collapsed), .effect-reduced .tooltip { 
+.effect-reduced footer > *:not(.search-controls), .effect-reduced .selection:not(.collapsed), .effect-reduced .tooltip, .effect-reduced .switch { 
     border: 2px solid var(--color-border);
+}
+
+.effect-reduced .switch:not(.active) { 
+    background: silver;
 }
 
 .effect-reduced .side-bar .selection:not(.collapsed) { 
@@ -692,12 +696,12 @@ header * {
     width: 36px;
     min-width: 36px;
     height: 24px;
-    border-radius: 12px;
+    border-radius: 16px;
     background-color: var(--color-secondary);
     position: relative;
     cursor: pointer;
     margin: 0 4px;
-    box-shadow: var(--item-shadow-inset-hover);
+    box-shadow: var(--input-shadow-inset);
     transition: all 0.2s ease;
 }
 

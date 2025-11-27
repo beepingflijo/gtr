@@ -1669,19 +1669,19 @@ function handleWindowResize() {
         sideBar.style.position = 'relative';
         prefActions.style.display = 'none';
         main.style.paddingBottom = '36px';
+        if (!sidebarCollapseDone) { 
+            if (prefs.collapseSideBar) { 
+                if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
+            } else { 
+                if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');
+            }
+        }
+        sidebarCollapseDone = true;
         setTimeout(() => {
             const lineSelectorWidth = sideBar.getBoundingClientRect().width <= 60 ? 0 : sideBar.getBoundingClientRect().width;
             const mainWidth = main.getBoundingClientRect().width;
             main.style.paddingLeft = `calc(${lineSelectorWidth}px + 4vw)`;
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
-            if (!sidebarCollapseDone) { 
-                if (prefs.collapseSideBar) { 
-                    if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
-                } else { 
-                    if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');
-                }
-            }
-            sidebarCollapseDone = true;
         }, 100);
     }
 }
