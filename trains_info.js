@@ -1596,7 +1596,7 @@ function handleWindowResize() {
             activeItem.style.borderRadius = '36px';
         }
         if (!sidebarCollapseDone) { 
-            if (prefs.collapseSideBar) { 
+            if (prefs.collapseSidebar) { 
                 if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
             } else { 
                 if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');

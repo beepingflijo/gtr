@@ -461,6 +461,7 @@ header * {
     background-color: transparent;
     background: transparent;
     backdrop-filter: unset;
+    box-shadow: unset;
     position: relative;
     width: -webkit-fill-available;
     height: fit-content;

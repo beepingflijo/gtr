@@ -1791,12 +1791,12 @@ function handleWindowResize() {
         prefActions.style.display = 'none';
         main.style.paddingBottom = '36px';
         if (!sidebarCollapseDone) { 
-            if (prefs.collapseSideBar) { 
+            if (prefs.collapseSidebar) { 
                 if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
             } else { 
                 if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');
             }
-        }
+        } else console.log('sidebarCollapseDone');
         sidebarCollapseDone = true;
         setTimeout(() => {
             const lineSelectorWidth = sideBar.getBoundingClientRect().width <= 60 ? 0 : sideBar.getBoundingClientRect().width;
