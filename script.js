@@ -1,3 +1,15 @@
+// 获取偏好设置
+let prefs = {};
+try {
+    const prefsStr = localStorage.getItem('preferences');
+    if (prefsStr) {
+        prefs = JSON.parse(prefsStr);
+    }
+} catch (e) {
+    console.error('Error parsing preferences:', e);
+}
+window.prefs = prefs;
+
 // 从strings.json获取strings
 document.addEventListener('DOMContentLoaded', () => { 
     fetch('strings.json')
@@ -84,39 +96,96 @@ function hideNonActiveSelectionItems() {
 
 // 检查是否需要强制刷新
 function checkForceRefresh() {
-    // 检查是否存在强制刷新标记
-    const forceRefresh = prefs.forceRefresh;
-    
     // 获取当前页面
     const currentPage = window.location.pathname.split('/').pop();
+    console.log('Current page:', currentPage);
     
     // 定义需要强制刷新的页面
     const refreshPages = ['lines_info.html', 'ticket_calculator.html', 'trains_info.html', 'preferences.html'];
+    console.log('Refresh pages:', refreshPages.includes(currentPage));
     
     // 检查是否是preferences.html页面
     const isPreferencesPage = currentPage === 'preferences.html';
     
-    if (forceRefresh === 'true' && (refreshPages.includes(currentPage) || isPreferencesPage)) {
-        // 清除强制刷新标记
-        localStorage.removeItem('forceRefresh');
+    // 检查是否存在强制刷新标记
+    const forceRefresh = prefs.forceRefresh;
+    
+    if (forceRefresh === true && (refreshPages.includes(currentPage) || isPreferencesPage)) {
+        console.log('Force refresh detected for page:', currentPage);
         
         // 如果当前页面在需要刷新的列表中，则刷新页面
-        if (refreshPages.includes(currentPage)) {
+        if (refreshPages.includes(currentPage) && !prefs.refreshedPages || !prefs.refreshedPages.includes(currentPage)) {
             // 显示提示信息
             showToast('正在强制刷新数据...', 2000);
             
-            // 刷新页面，添加时间戳参数避免缓存
-            const url = new URL(window.location);
-            url.searchParams.set('_refresh', Date.now());
-            window.location.href = url.toString();
+            // 从preferences中移除此页面的刷新标记
+            if (!prefs.refreshedPages) {
+                prefs.refreshedPages = [];
+            }
+            
+            // 如果此页面尚未刷新，则执行刷新
+            if (!prefs.refreshedPages.includes(currentPage)) {
+                prefs.refreshedPages.push(currentPage);
+                
+                // 保存更新后的preferences
+                try {
+                    localStorage.setItem('preferences', JSON.stringify(prefs));
+                } catch (e) {
+                    console.error('Error saving preferences:', e);
+                }
+                
+                // 刷新页面，添加时间戳参数避免缓存
+                const url = new URL(window.location);
+                url.searchParams.set('_refresh', Date.now());
+                window.location.reload(true);
+                return;
+            }
         }
         // 对于preferences.html页面，我们直接刷新但不添加参数
         else if (isPreferencesPage) {
             // 显示提示信息
             showToast('正在刷新偏好设置页面...', 2000);
             
-            // 刷新页面
-            window.location.reload();
+            // 检查是否已经刷新过preferences页面
+            if (!prefs.refreshedPages || !prefs.refreshedPages.includes(currentPage)) {
+                // 更新刷新记录
+                if (!prefs.refreshedPages) {
+                    prefs.refreshedPages = [];
+                }
+                prefs.refreshedPages.push(currentPage);
+                
+                // 保存更新后的preferences
+                try {
+                    localStorage.setItem('preferences', JSON.stringify(prefs));
+                } catch (e) {
+                    console.error('Error saving preferences:', e);
+                }
+                
+                // 刷新页面
+                window.location.reload(true);
+                return;
+            }
+        }
+    }
+    
+    // 检查是否所有页面都已经刷新过了，如果是则清除forceRefresh标记
+    if (forceRefresh === true) {
+        const refreshedPages = prefs.refreshedPages || [];
+        const allPagesRefreshed = refreshPages.every(page => refreshedPages.includes(page));
+        console.log('All pages refreshed:', allPagesRefreshed);
+        
+        if (allPagesRefreshed) {
+            // 清除强制刷新标记
+            prefs.forceRefresh = false;
+            prefs.refreshedPages = []; // 清空刷新记录
+            
+            try {
+                localStorage.setItem('preferences', JSON.stringify(prefs));
+            } catch (e) {
+                console.error('Error saving preferences:', e);
+            }
+            
+            console.log('All pages refreshed, force refresh flag cleared');
         }
     }
 }
@@ -182,17 +251,6 @@ function toggleSidebar() {
         }
     }
 }
-// 获取偏好设置
-let prefs = {};
-try {
-    const prefsStr = localStorage.getItem('preferences');
-    if (prefsStr) {
-        prefs = JSON.parse(prefsStr);
-    }
-} catch (e) {
-    console.error('Error parsing preferences:', e);
-}
-window.prefs = prefs;
 
 // 应用保存的主题设置
 function applySavedTheme() {
