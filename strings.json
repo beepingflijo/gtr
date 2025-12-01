@@ -4,12 +4,6 @@
         "cancel":{"zh_hans":"取消", "en": "Cancel", "zh_hant":"取消", "uk": "Скасувати"},
         "lang":{"zh_hans":"简体中文", "zh_hant":"繁體中文", "en": "English", "uk": "Українська", "pt": "Português"},
         "lang_short":{"zh_hans":"简", "zh_hant":"繁", "en": "EN", "uk": "УК", "pt": "PT"},
-        "footer":{
-            "zh_hans":"网站部分代码使用AI生成，图标来自<a href=\"icons8.com\">Icons8<\/a>。",
-            "zh_hant":"網站部分代碼使用AI生成，圖標來自<a href=\"icons8.com\">Icons8<\/a>。",
-            "en": "This site is partially AI-generated. Icons from <a href=\"icons8.com\">Icons8<\/a>.",
-            "uk": "Цей сайт частково створено за допомогою ШІ. Іконки з <a href=\"icons8.com\">Icons8<\/a>."
-        },
         "unknown":{"zh_hans":"未知", "en": "Unknown", "zh_hant":"未知", "uk": "Невідомо"},
         "reset":{"zh_hans":"重置", "en": "Reset", "zh_hant":"重置", "uk": "Скинути"},
         "back":{"zh_hans":"返回", "en": "Back", "zh_hant":"返回", "uk": "Назад"},
@@ -43,8 +37,8 @@
         "general":{"zh_hans":"通用设置", "en": "General", "zh_hant":"一般設定", "uk": "Загальні"},
         "language":{"zh_hans":"语言", "en": "Language", "zh_hant":"語言", "uk": "Мова"},
         "theme_mode":{"zh_hans":"主题模式", "en": "Theme mode", "zh_hant":"主題模式", "uk": "Тема"},
-        "theme_mode_light":{"zh_hans":"浅色", "en": "Light", "zh_hant":"淺色", "uk": "Світлий"},
-        "theme_mode_dark":{"zh_hans":"深色", "en": "Dark", "zh_hant":"深色", "uk": "Темний"},
+        "theme_mode_light":{"zh_hans":"浅色", "en": "Light", "zh_hant":"淺色", "uk": "Світла"},
+        "theme_mode_dark":{"zh_hans":"深色", "en": "Dark", "zh_hant":"深色", "uk": "Темна"},
         "theme_mode_system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системна"},
         "system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системний"},
         "font":{"zh_hans":"字体", "en": "Font", "zh_hant":"字體", "uk": "Шрифт"},
