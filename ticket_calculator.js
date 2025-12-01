@@ -816,6 +816,26 @@ function findShortestRoutes(startCode, endCode) {
         }
     });
     
+    // 如果起点站有多于一条线路，则在寻路时找出从每条线路出发的路径
+    const startStationLines = getStationLines(startCode);
+    if (startStationLines.length > 1) {
+        // 为起点站的每条线路分别寻路
+        for (const lineInfo of startStationLines) {
+            const routesFromLine = findRoutesFromStartLine(startCode, endCode, lineInfo, graphWithAll, false);
+            routesFromLine.forEach(route => {
+                // 检查是否已存在相同路径
+                const isDuplicate = allRoutes.some(existingRoute => 
+                    existingRoute.path.join('-') === route.path.join('-') && 
+                    Math.abs(existingRoute.totalDuration - route.totalDuration) < 1e-6
+                );
+                
+                if (!isDuplicate) {
+                    allRoutes.push(route);
+                }
+            });
+        }
+    }
+    
     // 计算每条路线的用时（暂不计算票价）
     allRoutes.forEach(route => {
         // 计算用时
@@ -923,6 +943,26 @@ function findShortestRoutes(startCode, endCode) {
             routesWithoutGX.push(formattedPath);
         }
     });
+    
+    // 如果起点站有多于一条线路，则在寻路时找出从每条线路出发的路径（不含GX线路）
+    const startStationLinesWithoutGX = getStationLines(startCode, true);
+    if (startStationLinesWithoutGX.length > 1) {
+        // 为起点站的每条不含GX的线路分别寻路
+        for (const lineInfo of startStationLinesWithoutGX) {
+            const routesFromLine = findRoutesFromStartLine(startCode, endCode, lineInfo, graphWithoutGX, true);
+            routesFromLine.forEach(route => {
+                // 检查是否已存在相同路径
+                const isDuplicate = routesWithoutGX.some(existingRoute => 
+                    existingRoute.path.join('-') === route.path.join('-') && 
+                    Math.abs(existingRoute.totalDuration - route.totalDuration) < 1e-6
+                );
+                
+                if (!isDuplicate) {
+                    routesWithoutGX.push(route);
+                }
+            });
+        }
+    }
     
     // 从不含GX线路的路线中找到计费基准路线（总时间最短且换乘次数最少的路线）
     if (routesWithoutGX.length > 0) {
@@ -1272,6 +1312,118 @@ function formatPath(path, excludeGXLines, graph) {
     };
 }
 
+function getStationLines (stationCode) {
+    return window.lines.filter(line => line.route.some(step => step.type === 'station' && step.code === stationCode));
+}
+
+// 从特定线路开始寻路
+function findRoutesFromStartLine(startCode, endCode, startLineInfo, graph, excludeGXLines) {
+    const times = {};
+    const previous = {};
+    const visited = {};
+    const queue = [];
+    
+    // 初始化时间
+    Object.keys(graph).forEach(station => {
+        times[station] = station === startCode ? 0 : Infinity;
+        previous[station] = [];
+        visited[station] = false;
+        queue.push(station);
+    });
+    
+    // 使用Dijkstra算法计算最短路径
+    while (queue.length > 0) {
+        // 找到未访问的最短时间节点
+        let minTime = Infinity;
+        let minStation = null;
+        
+        for (const station of queue) {
+            if (!visited[station] && times[station] < minTime) {
+                minTime = times[station];
+                minStation = station;
+            }
+        }
+        
+        if (minStation === null) {
+            break;
+        }
+        
+        visited[minStation] = true;
+        queue.splice(queue.indexOf(minStation), 1);
+        
+        // 更新相邻节点的时间
+        if (graph[minStation]) {
+            Object.keys(graph[minStation]).forEach(neighbor => {
+                if (!visited[neighbor]) {
+                    graph[minStation][neighbor].forEach(edge => {
+                        // 计算换乘时间
+                        let transferTime = 0;
+                        let waitingTime = 0;
+                        
+                        // 计算换乘时间
+                        if (previous[minStation].length > 0) {
+                            // 检查是否需要换乘（线路不同）
+                            const lastEdge = previous[minStation][previous[minStation].length - 1];
+                            if (lastEdge && lastEdge.line !== edge.line) {
+                                transferTime = 180; // 3分钟换乘时间（根据规范）
+                            }
+                        } else if (minStation === startCode && edge.line !== startLineInfo.lineId) {
+                            // 如果是从起点站出发且线路不同，也需要换乘时间
+                            transferTime = 180; // 3分钟换乘时间
+                        }
+                        
+                        const newTime = times[minStation] + edge.duration + 30 + transferTime + waitingTime; // 30秒站点停留时间
+                        
+                        // 如果找到更短的时间，更新时间并记录路径
+                        if (newTime < times[neighbor]) {
+                            times[neighbor] = newTime;
+                            previous[neighbor] = [{
+                                station: minStation,
+                                line: edge.line,
+                                distance: edge.distance,
+                                duration: edge.duration
+                            }];
+                        } 
+                        // 如果时间相等，也记录这个路径选项（添加到现有路径中）
+                        else if (Math.abs(newTime - times[neighbor]) < 1e-6) {
+                            previous[neighbor].push({
+                                station: minStation,
+                                line: edge.line,
+                                distance: edge.distance,
+                                duration: edge.duration
+                            });
+                        }
+                        // 即使不是最短路径，我们也记录这个可能的路径（扩展搜索范围）
+                        else {
+                            // 添加非最优但有效的路径
+                            previous[neighbor].push({
+                                station: minStation,
+                                line: edge.line,
+                                distance: edge.distance,
+                                duration: edge.duration
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    }
+    
+    // 重构路径
+    const routes = [];
+    const paths = buildAllPaths(previous, startCode, endCode);
+    
+    paths.forEach(path => {
+        const formattedPath = formatPath(path.path, excludeGXLines, graph);
+        if (formattedPath) {
+            formattedPath.totalDuration = path.time;
+            routes.push(formattedPath);
+        }
+    });
+    
+    return routes;
+}
+
 // 计算路线总用时（包括行驶时间和停站时间）
 function calculateRouteDuration(route) {
     // 行驶时间总和
@@ -1420,6 +1572,39 @@ function renderSearchResults(routes, container) {
         </div>`;
         
         routeElement.innerHTML = routeHTML;
+
+        const fareDetails = document.createElement('div');
+        fareDetails.className = 'fare-details';
+
+        const secondClassFare = route.fare;
+        const firstClassFare = route.fare + calculateFare(route.totalDistance) * 0.5;
+        const premiumClassAddition = (route.fare - calculateFare(route.totalDistance)) * 2;
+        const premiumClassFare = Math.max(firstClassFare + premiumClassAddition, 29);
+        const fareDetailsHTML = `
+        <div class="fare-detail-item second>
+            <span class="fare-detail-title">${
+                strings.ticket_calculator.second_class[lang] + ' / ' 
+                + strings.ticket_calculator.no_seat_class[lang]  || '二等座/无座'
+            }</span>
+            <span class="fare-detail-value">¥${secondClassFare.toFixed(2)}</span>
+        </div>
+        <div class="fare-detail-item first">
+            <span class="fare-detail-title">${
+                strings.ticket_calculator.first_class[lang] + ' (' 
+                + strings.ticket_calculator.if_available[lang]  + ') ' || '一等座（如有）'
+            }</span>
+            <span class="fare-detail-value">¥${firstClassFare.toFixed(2)}</span>
+        </div>
+        <div class="fare-detail-item premium"${route.fare !== calculateFare(route.totalDistance) ? '' : ' style="display: none;"'}>
+            <span class="fare-detail-title">${
+                strings.ticket_calculator.premium_class[lang] + ' (' 
+                + strings.ticket_calculator.if_available[lang] + ') ' || '商务座（如有）'
+            }</span>
+            <span class="fare-detail-value">¥${premiumClassFare.toFixed(2)}</span>
+        </div>`
+        fareDetails.innerHTML = fareDetailsHTML;
+        routeElement.appendChild(fareDetails);
+
         container.appendChild(routeElement);
         handleWindowResize();
     });

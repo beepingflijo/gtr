@@ -290,6 +290,30 @@ footer .search-controls{
     background: transparent;
 }
 
+.fare-details { 
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 24px;
+    color: var(--color-text-secondary);
+    justify-content: flex-start;
+    padding: 6px;
+    margin-bottom: 3px;
+}
+
+.fare-detail-item { 
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.fare-detail-value { 
+    color: var(--color-primary);
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
 .swap-btn img {
     rotate: 90deg;
     transition: all 0.3s ease;

@@ -21,5 +21,31 @@
         { "name":"GX01", "line":"GX01", "maxSpeed":300, "series":"DE134-300" },
         { "name":"JC17", "line":"GX01", "maxSpeed":300, "series":"DE134-280" },
         { "name":"GX04", "line":"GX04", "maxSpeed":300, "series":"DE134-300" }
+    ],
+    "series":[
+        { "name":"DE134-200", "seats":[
+            {"number":1, "class":"first", "rows":6, "seatsInRow":["A","C"]},
+            {"number":2, "class":"second", "seatsCount":16},
+            {"number":3, "class":"second", "seatsCount":16},
+            {"number":4, "class":"second", "seatsCount":16},
+            {"number":5, "class":"second", "seatsCount":16},
+            {"number":6, "class":"first", "rows":6, "seatsInRow":["A","C"]}
+        ] },
+        { "name":"DE134-280", "seats":[
+            {"number":1, "class":"premium", "rows":3, "seatsInRow":["F"]},
+            {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"]},
+            {"number":3, "class":"first", "rows":6, "seatsInRow":["A","C"]},
+            {"number":4, "class":"second", "seatsCount":16},
+            {"number":5, "class":"second", "seatsCount":16},
+            {"number":6, "class":"second", "seatsCount":16}
+        ] },
+        { "name":"DE134-300", "seats":[
+            {"number":1, "class":"premium", "rows":3, "seatsInRow":["A","F"]},
+            {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"]},
+            {"number":3, "class":"first", "rows":6, "seatsInRow":["A","C"]},
+            {"number":4, "class":"second", "seatsCount":16},
+            {"number":5, "class":"second", "seatsCount":16},
+            {"number":6, "class":"second", "seatsCount":16}
+        ] }
     ]
 }

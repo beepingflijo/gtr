@@ -295,7 +295,7 @@ function initThemeSelector() {
     const themes = [
         { id: 'light', label: strings.preferences.theme_mode_light },
         { id: 'dark', label: strings.preferences.theme_mode_dark },
-        { id: 'system', label: strings.preferences.system }
+        { id: 'system', label: strings.preferences.theme_mode_system }
     ];
 
     // 清空选择器

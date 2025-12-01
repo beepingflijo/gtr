@@ -28,7 +28,7 @@
             "zh_hans":"通运铁路信息",
             "zh_hant":"通運鐵路信息",
             "en": "GTR Info",
-            "uk": "Інформація про GTR"
+            "uk": "Інформацію GTR"
         },
         "gt":{
             "zh_hans":"通运",
@@ -38,13 +38,14 @@
         }
     },
     "preferences":{
-        "page_title":{"zh_hans":"偏好设置", "en": "Preferences", "zh_hant":"偏好設定", "uk": "Уподобання"},
+        "page_title":{"zh_hans":"偏好设置", "en": "Preferences", "zh_hant":"偏好設定", "uk": "Налаштування"},
         "search_placeholder":{"zh_hans":"搜索设置项…", "en": "Search preferences…", "zh_hant":"搜索設定…", "uk": "Пошук налаштувань…"},
         "general":{"zh_hans":"通用设置", "en": "General", "zh_hant":"一般設定", "uk": "Загальні"},
         "language":{"zh_hans":"语言", "en": "Language", "zh_hant":"語言", "uk": "Мова"},
         "theme_mode":{"zh_hans":"主题模式", "en": "Theme mode", "zh_hant":"主題模式", "uk": "Тема"},
         "theme_mode_light":{"zh_hans":"浅色", "en": "Light", "zh_hant":"淺色", "uk": "Світлий"},
         "theme_mode_dark":{"zh_hans":"深色", "en": "Dark", "zh_hant":"深色", "uk": "Темний"},
+        "theme_mode_system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системна"},
         "system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системний"},
         "font":{"zh_hans":"字体", "en": "Font", "zh_hant":"字體", "uk": "Шрифт"},
         "sans_serif":{"zh_hans":"无衬线字体", "en": "Sans-serif", "zh_hant":"無襯線字體", "uk": "Без засічок"},
@@ -52,7 +53,7 @@
         "reduce_motion_and_transparency":{"zh_hans":"减弱特效", "en": "Reduce effects", "zh_hant":"減少特效", "uk": "Зменшити ефекти"},
         "storage":{"zh_hans":"本地存储", "en": "Storage", "zh_hant":"保存的資料", "uk": "Збережені дані"},
         "manage_storage":{"zh_hans":"管理存储", "en": "Manage storage", "zh_hant":"管理保存的資料", "uk": "Керувати збереженими даними"},
-        "reset_all_data":{"zh_hans":"重置所有数据", "en": "Reset all data", "zh_hant":"重置所有資料", "uk": "Зкинути всі дані"},
+        "reset_all_data":{"zh_hans":"重置所有数据", "en": "Reset all data", "zh_hant":"重置所有資料", "uk": "Скинути всі дані"},
         "reset_all_data_confirm":{"zh_hans":"确定要重置所有数据吗？", "en": "Are you sure you want to reset all data?", "zh_hant":"確定要重置所有資料嗎？", "uk": "Ви впевнені, що хочете скинути всі дані?"},
         "reset_all_data_success":{"zh_hans":"重置成功！", "en": "Reset successful!", "zh_hant":"重置成功！", "uk": "Зкидання успішне!"},
         "about_":{"zh_hans":"关于", "en": "About ", "zh_hant":"關於", "uk": "Про "},
@@ -65,7 +66,7 @@
             "zh_hans":"本站提及的各类地名、组织名、品牌名均为虚构，部分代码使用AI生成，图标来自",
             "en": "Places, organizations and brands mentioned are fictional. This site is partially AI-generated. Icons from ",
             "zh_hant":"本站提及的各类地名、组织名、品牌名為虛构，部分代碼使用AI生成，圖標來自",
-            "uk": "Назва станції, організації та бренди, які зазначені тут, є зафальованими. Ця сторінка частинно генерується AI. Icons from "
+            "uk": "Назви станцій, організацій та брендів, зазначені тут, є вигаданими. Ця сторінка частково згенерована ШІ. Іконки від "
         },
         "last_visited_page": {"zh_hans": "最后访问页面", "en": "Last visited page", "zh_hant": "最後訪問頁面", "uk": "Остання відвідана сторінка"},
         "last_visited_params": {"zh_hans": "最后访问参数", "en": "Last visited parameters", "zh_hant": "最後訪問參數", "uk": "Параметри останнього візиту"},
@@ -268,7 +269,12 @@
             "zh_hant": "未找到該終點站資訊", 
             "uk": "Інформація про кінцеву станцію не знайдена"
         },
-        "searching": {"zh_hans": "正在搜索…", "en": "Searching...", "zh_hant": "正在搜尋…", "uk": "Пошук..."}
+        "searching": {"zh_hans": "正在搜索…", "en": "Searching...", "zh_hant": "正在搜尋…", "uk": "Пошук..."},
+        "premium_class": {"zh_hans": "商务座", "en": "Premium class", "zh_hant": "商務座", "uk": "Преміум клас"},
+        "first_class": {"zh_hans": "一等座", "en": "First class", "zh_hant": "一等座", "uk": "Перший клас"},
+        "second_class": {"zh_hans": "二等座", "en": "Second class", "zh_hant": "二等座", "uk": "Другий клас"},
+        "no_seat_class": {"zh_hans": "无座", "en": "No seat", "zh_hant": "無座", "uk": "Без місць"},
+        "if_available": {"zh_hans": "如有", "en": "if available", "zh_hant": "如有", "uk": "якщо доступно"}
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
