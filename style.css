@@ -24,6 +24,9 @@
     --color-text-secondary: #666;
     --color-text-on-primary: #fff;
     --font-family: "Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+}
+
+* { 
     scrollbar-width: thin;
     scrollbar-color: var(--color-text-secondary) var(--color-background-card-solid);
 }
@@ -432,6 +435,7 @@ header * {
 
 .side-bar:not(.collapsed) .side-bar-navigation { 
     height: -webkit-fill-available;
+    overflow-y: auto;
 }
 
 .side-bar .side-bar-item { 

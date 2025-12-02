@@ -209,6 +209,8 @@ function getCurrentLanguage() {
 }
 
 let lang = getCurrentLanguage();
+const html = document.querySelector('html');
+html.lang = lang.includes('zh') ? 'zh' : lang;
 
 // 显示Toast提示
 function showToast(message, duration = 3000) {
@@ -393,7 +395,7 @@ function initLanguageSelector() {
             
             // 获取选择的语言并更新页面
             const selectedLang = this.classList[1].replace('lang-', '').replace('-', '_');
-            changeLanguage(selectedLang);
+            selectLanguage(selectedLang);
             
             // 收起语言选择
             selectionElement.classList.add('collapsed');
@@ -465,19 +467,6 @@ selectionElements.forEach(selectionElement => {
         }
     });
 });
-
-// 语言切换函数
-function changeLanguage(newLang) {
-    // 更新localStorage中的语言设置
-    localStorage.setItem('lang', newLang);
-    
-    // 更新URL参数
-    const url = new URL(window.location);
-    url.searchParams.set('lang', newLang);
-    
-    // 重新加载页面以应用新语言
-    window.location.href = url.toString();
-}
 
 // 调整actions样式
 document.querySelectorAll('header .actions').forEach(actions => { 

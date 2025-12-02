@@ -65,6 +65,18 @@ button {
     min-width: fit-content;
 }
 
+#languagePref { 
+    width: fit-content;
+    min-width: fit-content;
+}
+
+#languageHintPref { 
+    font-size: 0.8em;
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease-in-out;
+    opacity: 1;
+}
+
 .storage-list {
     height: fit-content;
     min-height: 30px;

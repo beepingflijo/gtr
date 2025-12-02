@@ -99,6 +99,31 @@ function init() {
     
     // 添加强制刷新按钮的事件监听器
     refreshPref.addEventListener('click', forceRefresh);
+
+    // 实现languageHintPref每2秒显示不同语言的功能（排除当前页面语言）
+    const languageHintPref = document.getElementById('languageHintPref');
+    if (languageHintPref) {
+        languageHintPref.textContent = '';
+        // 获取所有支持的语言，但排除当前页面语言
+        const allLanguages = Object.keys(strings.preferences.language);
+        const languages = allLanguages.filter(language => language !== lang);
+        let currentIndex = 0;
+        
+        // 每2秒更新一次显示的语言，带有淡入淡出效果
+        setInterval(() => {
+            if (languages.length > 0) {
+                // 淡出效果
+                languageHintPref.style.opacity = '0';
+                
+                // 在淡出完成后更新文本并淡入
+                setTimeout(() => {
+                    languageHintPref.textContent = strings.preferences.language[languages[currentIndex]];
+                    languageHintPref.style.opacity = '1';
+                    currentIndex = (currentIndex + 1) % languages.length;
+                }, 500); // 与CSS过渡时间匹配
+            }
+        }, 2000);
+    }
     
     const aboutGtLink = document.getElementById('aboutGtLink');
     aboutGtLink.textContent = strings.preferences.about_gt[lang];
