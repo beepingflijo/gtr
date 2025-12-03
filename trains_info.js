@@ -111,12 +111,14 @@ function init() {
     })
 
     // 添加搜索功能
-    const searchInput = document.querySelector('.search-input');
-    searchInput.placeholder = strings.trains_info.search_placeholder[lang];
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const searchQuery = urlSearchParams.get('q') || '';
-    searchInput.value = searchQuery; // 从URL参数获取搜索词或设置为空
-    searchInput.addEventListener('input', handleSearch);
+    const searchInputs = document.querySelectorAll('.search-input');
+    searchInputs.forEach(searchInput => {
+        searchInput.placeholder = strings.trains_info.search_placeholder[lang];
+        const urlSearchParams = new URLSearchParams(window.location.search);
+        const searchQuery = urlSearchParams.get('q') || '';
+        searchInput.value = searchQuery; // 从URL参数获取搜索词或设置为空
+        searchInput.addEventListener('input', handleSearch);
+    });
 
     window.addEventListener('resize', handleWindowResize);
     

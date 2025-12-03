@@ -32,6 +32,24 @@
     <main>
         <div class="item pref-list">
             <div class="item-title icon-btn">
+                <img src="./res/profile.png" alt="profile" class="icon"></img>
+                <h3 id="rolePref">角色</h3>
+            </div>
+            <div class="pref-item"> 
+                <span id="loginStatus">未登录</span>
+                <div class="icon-btn" id="toggleLogin">登录</div>
+            </div>
+            <div class="pref-item"> 
+                <span id="followPlayersPref">关注的玩家</span>
+                <textarea rows="1" class="pref-value" id="followPlayers" spellcheck="false"></textarea>
+            </div>
+            <div class="pref-item"> 
+                <span id="notifyTrainApproachingPref">列车接近预警</span>
+                <div class="switch notify-train-approaching"></div>
+            </div>
+        </div>
+        <div class="item pref-list">
+            <div class="item-title icon-btn">
                 <img src="./res/settings.png" alt="profile" class="icon"></img>
                 <h3 id="generalPref">通用设置</h3>
             </div>
@@ -76,7 +94,7 @@
             </div>
             <div class="pref-item"> 
                 <span id="versionPref">版本</span>
-                <span class="pref-value" id="version">20251202-02</span>
+                <span class="pref-value" id="version">20251203-01</span>
             </div>
             <div class="icon-btn">
                 <a id="refreshPref">刷新所有文件</a>

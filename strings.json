@@ -34,6 +34,19 @@
     "preferences":{
         "page_title":{"zh_hans":"偏好设置", "en": "Preferences", "zh_hant":"偏好設定", "uk": "Налаштування"},
         "search_placeholder":{"zh_hans":"搜索设置项…", "en": "Search preferences…", "zh_hant":"搜索設定…", "uk": "Пошук налаштувань…"},
+        "role_and_notifications":{"zh_hans":"角色与通知", "en": "Role and notifications", "zh_hant":"角色與通知", "uk": "Роль та повідомлення"},
+        "logged_in":{"zh_hans":"已登录", "en": "Logged in", "zh_hant":"已登錄", "uk": "Ввійшов"},
+        "not_logged_in":{"zh_hans":"未登录", "en": "Not logged in", "zh_hant":"未登錄", "uk": "Не ввійшов"},
+        "logout":{"zh_hans":"登出", "en": "Log out", "zh_hant":"登出", "uk": "Вийти"},
+        "login":{"zh_hans":"登录", "en": "Log in", "zh_hant":"登錄", "uk": "Увійти"},
+        "following_players":{"zh_hans":"关注的玩家", "en": "Following players", "zh_hant":"關注的玩家", "uk": "Відстежувані гравці"},
+        "following_players_placeholder":{
+            "zh_hans":"输入玩家ID，用“,”隔开",
+            "en": "Player IDs here...",
+            "zh_hant":"輸入玩家ID，用“,”隔開",
+            "uk": "Введіть ID гравця..."
+        },
+        "notify_train_approaching":{"zh_hans":"列车接近预警", "en": "Notify when train approaching", "zh_hant":"列車接近預警", "uk": "Попередження про приблизний прибуток"},
         "general":{"zh_hans":"通用设置", "en": "General", "zh_hant":"一般設定", "uk": "Загальні"},
         "language":{"zh_hans":"语言", "en": "Language", "zh_hant":"語言", "uk": "Мова"},
         "theme_mode":{"zh_hans":"主题模式", "en": "Theme mode", "zh_hant":"主題模式", "uk": "Тема"},

@@ -32,6 +32,19 @@ button {
     transition: all 0.2s ease-in-out;
 }
 
+.pref-item:has(textarea) {
+    height: fit-content;
+    min-height: 30px;
+}
+
+.pref-item > *:not(span, .switch) { 
+    min-width: fit-content;
+}
+
+.pref-item input, .pref-item textarea {
+    min-width: 24px;
+}
+
 .pref-item .selection { 
     filter: none;
     box-shadow: none;

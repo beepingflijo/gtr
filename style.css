@@ -838,7 +838,7 @@ button.active {
     letter-spacing: 0.01em;
 }
 
-input, input#endInput { 
+input, input#endInput, textarea { 
     padding: 6px 16px;
     border-radius: 16px;
     border: 1px solid var(--color-text-secondary);
@@ -847,6 +847,7 @@ input, input#endInput {
     font-size: 14px;
     font-family: var(--font-family);
     background-color: var(--color-background-card);
+    min-height: 16px;
 }
 
 datalist { 

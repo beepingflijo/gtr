@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(stringsData => {
             window.strings = stringsData;
             init();
+            initFollowPlayersPref();
+            initTrainApproachingSwitch();
             initLanguageSelector();
             initThemeSelector();
             initFontSelector();
@@ -49,12 +51,14 @@ function init() {
     pageTitle.textContent = strings.preferences.page_title[lang] + ' - ' + strings.mainpage.gtr_info[lang];
 
     // 添加搜索功能
-    const searchInput = document.querySelector('.search-input');
-    searchInput.placeholder = strings.preferences.search_placeholder[lang];
-    const urlSearchParams = new URLSearchParams(window.location.search);
-    const searchQuery = urlSearchParams.get('q') || '';
-    searchInput.value = searchQuery; // 从URL参数获取搜索词或设置为空
-    searchInput.addEventListener('input', handleSearch);
+    const searchInputs = document.querySelectorAll('.search-input');
+    searchInputs.forEach(searchInput => {
+        searchInput.placeholder = strings.preferences.search_placeholder[lang];
+        const urlSearchParams = new URLSearchParams(window.location.search);
+        const searchQuery = urlSearchParams.get('q') || '';
+        searchInput.value = searchQuery; // 从URL参数获取搜索词或设置为空
+        searchInput.addEventListener('input', handleSearch);
+    });
 
     window.addEventListener('resize', handleWindowResize);
 
@@ -63,6 +67,18 @@ function init() {
         window.open('index.html?lang='+lang, '_self');
     });
     backBtn.title = strings.general.back[lang];
+
+    const rolePref = document.getElementById('rolePref');
+    rolePref.textContent = strings.preferences.role_and_notifications[lang];
+    const loginStatus = document.getElementById('loginStatus');
+    loginStatus.textContent = strings.preferences.not_logged_in[lang];
+    const toggleLogin = document.getElementById('toggleLogin');
+    toggleLogin.textContent = strings.preferences.login[lang];
+    toggleLogin.style.color = 'var(--color-primary)';
+    const followPlayersPref = document.getElementById('followPlayersPref');
+    followPlayersPref.textContent = strings.preferences.following_players[lang];
+    const notifyTrainApproachingPref = document.getElementById('notifyTrainApproachingPref');
+    notifyTrainApproachingPref.textContent = strings.preferences.notify_train_approaching[lang];
 
     const generalPref = document.getElementById('generalPref');
     generalPref.textContent = strings.preferences.general[lang];
@@ -114,13 +130,15 @@ function init() {
             if (languages.length > 0) {
                 // 淡出效果
                 languageHintPref.style.opacity = '0';
+                const prefs = getPreferences();
+                const transitionTimeout = prefs.reduceMotion ? 0 : 200;
                 
                 // 在淡出完成后更新文本并淡入
                 setTimeout(() => {
                     languageHintPref.textContent = strings.preferences.language[languages[currentIndex]];
                     languageHintPref.style.opacity = '1';
                     currentIndex = (currentIndex + 1) % languages.length;
-                }, 500); // 与CSS过渡时间匹配
+                }, transitionTimeout); // 与CSS过渡时间匹配
             }
         }, 2000);
     }
@@ -140,6 +158,37 @@ function init() {
         const main = document.querySelector('main');
         main.appendChild(preparedInfo);
     }
+}
+
+function initFollowPlayersPref() { 
+    const prefs = getPreferences();
+
+    const followPlayers = document.getElementById('followPlayers');
+    followPlayers.placeholder = strings.preferences.following_players_placeholder[lang];
+    if (prefs.followPlayers) { 
+        followPlayers.value = prefs.followPlayers
+    }
+    followPlayers.addEventListener('change', () => { 
+        console.log(followPlayers.value);
+        prefs.followPlayers = followPlayers.value;
+        savePreferences(prefs);
+    });
+}
+
+function initTrainApproachingSwitch() {
+    const prefs = getPreferences();
+    const trainApproachingSwitch = document.querySelector('.notify-train-approaching');
+    if (prefs.notifyTrainApproaching) { 
+        trainApproachingSwitch.classList.add('active');
+    } else { 
+        trainApproachingSwitch.classList.remove('active');
+    }
+
+    trainApproachingSwitch.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        prefs.notifyTrainApproaching = isActive;
+        savePreferences(prefs);
+    });
 }
 
 // 强制刷新功能

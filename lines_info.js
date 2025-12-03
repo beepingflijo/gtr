@@ -257,20 +257,93 @@ function displayStations(line) {
     // 将车站列表添加到页面中
     stationsDisplay.appendChild(ul);
 
-    //const lineSelectionBtn = document.querySelectorAll('.line-selection button');
-    // 将当前线路的按钮添加active类
-    /*lineSelectionBtn.forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.textContent === line.name[lang]) {
-            btn.classList.add('active');
-        }
-    });*/
-
-    //showToast(strings.lines_info.loading[lang])
-
     // 调用显示列车信息的函数
     //displayTrains();
     //highlightTrainsForCurrentLine();
+    
+    // 获取并显示玩家信息
+    fetchAndDisplayPlayers();
+}
+
+// 获取并显示玩家信息
+function fetchAndDisplayPlayers() {
+    const timestamp = Date.now();
+    const playerDataUrl = `https://map.nitrogen.hydcraft.cn/up/world/world/${timestamp}`;
+    console.log(playerDataUrl);
+    
+    fetch(playerDataUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.players && data.players.length > 0) {
+                displayPlayers(data.players);
+            }
+        })
+        .catch(error => {
+            console.warn('获取玩家数据失败:', error);
+        });
+}
+
+// 显示玩家信息
+function displayPlayers(players) {
+    // 获取所有车站元素
+    const stationElements = document.querySelectorAll('.station-list-item');
+    
+    // 为每个车站计算附近的玩家数量
+    stationElements.forEach(stationElement => {
+        const stationNameElement = stationElement.querySelector('.station-name');
+        if (!stationNameElement) return;
+        
+        const stationName = stationNameElement.textContent.trim();
+        
+        // 查找车站坐标（需要从network.json中获取）
+        const stationCoords = findStationCoordinatesByDisplayName(stationName);
+        if (!stationCoords) return;
+        
+        // 计算在该车站附近的玩家数量（距离小于200米）
+        let nearbyPlayerCount = 0;
+        players.forEach(player => {
+            const distance = Math.sqrt(
+                Math.pow(player.x - stationCoords.x, 2) + 
+                Math.pow(player.z - stationCoords.z, 2)
+            );
+            
+            if (distance <= 200) {
+                nearbyPlayerCount++;
+            }
+        });
+        
+        // 如果有玩家在附近，显示玩家数量
+        if (nearbyPlayerCount > 0) {
+            const trainContainer = stationElement.querySelector('.train-container');
+            if (trainContainer) {
+                // 创建玩家数量显示元素
+                const playerItem = document.createElement('div');
+                playerItem.className = 'train-item';
+                playerItem.innerHTML = `
+                    <span class="player-count">👥 ${nearbyPlayerCount}</span>
+                `;
+                trainContainer.appendChild(playerItem);
+            }
+        }
+    });
+}
+
+// 根据显示名称查找车站坐标
+function findStationCoordinatesByDisplayName(displayName) {
+    // 遍历window.stationsNetwork查找匹配的车站
+    if (!window.stationsNetwork) return null;
+    
+    for (const station of window.stationsNetwork) {
+        const stationCode = station.name.substring(0, station.name.length - 1); // 去掉最后一位（A或B）
+        if (getStationName(stationCode, lang) === displayName) {
+            return {
+                x: station.location.x,
+                z: station.location.z
+            };
+        }
+    }
+    
+    return null;
 }
 
 let offlineToastShown = false;
@@ -402,7 +475,6 @@ function displayTrains() {
             }
             
             if (data && !capturedData) {
-                // ...保留原有处理逻辑...
                 try {
                     capturedData = structuredClone(data);
                     // 为capturedData添加一个时间戳
