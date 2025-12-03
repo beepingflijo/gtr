@@ -46,6 +46,7 @@
             "zh_hant":"輸入玩家ID，用“,”隔開",
             "uk": "Введіть ID гравця..."
         },
+        "show_players_nearby":{"zh_hans":"显示附近玩家", "en": "Show nearby players", "zh_hant":"顯示附近玩家", "uk": "Показувати близьких гравців"},
         "notify_train_approaching":{"zh_hans":"列车接近预警", "en": "Notify when train approaching", "zh_hant":"列車接近預警", "uk": "Попередження про приблизний прибуток"},
         "general":{"zh_hans":"通用设置", "en": "General", "zh_hant":"一般設定", "uk": "Загальні"},
         "language":{"zh_hans":"语言", "en": "Language", "zh_hant":"語言", "uk": "Мова"},

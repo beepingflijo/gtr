@@ -724,6 +724,7 @@ header * {
     width: 36px;
     min-width: 36px;
     height: 24px;
+    min-height: 24px;
     border-radius: 16px;
     background-color: var(--color-secondary);
     position: relative;

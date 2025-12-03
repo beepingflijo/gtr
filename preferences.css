@@ -4,7 +4,7 @@ button {
 
 .item {
     width: -webkit-fill-available;
-    padding: 16px;
+    padding: 18px;
     padding-bottom: 24px;
 }
 
@@ -12,8 +12,12 @@ button {
     width: fit-content;
 }
 
-.item *:not(.item-title) {
-    margin-left: 6px;
+.item > *:not(.item-title, .pref-item-header, .storage-list) {
+    margin-left: 8px;
+}
+
+.item >.icon-btn { 
+    padding: 4px 12px;
 }
 
 .language-selection { 
@@ -26,7 +30,7 @@ button {
     align-items: center;
     justify-content: flex-start;
     gap: 6px;
-    padding: 4px;
+    padding: 4px 12px;
     height: 30px;
     border-radius: 8px;
     transition: all 0.2s ease-in-out;
@@ -37,7 +41,7 @@ button {
     min-height: 30px;
 }
 
-.pref-item > *:not(span, .switch) { 
+.pref-item > *:not(.switch) { 
     min-width: fit-content;
 }
 
@@ -66,10 +70,6 @@ button {
     filter: none;
     padding: 2px 8px;
     max-height: 24px;
-}
-
-.pref-item span:not(.pref-value) {
-    width: -webkit-fill-available;
 }
 
 .pref-value { 
@@ -130,6 +130,7 @@ button {
     flex-direction: column; 
     transition: all 0.2s ease-in-out;
     gap: 4px;
+    margin-left: 8px;
 }
 
 .storage-item:last-child {
@@ -164,11 +165,12 @@ button {
     height: fit-content;
     padding-top: 8px;
     padding-bottom: 12px;
+    gap: 1em;
 }
 
 .disclaimer, .prepared-info { 
     padding: 0 12px;
-    font-size: 0.8em;
+    font-size: 0.9em;
     color: var(--color-text-secondary);
 }
 

@@ -209,6 +209,20 @@ function init() {
     });
 }
 
+// 获取偏好设置
+function getPreferences() {
+    const prefs = localStorage.getItem('preferences');
+    if (prefs) {
+        try {
+            return JSON.parse(prefs);
+        } catch (e) {
+            console.error('Error parsing preferences:', e);
+            return {};
+        }
+    }
+    return {};
+}
+
 // 显示指定线路的车站信息函数
 function displayStations(line) {
     const stationsDisplay = document.querySelector('.stations-display');
@@ -260,9 +274,6 @@ function displayStations(line) {
     // 调用显示列车信息的函数
     //displayTrains();
     //highlightTrainsForCurrentLine();
-    
-    // 获取并显示玩家信息
-    fetchAndDisplayPlayers();
 }
 
 // 获取并显示玩家信息
@@ -271,20 +282,117 @@ function fetchAndDisplayPlayers() {
     const playerDataUrl = `https://map.nitrogen.hydcraft.cn/up/world/world/${timestamp}`;
     console.log(playerDataUrl);
     
-    fetch(playerDataUrl)
-        .then(response => response.json())
+    // 添加超时控制
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+    
+    // 首先尝试直接访问
+    fetch(playerDataUrl, { 
+        signal: controller.signal,
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('获取玩家数据成功:', data);
             if (data.players && data.players.length > 0) {
+                console.log('即将调用displayPlayers');
                 displayPlayers(data.players);
             }
         })
         .catch(error => {
-            console.warn('获取玩家数据失败:', error);
+            clearTimeout(timeoutId);
+            console.warn('直接获取玩家数据失败，尝试通过代理获取:', error);
+            
+            // 如果直接访问失败，尝试通过代理访问
+            // 使用不同的代理服务
+            const proxyUrls = [
+                `https://api.allorigins.win/get?url=${encodeURIComponent(playerDataUrl)}&callback=?`
+            ];
+            
+            // 尝试第一个代理
+            fetchProxyData(proxyUrls, 0, playerDataUrl);
+        });
+}
+
+// 递归尝试不同的代理服务
+function fetchProxyData(proxyUrls, index, originalUrl) {
+    if (index >= proxyUrls.length) {
+        console.warn('所有代理服务都尝试失败');
+        return;
+    }
+    
+    const proxyController = new AbortController();
+    const proxyTimeoutId = setTimeout(() => proxyController.abort(), 10000); // 10秒超时
+    
+    fetch(proxyUrls[index], { 
+        signal: proxyController.signal,
+        method: 'GET'
+    })
+        .then(response => {
+            clearTimeout(proxyTimeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // 处理allorigins.win返回的数据格式
+            if (proxyUrls[index].includes('allorigins.win')) {
+                try {
+                    // 如果返回的是JSONP格式或包装过的数据
+                    if (typeof data === 'string') {
+                        // 尝试解析JSONP
+                        const jsonData = JSON.parse(data.replace(/^\?\(|\)$/g, ''));
+                        if (jsonData.contents) {
+                            const playersData = JSON.parse(jsonData.contents);
+                            if (playersData.players && playersData.players.length > 0) {
+                                displayPlayers(playersData.players);
+                            }
+                        }
+                    } else if (data.contents) {
+                        // 直接返回的对象格式
+                        const playersData = JSON.parse(data.contents);
+                        if (playersData.players && playersData.players.length > 0) {
+                            displayPlayers(playersData.players);
+                        }
+                    } else {
+                        // 直接就是我们需要的数据
+                        if (data.players && data.players.length > 0) {
+                            displayPlayers(data.players);
+                        }
+                    }
+                } catch (parseError) {
+                    console.error('解析代理返回数据失败:', parseError);
+                    // 尝试下一个代理
+                    fetchProxyData(proxyUrls, index + 1, originalUrl);
+                }
+            } else {
+                // 处理其他代理服务返回的数据
+                if (data.players && data.players.length > 0) {
+                    displayPlayers(data.players);
+                }
+            }
+        })
+        .catch(proxyError => {
+            clearTimeout(proxyTimeoutId);
+            console.warn(`通过代理${proxyUrls[index]}获取玩家数据失败:`, proxyError);
+            // 尝试下一个代理
+            fetchProxyData(proxyUrls, index + 1, originalUrl);
         });
 }
 
 // 显示玩家信息
 function displayPlayers(players) {
+    if (!prefs.showPlayers) return;
     // 获取所有车站元素
     const stationElements = document.querySelectorAll('.station-list-item');
     
@@ -296,21 +404,30 @@ function displayPlayers(players) {
         const stationName = stationNameElement.textContent.trim();
         
         // 查找车站坐标（需要从network.json中获取）
-        const stationCoords = findStationCoordinatesByDisplayName(stationName);
+        const stationCode = getStationCode(stationName);
+        const stationCoords = findStationCoordinates(stationCode);
         if (!stationCoords) return;
         
         // 计算在该车站附近的玩家数量（距离小于200米）
         let nearbyPlayerCount = 0;
         players.forEach(player => {
-            const distance = Math.sqrt(
-                Math.pow(player.x - stationCoords.x, 2) + 
-                Math.pow(player.z - stationCoords.z, 2)
-            );
-            
-            if (distance <= 200) {
-                nearbyPlayerCount++;
+            let minDistance = Infinity;
+            for (const coord of stationCoords) {
+                const distance = Math.sqrt(
+                    Math.pow(player.x - coord.x, 2) + 
+                    Math.pow(player.z - coord.z, 2)
+                );
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
+                
+                if (minDistance <= 200) {
+                    nearbyPlayerCount++;
+                    break;
+                }
             }
         });
+        console.log(`在车站${stationName}附近的玩家数量为: ${nearbyPlayerCount}`);
         
         // 如果有玩家在附近，显示玩家数量
         if (nearbyPlayerCount > 0) {
@@ -318,28 +435,30 @@ function displayPlayers(players) {
             if (trainContainer) {
                 // 创建玩家数量显示元素
                 const playerItem = document.createElement('div');
-                playerItem.className = 'train-item';
+                playerItem.className = 'player-count-container';
                 playerItem.innerHTML = `
-                    <span class="player-count">👥 ${nearbyPlayerCount}</span>
+                    <span class="player-count">×${nearbyPlayerCount}</span>
+                    <img class="icon player-icon" src="./res/group.png" alt="玩家图标"></img>
                 `;
-                trainContainer.appendChild(playerItem);
+                if (!trainContainer.querySelector('.player-count')) {
+                    trainContainer.appendChild(playerItem);
+                    // 如果没有玩家数量元素，则插入元素
+                }
             }
         }
     });
 }
 
-// 根据显示名称查找车站坐标
-function findStationCoordinatesByDisplayName(displayName) {
+// 根据显示名称查找三字码
+function getStationCode(displayName) {
     // 遍历window.stationsNetwork查找匹配的车站
     if (!window.stationsNetwork) return null;
     
     for (const station of window.stationsNetwork) {
-        const stationCode = station.name.substring(0, station.name.length - 1); // 去掉最后一位（A或B）
+        // 提取前三个大写字母作为三字码
+        const stationCode = station.name.match(/[A-Z]/g)?.slice(0, 3).join('') || '';
         if (getStationName(stationCode, lang) === displayName) {
-            return {
-                x: station.location.x,
-                z: station.location.z
-            };
+            return stationCode;
         }
     }
     
@@ -355,6 +474,7 @@ let capturedData = null;
 function displayTrains() {
     // 清除现有的列车元素
     document.querySelectorAll('.train-item').forEach(el => el.remove());
+    document.querySelectorAll('.player-count-container').forEach(el => el.remove());
 
     if (!window.lines || !window.stationsNetwork) return;
 
@@ -448,191 +568,125 @@ function displayTrains() {
 
             // 验证数据结构
             if (data) {
-                // 检查是否包含trains属性且为数组
-                if (!data.trains || !Array.isArray(data.trains)) {
-                    console.error('数据结构无效: trains属性不存在或不是数组', data);
+                if (typeof data === 'object' && data.trains && Array.isArray(data.trains)) {
+                    // 验证列车数据结构的有效性
+                    const isValidTrain = (train) => {
+                        return train && 
+                               typeof train === 'object' && 
+                               train.name && 
+                               train.cars && 
+                               Array.isArray(train.cars) && 
+                               train.cars.length > 0 &&
+                               train.cars[0].leading && 
+                               train.cars[0].leading.location;
+                    };
+                    
+                    // 过滤掉无效的列车数据
+                    data.trains = data.trains.filter(isValidTrain);
+                    
+                    //console.log(`有效列车数据数量: ${data.trains.length}`);
+                } else {
+                    console.error('解析成功但数据结构无效');
                     //showToast(strings.lines_info.invalid_data_format?.[lang] || '数据格式错误');
                     return;
                 }
                 
-                // 过滤掉无效的列车数据
-                data.trains = data.trains.filter(train => {
-                    return train && 
-                           typeof train === 'object' && 
-                           train.name && 
-                           train.cars && 
-                           Array.isArray(train.cars) && 
-                           train.cars.length > 0 &&
-                           train.cars[0].leading && 
-                           train.cars[0].leading.location;
-                });
-                
-                //console.log(`有效列车数据数量: ${data.trains.length}`);
-            } else {
-                console.error('解析成功但数据结构无效');
-                //showToast(strings.lines_info.invalid_data_format?.[lang] || '数据格式错误');
-                return;
-            }
-            
-            if (data && !capturedData) {
-                try {
-                    capturedData = structuredClone(data);
-                    // 为capturedData添加一个时间戳
-                    capturedData.timestamp = Date.now();
-                } catch (cloneError) {
-                    console.warn('structuredClone失败，使用替代方法:', cloneError);
+                if (data && !capturedData) {
                     try {
-                        capturedData = JSON.parse(JSON.stringify(data));
+                        capturedData = structuredClone(data);
+                        // 为capturedData添加一个时间戳
                         capturedData.timestamp = Date.now();
-                    } catch (jsonError) {
-                        console.error('JSON序列化失败:', jsonError);
-                        capturedData = data;
-                        capturedData.timestamp = Date.now();
+                    } catch (cloneError) {
+                        console.warn('structuredClone失败，使用替代方法:', cloneError);
+                        try {
+                            capturedData = JSON.parse(JSON.stringify(data));
+                            capturedData.timestamp = Date.now();
+                        } catch (jsonError) {
+                            console.error('JSON序列化失败:', jsonError);
+                            capturedData = data;
+                            capturedData.timestamp = Date.now();
+                        }
                     }
                 }
-            }
 
-            // 不再筛选对应线路列车以及GX开头的列车
-            if (data && data.trains && Array.isArray(data.trains)) {
-                // 先清理现有的列车元素，避免重复
-                document.querySelectorAll('.train-item').forEach(el => el.remove());
-                
-                data.trains
-                    .filter(train => { 
-                        // 检查列车数据是否完整
-                        if (!train || !train.name || !train.cars || !Array.isArray(train.cars) || train.cars.length === 0) {
-                            console.warn('过滤掉不完整的列车数据:', train);
-                            return false; // 过滤掉不完整的列车数据
-                        }
-                        
-                        if (!train.cars[0].leading || !train.cars[0].leading.location) {
-                            console.warn('过滤掉缺少位置信息的列车:', train.name);
-                            return false; // 过滤掉缺少位置信息的列车
-                        }
-                        
-                        const activeLineId = getActiveLineId();
-                        return train.name;
-                        //return train.name.startsWith(activeLineId) || train.name.startsWith('GX');
-                    })
-                    .forEach(train => {
-                        //console.log('Processing train:', train.name);
-                    //data.trains.forEach(train => {
-                        // 检查是否在轨道上
-                        let closestTrackDistance = Infinity;
-                        let currentTrack = null;
-                        let trackProgress = 0;
-                        let carDirection = '';
-                        let closestSegmentDirection = null; // 保存最近线段的方向
-                        let isTrainAtStation = false; // 标记列车是否在车站
-                        //train.cars.forEach((car, index) => {
-                            //if (index < 1) {
-                                // 获取列车初始位置并进行深拷贝，避免后续随原数据变化
-                                let carPos = train.cars[0].leading.location;
-                                let isStopped = train.stopped === 'true';
+                // 不再筛选对应线路列车以及GX开头的列车
+                if (data && data.trains && Array.isArray(data.trains)) {
+                    // 先清理现有的列车元素，避免重复
+                    document.querySelectorAll('.train-item').forEach(el => el.remove());
+                    
+                    data.trains
+                        .filter(train => { 
+                            // 检查列车数据是否完整
+                            if (!train || !train.name || !train.cars || !Array.isArray(train.cars) || train.cars.length === 0) {
+                                console.warn('过滤掉不完整的列车数据:', train);
+                                return false; // 过滤掉不完整的列车数据
+                            }
+                            
+                            if (!train.cars[0].leading || !train.cars[0].leading.location) {
+                                console.warn('过滤掉缺少位置信息的列车:', train.name);
+                                return false; // 过滤掉缺少位置信息的列车
+                            }
+                            
+                            const activeLineId = getActiveLineId();
+                            return train.name;
+                            //return train.name.startsWith(activeLineId) || train.name.startsWith('GX');
+                        })
+                        .forEach(train => {
+                            //console.log('Processing train:', train.name);
+                        //data.trains.forEach(train => {
+                            // 检查是否在轨道上
+                            let closestTrackDistance = Infinity;
+                            let currentTrack = null;
+                            let trackProgress = 0;
+                            let carDirection = '';
+                            let closestSegmentDirection = null; // 保存最近线段的方向
+                            let isTrainAtStation = false; // 标记列车是否在车站
+                            //train.cars.forEach((car, index) => {
+                                //if (index < 1) {
+                                    // 获取列车初始位置并进行深拷贝，避免后续随原数据变化
+                                    let carPos = train.cars[0].leading.location;
+                                    let isStopped = train.stopped === 'true';
 
-                                // 将列车在一段时间内位移的方向定义为行驶方向
-                                let direction = getDirection(train.name, carPos, isStopped);
-                                
-                                // 首先检查列车是否在车站
-                                let closestStationDistance = Infinity;
-                                let platform = '';
-                                let stationTrainItem = null;
-                                
-                                // 检查是否为GX列车且在车站内
-                                const isGXTrain = train.name.startsWith('GX');
-                                let isStationInCurrentLine = false;
-                                
-                                // 如果是GX列车，先检查当前线路是否包含该车站
-                                if (isGXTrain) {
-                                    const currentLine = window.lines.find(line => line.id === getActiveLineId());
-                                    if (currentLine) {
-                                        // 检查当前线路是否包含列车所在车站
-                                        for (const station of currentLine.route.filter(node => node.type === 'station')) {
-                                            const stationCoords = findStationCoordinates(station.code);
-                                            for (const coord of stationCoords) {
-                                                const distance = Math.sqrt(
-                                                    Math.pow(carPos.x - coord.x, 2) + 
-                                                    Math.pow(carPos.y - coord.y, 2) + 
-                                                    Math.pow(carPos.z - coord.z, 2)
-                                                );
-                                                if (distance <= 200) {
-                                                    isStationInCurrentLine = true;
-                                                    break;
-                                                }
-                                            }
-                                            if (isStationInCurrentLine) break;
-                                        }
-                                    }
-                                }
-                                
-                                window.lines.forEach(line => {
-                                    if (line.id !== getActiveLineId()) return;
-                                    line.route.filter(node => node.type === 'station').forEach(station => {
-                                        const stationCoords = findStationCoordinates(station.code);
-                                        stationCoords.forEach(coord => {
-                                            // 确保坐标数据存在
-                                            if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
-                                                return;
-                                            }
-                                            
-                                            const distance = Math.sqrt(
-                                                Math.pow(carPos.x - coord.x, 2) + 
-                                                Math.pow(carPos.y - coord.y, 2) + 
-                                                Math.pow(carPos.z - coord.z, 2)
-                                            );
-                                            if (distance <= 200 && distance < closestStationDistance) {
-                                                closestStationDistance = distance;
-                                                // 对于GX列车，如果不在当前线路停靠，则显示省略号
-                                                if (isGXTrain && !isStationInCurrentLine) {
-                                                    platform = '…';
-                                                } else {
-                                                    // 将coord.name去掉station.code作为站台名
-                                                    platform = coord.name.replace(station.code, "");
-
-                                                    if (train.stopped === 'false') {
-                                                        // 如果列车未到站则去除站台编号中的字母
-                                                        platform = platform.replace(/[A-Za-z]/g, '') + '…';
+                                    // 将列车在一段时间内位移的方向定义为行驶方向
+                                    let direction = getDirection(train.name, carPos, isStopped);
+                                    
+                                    // 首先检查列车是否在车站
+                                    let closestStationDistance = Infinity;
+                                    let platform = '';
+                                    let stationTrainItem = null;
+                                    
+                                    // 检查是否为GX列车且在车站内
+                                    const isGXTrain = train.name.startsWith('GX');
+                                    let isStationInCurrentLine = false;
+                                    
+                                    // 如果是GX列车，先检查当前线路是否包含该车站
+                                    if (isGXTrain) {
+                                        const currentLine = window.lines.find(line => line.id === getActiveLineId());
+                                        if (currentLine) {
+                                            // 检查当前线路是否包含列车所在车站
+                                            for (const station of currentLine.route.filter(node => node.type === 'station')) {
+                                                const stationCoords = findStationCoordinates(station.code);
+                                                for (const coord of stationCoords) {
+                                                    const distance = Math.sqrt(
+                                                        Math.pow(carPos.x - coord.x, 2) + 
+                                                        Math.pow(carPos.y - coord.y, 2) + 
+                                                        Math.pow(carPos.z - coord.z, 2)
+                                                    );
+                                                    if (distance <= 200) {
+                                                        isStationInCurrentLine = true;
+                                                        break;
                                                     }
                                                 }
+                                                if (isStationInCurrentLine) break;
                                             }
-                                        });
-                                    });
-                                });
-                                
-                                // 如果列车在车站范围内，则标记为在车站
-                                if (closestStationDistance <= 140) {
-                                    isTrainAtStation = true;
+                                        }
+                                    }
                                     
-                                    // 创建列车元素并放置到对应的车站
-                                    stationTrainItem = document.createElement('div');
-                                    stationTrainItem.className = 'train-item';
-                                    
-                                    // 根据列车方向确定站台编号
-                                    let platformWithDirection = platform;
-                                    /*if (carDirection === 'down') {
-                                        // 下行方向显示为A站台
-                                        platformWithDirection = platform.replace(/[A-Za-z]/g, '') + 'A';
-                                    } else if (carDirection === 'up') {
-                                        // 上行方向显示为B站台
-                                        platformWithDirection = platform.replace(/[A-Za-z]/g, '') + 'B';
-                                    }*/
-                                    // 如果方向未知，则保持原始platform值
-                                    
-                                    stationTrainItem.innerHTML = `
-                                        <img src="./res/train.png" class="icon train-icon" style="z-index:1"></img>
-                                        <span class="train-name">${train.name}</span>
-                                        <span class="platform">${platformWithDirection} </span>
-                                    `;
-                                    
-                                    // 将列车放置到对应车站
                                     window.lines.forEach(line => {
                                         if (line.id !== getActiveLineId()) return;
                                         line.route.filter(node => node.type === 'station').forEach(station => {
                                             const stationCoords = findStationCoordinates(station.code);
-                                            let filteredCoords = stationCoords.filter(coord => 
-                                                coord.name.replace(station.code, "") === platform);
-                                            
-                                            filteredCoords.forEach(coord => {
+                                            stationCoords.forEach(coord => {
                                                 // 确保坐标数据存在
                                                 if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
                                                     return;
@@ -643,275 +697,579 @@ function displayTrains() {
                                                     Math.pow(carPos.y - coord.y, 2) + 
                                                     Math.pow(carPos.z - coord.z, 2)
                                                 );
-                                                if (distance <= 200) {
-                                                    // 找到对应车站的DOM节点
-                                                    const stationElement = document.querySelectorAll('.station-list-item');
-                                                    stationElement.forEach(element => {
-                                                        const stationName = element.querySelector('.station-name').textContent;
-                                                        if (stationName === getStationName(station.code,lang)) {
-                                                            const trainContainer = element.querySelector('.train-container');
-                                                            if (trainContainer) {
-                                                                trainContainer.appendChild(stationTrainItem);
-                                                            }
+                                                if (distance <= 200 && distance < closestStationDistance) {
+                                                    closestStationDistance = distance;
+                                                    // 对于GX列车，如果不在当前线路停靠，则显示省略号
+                                                    if (isGXTrain && !isStationInCurrentLine) {
+                                                        platform = '…';
+                                                    } else {
+                                                        // 将coord.name去掉station.code作为站台名
+                                                        platform = coord.name.replace(station.code, "");
+
+                                                        if (train.stopped === 'false') {
+                                                            // 如果列车未到站则去除站台编号中的字母
+                                                            platform = platform.replace(/[A-Za-z]/g, '') + '…';
                                                         }
-                                                    });
+                                                    }
                                                 }
                                             });
                                         });
                                     });
                                     
-                                    // 检查是否需要添加警告标志
-                                    checkAndAddWarningSign(train, stationTrainItem, true);
-                                }
-                                
-                                // 只有当列车不在车站范围内时，才执行轨道位置检测
-                                if (!isTrainAtStation) {
-                                    window.lines.forEach(line => {
-                                        const activeLineId = getActiveLineId();
-                                        const activeLineName = getLineName(activeLineId);
-                                        if (line.id !== activeLineId) return;
-                                        line.route.filter(node => node.type === 'track').forEach((track, index) => {
-                                            for (let i = 0; i < track.nodes.length - 1; i++) {
-                                                const v = track.nodes[i];
-                                                const w = track.nodes[i + 1];
-                                                const distance = distanceFromSegment(carPos, v, w);
+                                    // 如果列车在车站范围内，则标记为在车站
+                                    if (closestStationDistance <= 140) {
+                                        isTrainAtStation = true;
+                                        
+                                        // 创建列车元素并放置到对应的车站
+                                        stationTrainItem = document.createElement('div');
+                                        stationTrainItem.className = 'train-item';
+                                        
+                                        // 根据列车方向确定站台编号
+                                        let platformWithDirection = platform;
+                                        /*if (carDirection === 'down') {
+                                            // 下行方向显示为A站台
+                                            platformWithDirection = platform.replace(/[A-Za-z]/g, '') + 'A';
+                                        } else if (carDirection === 'up') {
+                                            // 上行方向显示为B站台
+                                            platformWithDirection = platform.replace(/[A-Za-z]/g, '') + 'B';
+                                        }*/
+                                        // 如果方向未知，则保持原始platform值
+                                        
+                                        stationTrainItem.innerHTML = `
+                                            <img src="./res/train.png" class="icon train-icon" style="z-index:1"></img>
+                                            <span class="train-name">${train.name}</span>
+                                            <span class="platform">${platformWithDirection} </span>
+                                        `;
+                                        
+                                        // 将列车放置到对应车站
+                                        window.lines.forEach(line => {
+                                            if (line.id !== getActiveLineId()) return;
+                                            line.route.filter(node => node.type === 'station').forEach(station => {
+                                                const stationCoords = findStationCoordinates(station.code);
+                                                let filteredCoords = stationCoords.filter(coord => 
+                                                    coord.name.replace(station.code, "") === platform);
+                                                
+                                                filteredCoords.forEach(coord => {
+                                                    // 确保坐标数据存在
+                                                    if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
+                                                        return;
+                                                    }
+                                                    
+                                                    const distance = Math.sqrt(
+                                                        Math.pow(carPos.x - coord.x, 2) + 
+                                                        Math.pow(carPos.y - coord.y, 2) + 
+                                                        Math.pow(carPos.z - coord.z, 2)
+                                                    );
+                                                    if (distance <= 200) {
+                                                        // 找到对应车站的DOM节点
+                                                        const stationElement = document.querySelectorAll('.station-list-item');
+                                                        stationElement.forEach(element => {
+                                                            const stationName = element.querySelector('.station-name').textContent;
+                                                            if (stationName === getStationName(station.code,lang)) {
+                                                                const trainContainer = element.querySelector('.train-container');
+                                                                if (trainContainer) {
+                                                                    trainContainer.appendChild(stationTrainItem);
+                                                                }
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                            });
+                                        });
+                                        
+                                        // 检查是否需要添加警告标志
+                                        checkAndAddWarningSign(train, stationTrainItem, true);
+                                    }
+                                    
+                                    // 只有当列车不在车站范围内时，才执行轨道位置检测
+                                    if (!isTrainAtStation) {
+                                        window.lines.forEach(line => {
+                                            const activeLineId = getActiveLineId();
+                                            const activeLineName = getLineName(activeLineId);
+                                            if (line.id !== activeLineId) return;
+                                            line.route.filter(node => node.type === 'track').forEach((track, index) => {
+                                                for (let i = 0; i < track.nodes.length - 1; i++) {
+                                                    const v = track.nodes[i];
+                                                    const w = track.nodes[i + 1];
+                                                    const distance = distanceFromSegment(carPos, v, w);
+                                                    
+                                                    // 添加调试日志
+                                                    //console.log(`列车 ${train.name} 到轨道段[${index}][${i}]的距离: ${distance}`);
+                                                    
+                                                    //console.log(distance);
+                                                    if (distance < closestTrackDistance && distance <= 100) { // 增加距离阈值到100
+                                                        closestTrackDistance = distance;
+                                                        const currentLine = line.id;
+                                                        currentTrack = { currentLine, track, index };
+                                                        //console.log('track:',currentTrack);
+
+                                                        // 保存最近线段的方向向量
+                                                        closestSegmentDirection = [(w.x - v.x), (w.z - v.z)];
+                                                        
+                                                        // 计算此时列车离上一个节点的距离
+                                                        const upwardDistance = calculateTotalDistance(carPos, track, index);
+                                                        //console.log('track.nodes[track.nodes.length]: ',track.nodes[track.nodes.length - 1]);
+                                                        const segmentDistance = calculateTotalDistance(track.nodes[track.nodes.length - 1], track, track.nodes.length - 1);
+                                                        trackProgress = upwardDistance / segmentDistance;
+                                                        //console.log(train.name,'trackProgress: ',trackProgress,'distance: ',upwardDistance,'/',segmentDistance);
+                                                    }
+                                                }
+                                                //console.log('track distance: ',closestTrackDistance, line.id, index);
+                                            });
+                                        });
+                                        
+                                        /*console.log(`列车 ${train.name} 轨道检测结果:`, {
+                                            isTrainAtStation: isTrainAtStation,
+                                            closestTrackDistance: closestTrackDistance,
+                                            currentTrack: currentTrack,
+                                            closestSegmentDirection: closestSegmentDirection
+                                        });*/
+                                        
+                                        // 只有找到最近的轨道段时才计算方向
+                                        if (closestSegmentDirection) {
+                                            // 计算方向向量的模长
+                                            const magDirection = Math.sqrt(direction[0] ** 2 + direction[1] ** 2);
+                                            // 计算轨道方向向量的模长
+                                            const magTrackDirection = Math.sqrt(closestSegmentDirection[0] ** 2 + closestSegmentDirection[1] ** 2);
+
+                                            // 添加调试日志
+                                            /*console.log(`列车 ${train.name} 方向计算:`, {
+                                                directionVector: direction,
+                                                trackDirectionVector: closestSegmentDirection,
+                                                magDirection: magDirection,
+                                                magTrackDirection: magTrackDirection
+                                            });*/
+
+                                            // 防止除以零
+                                            if (magDirection === 0 || magTrackDirection === 0) {
+                                                // 如果任意向量长度为0，则无法计算角度，默认设为 'unknown'
+                                                // 但我们可以尝试从localStorage中获取之前的方向
+                                                try {
+                                                    const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                                                    const currentTrainData = allTrainsData[train.name];
+                                                    if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
+                                                        carDirection = currentTrainData.direction;
+                                                        //console.log(`列车 ${train.name} 无法计算方向，继承之前方向: ${carDirection}`);
+                                                    } else {
+                                                        carDirection = 'unknown';
+                                                        //console.log(`列车 ${train.name} 无法计算方向且无历史方向，设为 unknown`);
+                                                    }
+                                                } catch (e) {
+                                                    carDirection = 'unknown';
+                                                    //console.log(`列车 ${train.name} 无法计算方向且读取历史数据失败，设为 unknown`);
+                                                }
+                                            } else {
+                                                // 计算点积
+                                                const dotProd = direction[0] * closestSegmentDirection[0] + direction[1] * closestSegmentDirection[1];
+                                                const cosAngle = dotProd / (magDirection * magTrackDirection);
                                                 
                                                 // 添加调试日志
-                                                //console.log(`列车 ${train.name} 到轨道段[${index}][${i}]的距离: ${distance}`);
-                                                
-                                                //console.log(distance);
-                                                if (distance < closestTrackDistance && distance <= 100) { // 增加距离阈值到100
-                                                    closestTrackDistance = distance;
-                                                    const currentLine = line.id;
-                                                    currentTrack = { currentLine, track, index };
-                                                    //console.log('track:',currentTrack);
+                                                /*console.log(`列车 ${train.name} 点积计算:`, {
+                                                    dotProduct: dotProd,
+                                                    cosAngle: cosAngle
+                                                });*/
 
-                                                    // 保存最近线段的方向向量
-                                                    closestSegmentDirection = [(w.x - v.x), (w.z - v.z)];
-                                                    
-                                                    // 计算此时列车离上一个节点的距离
-                                                    const upwardDistance = calculateTotalDistance(carPos, track, index);
-                                                    //console.log('track.nodes[track.nodes.length]: ',track.nodes[track.nodes.length - 1]);
-                                                    const segmentDistance = calculateTotalDistance(track.nodes[track.nodes.length - 1], track, track.nodes.length - 1);
-                                                    trackProgress = upwardDistance / segmentDistance;
-                                                    //console.log(train.name,'trackProgress: ',trackProgress,'distance: ',upwardDistance,'/',segmentDistance);
+                                                // 直接比较余弦值，避免调用 Math.acos 提升性能且增加数值稳定性
+                                                if (cosAngle > 0.1) {  // 增加一点容差
+                                                    carDirection = 'down';  // 当余弦值大于0.1，表示夹角小于约84度
+                                                } else if (cosAngle < -0.1) {  // 增加负值判断
+                                                    carDirection = 'up';    // 当余弦值小于-0.1，表示夹角大于约96度
+                                                } else {
+                                                    // 余弦值在-0.1到0.1之间，方向不确定
+                                                    carDirection = 'unknown';
+                                                    //console.log(`列车 ${train.name} 方向不确定，余弦值接近0: ${cosAngle}`);
                                                 }
+                                                //console.log(`列车 ${train.name} 方向计算结果: ${carDirection}`);
                                             }
-                                            //console.log('track distance: ',closestTrackDistance, line.id, index);
-                                        });
-                                    });
-                                    
-                                    /*console.log(`列车 ${train.name} 轨道检测结果:`, {
-                                        isTrainAtStation: isTrainAtStation,
-                                        closestTrackDistance: closestTrackDistance,
-                                        currentTrack: currentTrack,
-                                        closestSegmentDirection: closestSegmentDirection
-                                    });*/
-                                    
-                                    // 只有找到最近的轨道段时才计算方向
-                                    if (closestSegmentDirection) {
-                                        // 计算方向向量的模长
-                                        const magDirection = Math.sqrt(direction[0] ** 2 + direction[1] ** 2);
-                                        // 计算轨道方向向量的模长
-                                        const magTrackDirection = Math.sqrt(closestSegmentDirection[0] ** 2 + closestSegmentDirection[1] ** 2);
-
-                                        // 添加调试日志
-                                        /*console.log(`列车 ${train.name} 方向计算:`, {
-                                            directionVector: direction,
-                                            trackDirectionVector: closestSegmentDirection,
-                                            magDirection: magDirection,
-                                            magTrackDirection: magTrackDirection
-                                        });*/
-
-                                        // 防止除以零
-                                        if (magDirection === 0 || magTrackDirection === 0) {
-                                            // 如果任意向量长度为0，则无法计算角度，默认设为 'unknown'
-                                            // 但我们可以尝试从localStorage中获取之前的方向
+                                        } else {
+                                            // 如果没有找到最近的轨道段，则无法确定方向
+                                            // 尝试从localStorage中获取之前的方向
                                             try {
                                                 const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
                                                 const currentTrainData = allTrainsData[train.name];
                                                 if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
                                                     carDirection = currentTrainData.direction;
-                                                    //console.log(`列车 ${train.name} 无法计算方向，继承之前方向: ${carDirection}`);
+                                                   // console.log(`列车 ${train.name} 未找到最近轨道段，继承之前方向: ${carDirection}`);
                                                 } else {
                                                     carDirection = 'unknown';
-                                                    //console.log(`列车 ${train.name} 无法计算方向且无历史方向，设为 unknown`);
+                                                    //console.log(`列车 ${train.name} 未找到最近轨道段且无历史方向，设为 unknown`);
                                                 }
                                             } catch (e) {
                                                 carDirection = 'unknown';
-                                                //console.log(`列车 ${train.name} 无法计算方向且读取历史数据失败，设为 unknown`);
+                                                //console.log(`列车 ${train.name} 未找到最近轨道段且读取历史数据失败，设为 unknown`);
                                             }
-                                        } else {
-                                            // 计算点积
-                                            const dotProd = direction[0] * closestSegmentDirection[0] + direction[1] * closestSegmentDirection[1];
-                                            const cosAngle = dotProd / (magDirection * magTrackDirection);
-                                            
-                                            // 添加调试日志
-                                            /*console.log(`列车 ${train.name} 点积计算:`, {
-                                                dotProduct: dotProd,
-                                                cosAngle: cosAngle
-                                            });*/
-
-                                            // 直接比较余弦值，避免调用 Math.acos 提升性能且增加数值稳定性
-                                            if (cosAngle > 0.1) {  // 增加一点容差
-                                                carDirection = 'down';  // 当余弦值大于0.1，表示夹角小于约84度
-                                            } else if (cosAngle < -0.1) {  // 增加负值判断
-                                                carDirection = 'up';    // 当余弦值小于-0.1，表示夹角大于约96度
-                                            } else {
-                                                // 余弦值在-0.1到0.1之间，方向不确定
-                                                carDirection = 'unknown';
-                                                //console.log(`列车 ${train.name} 方向不确定，余弦值接近0: ${cosAngle}`);
-                                            }
-                                            //console.log(`列车 ${train.name} 方向计算结果: ${carDirection}`);
                                         }
-                                    } else {
-                                        // 如果没有找到最近的轨道段，则无法确定方向
-                                        // 尝试从localStorage中获取之前的方向
+
+                                        // 处理backwards属性
+                                        if (train.backwards === 'true') { 
+                                            if (carDirection !== 'unknown') {
+                                                carDirection = carDirection === 'up' ? 'down' : 'up';
+                                                //console.log(`列车 ${train.name} backwards属性为true，方向调整为: ${carDirection}`);
+                                            } else {
+                                                //console.log(`列车 ${train.name} backwards属性为true但方向未知，无法调整`);
+                                            }
+                                        }
+
+                                        // 优先考虑速度方向来确定列车方向
                                         try {
                                             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
                                             const currentTrainData = allTrainsData[train.name];
-                                            if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
-                                                carDirection = currentTrainData.direction;
-                                               // console.log(`列车 ${train.name} 未找到最近轨道段，继承之前方向: ${carDirection}`);
-                                            } else {
-                                                carDirection = 'unknown';
-                                                //console.log(`列车 ${train.name} 未找到最近轨道段且无历史方向，设为 unknown`);
+                                            
+                                            if (currentTrainData && currentTrainData.speed !== undefined && !currentTrainData.isSpeedLost) {
+                                                // 如果有有效速度信息
+                                                if (currentTrainData.speed > 5) { // 速度大于5km/h
+                                                    if (currentTrainData.speed > (currentTrainData.lastReportedSpeed || 0) + 10) {
+                                                        // 如果速度突然增加超过10km/h，可能表示方向改变
+                                                        //console.log(`列车 ${train.name} 检测到速度显著增加，可能方向改变`);
+                                                        // 这里可以添加额外的逻辑来处理方向变化
+                                                    }
+                                                    
+                                                    // 使用速度方向作为最终方向
+                                                    if (carDirection === 'unknown' && currentTrainData.direction !== 'unknown') {
+                                                        carDirection = currentTrainData.direction;
+                                                        //console.log(`列车 ${train.name} 用速度方向替代未知方向: ${carDirection}`);
+                                                    }
+                                                }
                                             }
                                         } catch (e) {
-                                            carDirection = 'unknown';
-                                            //console.log(`列车 ${train.name} 未找到最近轨道段且读取历史数据失败，设为 unknown`);
+                                            console.warn('使用速度方向确定列车方向时出错:', e);
                                         }
-                                    }
-
-                                    // 处理backwards属性
-                                    if (train.backwards === 'true') { 
-                                        if (carDirection !== 'unknown') {
-                                            carDirection = carDirection === 'up' ? 'down' : 'up';
-                                            //console.log(`列车 ${train.name} backwards属性为true，方向调整为: ${carDirection}`);
-                                        } else {
-                                            //console.log(`列车 ${train.name} backwards属性为true但方向未知，无法调整`);
-                                        }
-                                    }
-
-                                    // 优先考虑速度方向来确定列车方向
-                                    try {
-                                        const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                        const currentTrainData = allTrainsData[train.name];
                                         
-                                        if (currentTrainData && currentTrainData.speed !== undefined && !currentTrainData.isSpeedLost) {
-                                            // 如果有有效速度信息
-                                            if (currentTrainData.speed > 5) { // 速度大于5km/h
-                                                if (currentTrainData.speed > (currentTrainData.lastReportedSpeed || 0) + 10) {
-                                                    // 如果速度突然增加超过10km/h，可能表示方向改变
-                                                    //console.log(`列车 ${train.name} 检测到速度显著增加，可能方向改变`);
-                                                    // 这里可以添加额外的逻辑来处理方向变化
+                                        // 添加列车运行方向信息（与线路默认方向一致为下行，相反为上行）
+                                        const trainDirection = carDirection === 'down' ? '下行' : carDirection === 'up' ? '上行' : '未知方向';
+                                        
+                                        // 保存列车方向信息到localStorage
+                                        try {
+                                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                                            if (!allTrainsData[train.name]) {
+                                                allTrainsData[train.name] = {};
+                                            }
+                                            // 修复方向显示问题，统一使用"上行/下行"的定义
+                                            // 与轨道默认方向一致为下行（down），相反为上行（up）
+                                            // unknown表示无法确定方向
+                                            allTrainsData[train.name].direction = carDirection;
+                                            // 添加方向文本表示，用于tooltip显示
+                                            allTrainsData[train.name].directionText = trainDirection;
+                                            localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
+                                            //console.log(`列车 ${train.name} 方向信息已保存: ${carDirection} (${trainDirection})`);
+                                        } catch (e) {
+                                            console.warn('保存列车方向信息时出错:', e);
+                                        }
+
+                                    }
+
+                                    // 如果找到轨道，则在轨道上显示列车
+                                    if (currentTrack && !isTrainAtStation) {
+                                        const activeLineId = getActiveLineId();
+                                        const activeLineName = getLineName(activeLineId);
+                                        //console.log(activeLineId);
+                                        // 根据currentTrack.currentLine作为id查到的线路名称是否和activeLineName相匹配
+                                        if (currentTrack.currentLine === activeLineId) {
+                                            // 如果在轨道上，找到轨道的DOM元素并将列车信息插入进去，也就是第currentTrack.index个.station-line-block类
+                                            const trackElements = document.querySelectorAll('.station-line');
+                                            if (trackElements.length > currentTrack.index) {
+                                                const trackElement = trackElements[currentTrack.index];
+                                                //console.log(trackElement);
+                                                // 这里需要实现具体的逻辑来定位正确的轨道位置
+                                                // 可以基于当前轨道的线路颜色等特征匹配DOM上的元素
+                                                // 然后创建列车元素并将其放入.track-container中
+
+                                                const trainItem = document.createElement('div');
+                                                trainItem.className = 'train-item';
+                                                // 修复方向显示，使显示与实际方向一致
+                                                // down表示与轨道默认方向一致，显示为↓；up表示与轨道默认方向相反，显示为↑
+                                                // unknown表示无法确定方向，显示为?
+                                                let directionSymbol = '';
+                                                if (carDirection === 'up') {
+                                                    directionSymbol = '↑';
+                                                } else if (carDirection === 'down') {
+                                                    directionSymbol = '↓';
+                                                } else if (carDirection === 'unknown') {
+                                                    directionSymbol = '?';
                                                 }
                                                 
-                                                // 使用速度方向作为最终方向
-                                                if (carDirection === 'unknown' && currentTrainData.direction !== 'unknown') {
-                                                    carDirection = currentTrainData.direction;
-                                                    //console.log(`列车 ${train.name} 用速度方向替代未知方向: ${carDirection}`);
-                                                }
+                                                //console.log(`列车 ${train.name} 创建元素，方向符号: ${directionSymbol}, 方向: ${carDirection}`);
+                                                
+                                                trainItem.innerHTML = `
+                                                    <img src="./res/train.png" class="icon train-icon">
+                                                    <span class="train-name">${directionSymbol} ${train.name}</span>
+                                                `;
+                                                // 将列车项加入容器
+
+                                                // 如果匹配，则将trainItem加入trainContainer
+                                                const trainContainer = trackElement.querySelectorAll('.train-container');
+                                                trainContainer.forEach(container => { 
+                                                    container.appendChild(trainItem);
+                                                    //trainItem.style.marginTop = trackProgress * 60 + 'px' ;
+                                                    //trainItem.style.position = 'relative';
+                                                    //trainItem.style.top = '40%' ;
+                                                    //trainItem.style.bottom = '40%' ;
+                                                });
+                                                
+                                                // 检查是否需要添加警告标志
+                                                checkAndAddWarningSign(train, trainItem, false);
+                                                
+                                                // 更新已存在的列车方向箭头
+                                                updateTrainDirectionArrows();
                                             }
                                         }
-                                    } catch (e) {
-                                        console.warn('使用速度方向确定列车方向时出错:', e);
                                     }
-                                    
-                                    // 添加列车运行方向信息（与线路默认方向一致为下行，相反为上行）
-                                    const trainDirection = carDirection === 'down' ? '下行' : carDirection === 'up' ? '上行' : '未知方向';
-                                    
-                                    // 保存列车方向信息到localStorage
-                                    try {
-                                        const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                        if (!allTrainsData[train.name]) {
-                                            allTrainsData[train.name] = {};
-                                        }
-                                        // 修复方向显示问题，统一使用"上行/下行"的定义
-                                        // 与轨道默认方向一致为下行（down），相反为上行（up）
-                                        // unknown表示无法确定方向
-                                        allTrainsData[train.name].direction = carDirection;
-                                        // 添加方向文本表示，用于tooltip显示
-                                        allTrainsData[train.name].directionText = trainDirection;
-                                        localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
-                                        //console.log(`列车 ${train.name} 方向信息已保存: ${carDirection} (${trainDirection})`);
-                                    } catch (e) {
-                                        console.warn('保存列车方向信息时出错:', e);
-                                    }
+                        
+                            // 对轨道上的列车按距离上行车站由近到远排序
+                            sortTrainsOnTracks();
+                            
+                            const trainItems = document.querySelectorAll('.train-item');
+                            //console.log('train-items: ', trainItems);
+                            if (trainItems.length === 0) {
+                                //console.warn('没有找到.train-item元素');
+                            }
 
+                            // 使用Map来跟踪已经添加过事件监听器的列车元素
+                            const trainItemEventMap = new Map();
+                            
+                            // 更新完列车信息后，获取并显示玩家信息
+                            fetchAndDisplayPlayers();
+                            trainItems.forEach(item => { 
+                                // 需要和train的信息对应
+                                const trainNameElement = item.querySelector('.train-name');
+                                if (!trainNameElement) return;
+                                
+                                const fullTrainName = trainNameElement.textContent;
+                                // 检查是否已经为这个列车元素添加过事件监听器
+                                if (trainItemEventMap.has(fullTrainName)) {
+                                    return; // 已经添加过事件监听器，跳过
                                 }
+                                
+                                // 标记已经为这个列车元素添加过事件监听器
+                                trainItemEventMap.set(fullTrainName, true);
+                                
+                                // 添加点击事件监听器，跳转到列车详细信息页面
+                                item.addEventListener('click', function() {
+                                    // 提取纯列车名称（去除方向符号）
+                                    const cleanTrainName = fullTrainName.replace(/[↑↓? ]/g, '');
+                                    window.open(`trains_info.html?q=${cleanTrainName}&lang=${lang}`, '_self');
+                                });
+                                
+                                if (fullTrainName.includes(train.name)){
+                                    item.addEventListener('mouseover', function() { 
+                                        // 移除现有的train-tooltip
+                                        const existingTooltip = document.querySelectorAll('.train-tooltip');
+                                        existingTooltip.forEach(tooltip => { 
+                                            //tooltip.remove();
+                                        });
 
-                                // 如果找到轨道，则在轨道上显示列车
-                                if (currentTrack && !isTrainAtStation) {
-                                    const activeLineId = getActiveLineId();
-                                    const activeLineName = getLineName(activeLineId);
-                                    //console.log(activeLineId);
-                                    // 根据currentTrack.currentLine作为id查到的线路名称是否和activeLineName相匹配
-                                    if (currentTrack.currentLine === activeLineId) {
-                                        // 如果在轨道上，找到轨道的DOM元素并将列车信息插入进去，也就是第currentTrack.index个.station-line-block类
-                                        const trackElements = document.querySelectorAll('.station-line');
-                                        if (trackElements.length > currentTrack.index) {
-                                            const trackElement = trackElements[currentTrack.index];
-                                            //console.log(trackElement);
-                                            // 这里需要实现具体的逻辑来定位正确的轨道位置
-                                            // 可以基于当前轨道的线路颜色等特征匹配DOM上的元素
-                                            // 然后创建列车元素并将其放入.track-container中
+                                        const trainTooltip = document.createElement('div');
+                                        trainTooltip.classList.add('tooltip');
+                                        trainTooltip.classList.add('train-tooltip');
+                                        
+                                        trainTooltip.innerHTML = '';
 
-                                            const trainItem = document.createElement('div');
-                                            trainItem.className = 'train-item';
-                                            // 修复方向显示，使显示与实际方向一致
-                                            // down表示与轨道默认方向一致，显示为↓；up表示与轨道默认方向相反，显示为↑
-                                            // unknown表示无法确定方向，显示为?
-                                            let directionSymbol = '';
-                                            if (carDirection === 'up') {
-                                                directionSymbol = '↑';
-                                            } else if (carDirection === 'down') {
-                                                directionSymbol = '↓';
-                                            } else if (carDirection === 'unknown') {
-                                                directionSymbol = '?';
-                                            }
-                                            
-                                            //console.log(`列车 ${train.name} 创建元素，方向符号: ${directionSymbol}, 方向: ${carDirection}`);
-                                            
-                                            trainItem.innerHTML = `
-                                                <img src="./res/train.png" class="icon train-icon">
-                                                <span class="train-name">${directionSymbol} ${train.name}</span>
+                                        const trainTooltipTitle = document.createElement('h4');
+                                        trainTooltipTitle.className = 'train-tooltip-title';
+                                        trainTooltipTitle.textContent = train.name;
+                                        trainTooltip.appendChild(trainTooltipTitle);
+
+                                        train.cars.forEach(car => {
+                                            const carName = car.id;
+                                            const carType = car.type;
+                                            const carPos = train.backwards === 'true' ? car.trailing.location : car.leading.location;
+                                            //console.log(carName, carType, carPos);
+                                            const carPosX = Math.round(carPos.x, 2);
+                                            const carPosZ = Math.round(carPos.z, 2);
+                                            const locationItem = document.createElement('div');
+                                            locationItem.classList.add('location-item'); 
+                                            locationItem.innerHTML = `
+                                                <div class="car-name">${carName}</div>
+                                                <div class="car-pos">(${carPosX},${carPosZ})</div>
                                             `;
-                                            // 将列车项加入容器
+                                            trainTooltip.appendChild(locationItem);
+                                        });
+                                        item.insertBefore(trainTooltip, item.firstChild);
 
-                                            // 如果匹配，则将trainItem加入trainContainer
-                                            const trainContainer = trackElement.querySelectorAll('.train-container');
-                                            trainContainer.forEach(container => { 
-                                                container.appendChild(trainItem);
-                                                //trainItem.style.marginTop = trackProgress * 60 + 'px' ;
-                                                //trainItem.style.position = 'relative';
-                                                //trainItem.style.top = '40%' ;
-                                                //trainItem.style.bottom = '40%' ;
-                                            });
+                                        const isBackwardsElement = document.createElement("div");
+                                        isBackwardsElement.className = "is-backwards";
+                                        isBackwardsElement.textContent = train.backwards === 'true' ? strings.lines_info.going_backwards[lang] : '';
+                                        trainTooltip.appendChild(isBackwardsElement);
+                                        
+                                        // 检查列车是否在车站内（通过检查是否有.platform元素）
+                                        const platformElement = item.querySelector('.platform');
+                                        if (platformElement) {
+                                            // 车站内的列车，根据方向更新站台编号
+                                            const platformText = platformElement.textContent.trim();
+                                            let newPlatformText = platformText;
                                             
-                                            // 检查是否需要添加警告标志
-                                            checkAndAddWarningSign(train, trainItem, false);
+                                            // 从localStorage获取列车方向信息
+                                            try {
+                                                const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                                                const currentTrainData = allTrainsData[train.name];
+                                                
+                                                if (currentTrainData && currentTrainData.direction !== undefined) {
+                                                    const carDirection = currentTrainData.direction;
+                                                    
+                                                    // 根据方向更新站台编号
+                                                    /*if (carDirection === 'down') {
+                                                        // 下行方向显示为A站台
+                                                        newPlatformText = platformText.replace(/[A-Za-z]/g, '') + 'A';
+                                                    } else if (carDirection === 'up') {
+                                                        // 上行方向显示为B站台
+                                                        newPlatformText = platformText.replace(/[A-Za-z]/g, '') + 'B';
+                                                    }*/
+                                                    // 如果方向未知，则保持原始platform值
+                                                    
+                                                    // 更新站台编号
+                                                    platformElement.textContent = newPlatformText + ' ';
+                                                }
+                                            } catch (e) {
+                                                console.warn('更新车站内列车站台编号时出错:', e);
+                                            }
                                             
-                                            // 更新已存在的列车方向箭头
-                                            updateTrainDirectionArrows();
+                                            // 车站内的列车不显示方向箭头
+                                        } else {
+                                            // 添加列车运行方向信息
+                                            const directionElement = document.createElement("div");
+                                            directionElement.className = "train-direction";
+                                            // 确定列车运行方向文本，修复方向显示逻辑
+                                            // up表示与轨道默认方向相反，为上行；down表示与轨道默认方向一致，为下行
+                                            // unknown表示无法确定方向
+                                            let directionText = '';
+                                            if (carDirection === 'up') {
+                                                directionText = strings.lines_info.running_direction_up[lang] || '上行';
+                                            } else if (carDirection === 'down') {
+                                                directionText = strings.lines_info.running_direction_down[lang] || '下行';
+                                            } else if (carDirection === 'unknown') {
+                                                directionText = strings.lines_info.unknown_direction[lang] || '未知方向';
+                                            }
+                                            directionElement.textContent = directionText;
+                                            //trainTooltip.appendChild(directionElement);
                                         }
-                                    }
-                                }
-                            //}
-                        //});
-                        
-                        // 对轨道上的列车按距离上行车站由近到远排序
-                        sortTrainsOnTracks();
-                        
-                        const trainItems = document.querySelectorAll('.train-item');
-                        //console.log('train-items: ', trainItems);
-                        if (trainItems.length === 0) {
-                            //console.warn('没有找到.train-item元素');
-                        }
+                                        
+                                        // 从localStorage获取之前计算并存储的速度信息
+                                        try {
+                                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                                            const currentTrainData = allTrainsData[train.name];
+                                            const isStopped = train.isStopped === 'true';
+                                            
+                                            if (currentTrainData && currentTrainData.speed !== undefined) {
+                                                let speed = isStopped ? 0 : currentTrainData.speed.toFixed();
+                                                const speedElement = document.createElement("div");
+                                                speedElement.className = "train-speed";
+                                                
+                                                // 如果速度丢失，则继承之前的速度值
+                                                if (currentTrainData.isSpeedLost && currentTrainData.prevSpeed !== undefined) {
+                                                    speed = currentTrainData.prevSpeed.toFixed();
+                                                }
+                                                
+                                                speedElement.textContent = (strings.lines_info.speed[lang] + speed + 'km/h');
+                                                // 如果速度丢失，则将文本不透明度调整为0.4
+                                                speedElement.style.opacity = currentTrainData.isSpeedLost ? '0.4' : '1';
+                                                trainTooltip.appendChild(speedElement);
+                                            }
+                                        } catch (e) {
+                                            console.warn('获取列车速度时出错:', e);
+                                        }
+                                        
+                                        // 添加警告原因信息
+                                        try {
+                                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                                            const currentTrainData = allTrainsData[train.name];
+                                            
+                                            if (currentTrainData && currentTrainData.warningReasons && currentTrainData.warningReasons.length > 0) {
+                                                const warningReasonsElement = document.createElement("div");
+                                                warningReasonsElement.className = "warning-reasons";
+                                                warningReasonsElement.style.color = 'crimson';
+                                                warningReasonsElement.style.fontWeight = 'bold';
+                                                
+                                                let reasonsText = '! ';
+                                                currentTrainData.warningReasons.forEach(reason => {
+                                                    switch (reason) {
+                                                        case 'long_stop':
+                                                            reasonsText += strings.lines_info.warning_long_stop[lang] + '; ';
+                                                            break;
+                                                        case 'zero_speed':
+                                                            reasonsText += strings.lines_info.warning_zero_speed[lang] + '; ';
+                                                            break;
+                                                        case 'platform_conflict':
+                                                            reasonsText += strings.lines_info.warning_platform_conflict[lang] + '; ';
+                                                    }
+                                                });
+                                                
+                                                // 移除末尾的分号和空格
+                                                reasonsText = reasonsText.slice(0, -2);
+                                                warningReasonsElement.textContent = reasonsText;
+                                                trainTooltip.appendChild(warningReasonsElement);
+                                            }
+                                        } catch (e) {
+                                            console.warn('获取列车警告原因时出错:', e);
+                                        }
 
-                        // 使用Map来跟踪已经添加过事件监听器的列车元素
-                        const trainItemEventMap = new Map();
+                                        // 只显示第一个trainTooltip，其余隐藏
+                                    });
+                                    item.addEventListener('mouseout', function() { 
+                                        const trainTooltip = item.querySelector('.train-tooltip');
+                                        if (trainTooltip) {
+                                            trainTooltip.remove();
+                                        }
+                                    });
+
+                                }
+                            });
+
+                            // 更新已存在的tooltip内容
+                            updateExistingTooltips(data);
+
+                            const activeLineId = getActiveLineId();
+                            const activeLineName = getLineName(activeLineId);
+
+                            loadSegmentInfo();
+
+                            let trainNames = [];
+                            trainItems.forEach(item => {
+                                const trainName = item.querySelector('.train-name').textContent;
+                                //console.log(trainName);
+                                // 如果列车运行线路不是其所属线路或者找不到列车信息则降低不透明度
+                                const trainInfo = window.trainsInfo.find(t => t.name === trainName);
+                                if (!trainInfo || (trainInfo && trainInfo.line !== activeLineId)) {
+                                    const iconElement = item.querySelector('.train-icon');
+                                    const nameElement = item.querySelector('.train-name');
+                                    const platformElement = item.querySelector('.platform');
+                                    iconElement.style.opacity = 0.4;
+                                    nameElement.style.opacity = 0.4;
+                                    if (platformElement) { platformElement.style.opacity = 0.4; }
+                                }
+                                // 如果列车名称在trainNames中则移除
+                                if (trainNames.includes(trainName)) {
+                                    item.remove();
+                                }
+                                trainNames.push(trainName);
+                            });
+
+                            // 更新线路信息显示
+                            updateLineInfoDisplay(activeLineId);
+                    
+                        });
                         
+                    }
+                capturedData = structuredClone(data);
+                // 为capturedData添加一个时间戳
+                capturedData.timestamp = structuredClone(Date.now());
+                
+                // 更新已存在的列车方向箭头
+                updateTrainDirectionArrows();
+            }
+        } else {
+            console.error('数据结构无效，无法处理列车信息');
+            // 即使列车数据无效，也更新线路信息
+            const activeLineId = getActiveLineId();
+            updateLineInfoDisplay(activeLineId);
+            loadSegmentInfo();
+        }
+    };
+    xhr.send();
+    //highlightTrainsForCurrentLine();
+}
+
+
+
 // 对轨道上的列车按距离上行车站由近到远排序
 function sortTrainsOnTracks() {
     const stationLines = document.querySelectorAll('.station-line');
@@ -960,243 +1318,6 @@ function sortTrainsOnTracks() {
             trainContainer.appendChild(trainItem);
         });
     });
-}
-
-                        trainItems.forEach(item => { 
-                            // 需要和train的信息对应
-                            const trainNameElement = item.querySelector('.train-name');
-                            if (!trainNameElement) return;
-                            
-                            const fullTrainName = trainNameElement.textContent;
-                            // 检查是否已经为这个列车元素添加过事件监听器
-                            if (trainItemEventMap.has(fullTrainName)) {
-                                return; // 已经添加过事件监听器，跳过
-                            }
-                            
-                            // 标记已经为这个列车元素添加过事件监听器
-                            trainItemEventMap.set(fullTrainName, true);
-                            
-                            // 添加点击事件监听器，跳转到列车详细信息页面
-                            item.addEventListener('click', function() {
-                                // 提取纯列车名称（去除方向符号）
-                                const cleanTrainName = fullTrainName.replace(/[↑↓? ]/g, '');
-                                window.open(`trains_info.html?q=${cleanTrainName}&lang=${lang}`, '_self');
-                            });
-                            
-                            if (fullTrainName.includes(train.name)){
-                                item.addEventListener('mouseover', function() { 
-                                    // 移除现有的train-tooltip
-                                    const existingTooltip = document.querySelectorAll('.train-tooltip');
-                                    existingTooltip.forEach(tooltip => { 
-                                        //tooltip.remove();
-                                    });
-
-                                    const trainTooltip = document.createElement('div');
-                                    trainTooltip.classList.add('tooltip');
-                                    trainTooltip.classList.add('train-tooltip');
-                                    
-                                    trainTooltip.innerHTML = '';
-
-                                    const trainTooltipTitle = document.createElement('h4');
-                                    trainTooltipTitle.className = 'train-tooltip-title';
-                                    trainTooltipTitle.textContent = train.name;
-                                    trainTooltip.appendChild(trainTooltipTitle);
-
-                                    train.cars.forEach(car => {
-                                        const carName = car.id;
-                                        const carType = car.type;
-                                        const carPos = train.backwards === 'true' ? car.trailing.location : car.leading.location;
-                                        //console.log(carName, carType, carPos);
-                                        const carPosX = Math.round(carPos.x, 2);
-                                        const carPosZ = Math.round(carPos.z, 2);
-                                        const locationItem = document.createElement('div');
-                                        locationItem.classList.add('location-item'); 
-                                        locationItem.innerHTML = `
-                                            <div class="car-name">${carName}</div>
-                                            <div class="car-pos">(${carPosX},${carPosZ})</div>
-                                        `;
-                                        trainTooltip.appendChild(locationItem);
-                                    });
-                                    item.insertBefore(trainTooltip, item.firstChild);
-
-                                    const isBackwardsElement = document.createElement("div");
-                                    isBackwardsElement.className = "is-backwards";
-                                    isBackwardsElement.textContent = train.backwards === 'true' ? strings.lines_info.going_backwards[lang] : '';
-                                    trainTooltip.appendChild(isBackwardsElement);
-                                    
-                                    // 检查列车是否在车站内（通过检查是否有.platform元素）
-                                    const platformElement = item.querySelector('.platform');
-                                    if (platformElement) {
-                                        // 车站内的列车，根据方向更新站台编号
-                                        const platformText = platformElement.textContent.trim();
-                                        let newPlatformText = platformText;
-                                        
-                                        // 从localStorage获取列车方向信息
-                                        try {
-                                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                            const currentTrainData = allTrainsData[train.name];
-                                            
-                                            if (currentTrainData && currentTrainData.direction !== undefined) {
-                                                const carDirection = currentTrainData.direction;
-                                                
-                                                // 根据方向更新站台编号
-                                                /*if (carDirection === 'down') {
-                                                    // 下行方向显示为A站台
-                                                    newPlatformText = platformText.replace(/[A-Za-z]/g, '') + 'A';
-                                                } else if (carDirection === 'up') {
-                                                    // 上行方向显示为B站台
-                                                    newPlatformText = platformText.replace(/[A-Za-z]/g, '') + 'B';
-                                                }*/
-                                                // 如果方向未知，则保持原始platform值
-                                                
-                                                // 更新站台编号
-                                                platformElement.textContent = newPlatformText + ' ';
-                                            }
-                                        } catch (e) {
-                                            console.warn('更新车站内列车站台编号时出错:', e);
-                                        }
-                                        
-                                        // 车站内的列车不显示方向箭头
-                                    } else {
-                                        // 添加列车运行方向信息
-                                        const directionElement = document.createElement("div");
-                                        directionElement.className = "train-direction";
-                                        // 确定列车运行方向文本，修复方向显示逻辑
-                                        // up表示与轨道默认方向相反，为上行；down表示与轨道默认方向一致，为下行
-                                        // unknown表示无法确定方向
-                                        let directionText = '';
-                                        if (carDirection === 'up') {
-                                            directionText = strings.lines_info.running_direction_up[lang] || '上行';
-                                        } else if (carDirection === 'down') {
-                                            directionText = strings.lines_info.running_direction_down[lang] || '下行';
-                                        } else if (carDirection === 'unknown') {
-                                            directionText = strings.lines_info.unknown_direction[lang] || '未知方向';
-                                        }
-                                        directionElement.textContent = directionText;
-                                        //trainTooltip.appendChild(directionElement);
-                                    }
-                                    
-                                    // 从localStorage获取之前计算并存储的速度信息
-                                    try {
-                                        const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                        const currentTrainData = allTrainsData[train.name];
-                                        const isStopped = train.isStopped === 'true';
-                                        
-                                        if (currentTrainData && currentTrainData.speed !== undefined) {
-                                            let speed = isStopped ? 0 : currentTrainData.speed.toFixed();
-                                            const speedElement = document.createElement("div");
-                                            speedElement.className = "train-speed";
-                                            
-                                            // 如果速度丢失，则继承之前的速度值
-                                            if (currentTrainData.isSpeedLost && currentTrainData.prevSpeed !== undefined) {
-                                                speed = currentTrainData.prevSpeed.toFixed();
-                                            }
-                                            
-                                            speedElement.textContent = (strings.lines_info.speed[lang] + speed + 'km/h');
-                                            // 如果速度丢失，则将文本不透明度调整为0.4
-                                            speedElement.style.opacity = currentTrainData.isSpeedLost ? '0.4' : '1';
-                                            trainTooltip.appendChild(speedElement);
-                                        }
-                                    } catch (e) {
-                                        console.warn('获取列车速度时出错:', e);
-                                    }
-                                    
-                                    // 添加警告原因信息
-                                    try {
-                                        const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                        const currentTrainData = allTrainsData[train.name];
-                                        
-                                        if (currentTrainData && currentTrainData.warningReasons && currentTrainData.warningReasons.length > 0) {
-                                            const warningReasonsElement = document.createElement("div");
-                                            warningReasonsElement.className = "warning-reasons";
-                                            warningReasonsElement.style.color = 'crimson';
-                                            warningReasonsElement.style.fontWeight = 'bold';
-                                            
-                                            let reasonsText = '! ';
-                                            currentTrainData.warningReasons.forEach(reason => {
-                                                switch (reason) {
-                                                    case 'long_stop':
-                                                        reasonsText += strings.lines_info.warning_long_stop[lang] + '; ';
-                                                        break;
-                                                    case 'zero_speed':
-                                                        reasonsText += strings.lines_info.warning_zero_speed[lang] + '; ';
-                                                        break;
-                                                    case 'platform_conflict':
-                                                        reasonsText += strings.lines_info.warning_platform_conflict[lang] + '; ';
-                                                }
-                                            });
-                                            
-                                            // 移除末尾的分号和空格
-                                            reasonsText = reasonsText.slice(0, -2);
-                                            warningReasonsElement.textContent = reasonsText;
-                                            trainTooltip.appendChild(warningReasonsElement);
-                                        }
-                                    } catch (e) {
-                                        console.warn('获取列车警告原因时出错:', e);
-                                    }
-
-                                    // 只显示第一个trainTooltip，其余隐藏
-                                });
-                                item.addEventListener('mouseout', function() { 
-                                    const trainTooltip = item.querySelector('.train-tooltip');
-                                    if (trainTooltip) {
-                                        trainTooltip.remove();
-                                    }
-                                });
-
-                            }
-                        });
-
-                        // 更新已存在的tooltip内容
-                        updateExistingTooltips(data);
-
-                        const activeLineId = getActiveLineId();
-                        const activeLineName = getLineName(activeLineId);
-
-                        loadSegmentInfo();
-
-                        let trainNames = [];
-                        trainItems.forEach(item => {
-                            const trainName = item.querySelector('.train-name').textContent;
-                            //console.log(trainName);
-                            // 如果列车运行线路不是其所属线路或者找不到列车信息则降低不透明度
-                            const trainInfo = window.trainsInfo.find(t => t.name === trainName);
-                            if (!trainInfo || (trainInfo && trainInfo.line !== activeLineId)) {
-                                const iconElement = item.querySelector('.train-icon');
-                                const nameElement = item.querySelector('.train-name');
-                                const platformElement = item.querySelector('.platform');
-                                iconElement.style.opacity = 0.4;
-                                nameElement.style.opacity = 0.4;
-                                if (platformElement) { platformElement.style.opacity = 0.4; }
-                            }
-                            // 如果列车名称在trainNames中则移除
-                            if (trainNames.includes(trainName)) {
-                                item.remove();
-                            }
-                            trainNames.push(trainName);
-                        });
-
-                        // 更新线路信息显示
-                        updateLineInfoDisplay(activeLineId);
-                        
-                    });
-                capturedData = structuredClone(data);
-                // 为capturedData添加一个时间戳
-                capturedData.timestamp = structuredClone(Date.now());
-                
-                // 更新已存在的列车方向箭头
-                updateTrainDirectionArrows();
-            }
-        } else {
-            console.error('数据结构无效，无法处理列车信息');
-            // 即使列车数据无效，也更新线路信息
-            const activeLineId = getActiveLineId();
-            updateLineInfoDisplay(activeLineId);
-            loadSegmentInfo();
-        }
-    };
-    xhr.send();
-    //highlightTrainsForCurrentLine();
 }
 
 // 新增函数：更新线路信息显示

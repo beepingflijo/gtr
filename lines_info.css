@@ -150,7 +150,7 @@
     overflow: visible;
 }
 
-.train-item {
+.train-item, .player-count-container {
     display: flex;
     flex-direction: row-reverse;
     align-items: center;
@@ -160,11 +160,11 @@
     cursor: pointer;
 }
 
-.train-item:hover {
+.train-item:hover, .player-count-container:hover {
     transform: scale(1.05);
 }
 
-.train-item img {
+.train-item img, .player-count-container img {
     width: 12px;
     height: 12px;
     z-index: 1;
@@ -174,6 +174,10 @@
     color: var(--color-text-secondary);
     margin: 0 4px;
     font-size: 12px;
+}
+
+.player-count-container {
+    margin-right: 6px;
 }
 
 .segment-length {

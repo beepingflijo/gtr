@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
             window.strings = stringsData;
             init();
             initFollowPlayersPref();
+            initShowPlayersSwitch();
             initTrainApproachingSwitch();
             initLanguageSelector();
             initThemeSelector();
@@ -77,6 +78,8 @@ function init() {
     toggleLogin.style.color = 'var(--color-primary)';
     const followPlayersPref = document.getElementById('followPlayersPref');
     followPlayersPref.textContent = strings.preferences.following_players[lang];
+    const showPlayersPref = document.getElementById('showPlayersPref');
+    showPlayersPref.textContent = strings.preferences.show_players_nearby[lang];
     const notifyTrainApproachingPref = document.getElementById('notifyTrainApproachingPref');
     notifyTrainApproachingPref.textContent = strings.preferences.notify_train_approaching[lang];
 
@@ -171,6 +174,21 @@ function initFollowPlayersPref() {
     followPlayers.addEventListener('change', () => { 
         console.log(followPlayers.value);
         prefs.followPlayers = followPlayers.value;
+        savePreferences(prefs);
+    });
+}
+
+function initShowPlayersSwitch() { 
+    const prefs = getPreferences();
+    const showPlayersSwitch = document.querySelector('.show-players');
+    if (prefs.showPlayers) { 
+        showPlayersSwitch.classList.add('active');
+    } else { 
+        showPlayersSwitch.classList.remove('active');
+    }
+    showPlayersSwitch.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        prefs.showPlayers = isActive;
         savePreferences(prefs);
     });
 }
@@ -636,6 +654,41 @@ function handleWindowResize() {
     const header = document.querySelector('header');
     const main = document.querySelector('main');
     const languageSelector = document.querySelector('.language-selection');
+
+    const prefItems = document.querySelectorAll('.pref-item');
+    prefItems.forEach(item => { 
+        if (item.classList.contains('storage-list')) return;
+        item.style.flexDirection = 'row';
+        item.style.alignItems = 'center';
+        item.style.justifyContent = 'space-between';
+        item.style.height = '30px';
+        // 如果item的子元素有#followPlayers
+        if (item.querySelector('#followPlayers')) { 
+            item.style.height = 'fit-content';
+        }
+        // 如果item的id是moreLinkPref
+        if (item.id === 'moreLinkPref') { 
+            item.style.justifyContent = 'flex-start';
+            item.style.height = 'fit-content';
+        }
+
+        item.querySelector('*').style.width = 'fit-content';
+        let itemTotalWidth = 0;
+        let itemTotalHeight = 0;
+        Array.from(item.children).forEach(child => { 
+            const childWidth = child.getBoundingClientRect().width;
+            itemTotalWidth += childWidth;
+            itemTotalHeight += child.getBoundingClientRect().height;
+        });
+        const changeDirection = itemTotalWidth + 36 > item.getBoundingClientRect().width;
+        if (changeDirection) { 
+            item.style.flexDirection = 'column';
+            item.style.alignItems = 'flex-end';
+            item.style.justifyContent = 'flex-start';
+            item.style.height = itemTotalHeight + 8 + 'px';
+            item.querySelector('*').style.width = '-webkit-fill-available';
+        }
+    });
     
     // 检查是否是由于虚拟键盘弹出导致的窗口大小变化
     // 通过检测窗口宽度没有变化而高度发生变化来判断
