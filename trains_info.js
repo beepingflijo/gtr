@@ -800,43 +800,12 @@ function getTrainLimitSpeed(trainName) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.getTrainLimitSpeed(trainName);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    // 从本地的data/trains_info.json获取列车限速信息
-    if (!window.trainsInfo) {
-        console.warn('Trains info data not loaded yet');
-        return 360; // 默认限速360 km/h
-    }
-    
-    // 从已加载的数据中查找列车信息
-    const trainInfo = window.trainsInfo.find(train => train.name === trainName);
-    if (trainInfo && trainInfo.maxSpeed) {
-        //console.log(`Train ${trainName} limit speed: ${trainInfo.maxSpeed} km/h`);
-        return trainInfo.maxSpeed;
-    } else {
-        return 360; // 默认限速360 km/h
-    }
 }
 
 function getLineForTrain(trainName, mode = 'name') { 
     // 使用PositionUtils模块
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.getLineForTrain(trainName, mode);
-    }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    // 从本地的data/trains_info.json获取列车线路信息
-    if (!window.trainsInfo) {
-        console.warn('Trains info data not loaded yet');
-        return null;
-    }
-    
-    // 从已加载的数据中查找列车信息
-    const trainInfo = window.trainsInfo.find(train => train.name === trainName);
-    if (trainInfo && trainInfo.line) {
-        //console.log(`Train ${trainName} line: ${trainInfo.line}`);
-        if (mode === 'id') return trainInfo.line;
-        else return getLineName(trainInfo.line);
     }
 }
 
@@ -845,9 +814,6 @@ function getLineName(lineId = '') {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.getLineName(lineId);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    return lines.find(line => line.id === lineId).name[lang];
 }
 
 function getLineColor(lineId = '') {
@@ -855,30 +821,12 @@ function getLineColor(lineId = '') {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.getLineColor(lineId);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    const line = lines.find(line => line.id === lineId);
-    return line ? line.color : 'var(--color-text-secondary)'; // 如果找不到线路，返回默认灰色
 }
 
 function getSeriesForTrain(trainName) {
     // 使用PositionUtils模块
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.getSeriesForTrain(trainName);
-    }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    // 从本地的data/trains_info.json获取列车车系信息
-    if (!window.trainsInfo) {
-        console.warn('Trains info data not loaded yet');
-        return null;
-    }
-    
-    // 从已加载的数据中查找列车信息
-    const trainInfo = window.trainsInfo.find(train => train.name === trainName);
-    if (trainInfo && trainInfo.series) {
-        //console.log(`Train ${trainName} series: ${trainInfo.series}`);
-        return trainInfo.series;
     }
 }
 
@@ -888,34 +836,6 @@ function findClosestTrack(position) {
     if (typeof PositionUtils !== 'undefined') {
         // PositionUtils.findClosestTrackOnAllLines 是更全面的实现
         return PositionUtils.findClosestTrackOnAllLines(position);
-    }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    let closestTrack = null;
-    let minDistance = Infinity;
-    
-    for (const line of window.lines) {
-        for (let i = 0; i < line.route.length; i++) {
-            const segment = line.route[i];
-            if (segment.type === 'track') {
-                for (let j = 0; j < segment.nodes.length - 1; j++) {
-                    const node1 = segment.nodes[j];
-                    const node2 = segment.nodes[j + 1];
-                    const distance = distanceFromSegment(position, node1, node2);
-                        
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestTrack = {
-                            line: line,
-                            segment: segment,
-                            segmentIndex: i,
-                            nodeIndex: j,
-                            distance: distance
-                        };
-                    }
-                }
-            }
-        }
     }
     
     return closestTrack;
@@ -928,35 +848,6 @@ function findClosestTrackOnAllLines(position) {
         return PositionUtils.findClosestTrackOnAllLines(position);
     }
     
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    let closestTrack = null;
-    let minDistance = Infinity;
-    
-    // 遍历所有线路查找最近的轨道
-    for (const line of window.lines) {
-        for (let i = 0; i < line.route.length; i++) {
-            const segment = line.route[i];
-            if (segment.type === 'track') {
-                for (let j = 0; j < segment.nodes.length - 1; j++) {
-                    const node1 = segment.nodes[j];
-                    const node2 = segment.nodes[j + 1];
-                    const distance = distanceFromSegment(position, node1, node2);
-                    
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        closestTrack = {
-                            line: line,
-                            segment: segment,
-                            segmentIndex: i,
-                            nodeIndex: j,
-                            distance: distance
-                        };
-                    }
-                }
-            }
-        }
-    }
-    
     return closestTrack;
 }
 
@@ -966,18 +857,6 @@ function distanceFromSegment(p, v, w) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.distanceFromSegment(p, v, w);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    const l2 = Math.pow(v.x - w.x, 2) + Math.pow(v.z - w.z, 2);
-    if (l2 === 0) return Math.sqrt(Math.pow(p.x - v.x, 2) + Math.pow(p.z - v.z, 2));
-    
-    let t = ((p.x - v.x) * (w.x - v.x) + (p.z - v.z) * (w.z - v.z)) / l2;
-    t = Math.max(0, Math.min(1, t));
-    const projection = {
-        x: v.x + t * (w.x - v.x),
-        z: v.z + t * (w.z - v.z)
-    };
-    return Math.sqrt(Math.pow(p.x - projection.x, 2) + Math.pow(p.z - projection.z, 2));
 }
 
 // 查找线路上最近的车站
@@ -986,35 +865,6 @@ function findClosestStation(line, position, direction = null) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.findClosestStation(line, position, direction);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    let closestStation = null;
-    let minDistance = Infinity;
-    
-    for (let i = 0; i < line.route.length; i++) {
-        const node = line.route[i];
-        if (node.type === 'station') {
-            // 查找车站的所有坐标点
-            const stationCoords = findStationCoordinates(node.code, direction);
-            for (const coord of stationCoords) {
-                const distance = Math.sqrt(
-                    Math.pow(position.x - coord.x, 2) +
-                    Math.pow(position.z - coord.z, 2)
-                );
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestStation = {
-                        station: node,
-                        distance: distance,
-                        coordinates: coord
-                    };
-                }
-            }
-        }
-    }
-    
-    return closestStation;
 }
 
 // 查找车站坐标
@@ -1024,28 +874,6 @@ function findStationCoordinates(stationCode, filterType = null) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.findStationCoordinates(stationCode, filterType);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    if (!window.stationsNetwork) return [];
-    
-    let filteredStations = window.stationsNetwork
-        .filter(station => station.name.startsWith(stationCode));
-    
-    // 如果提供了过滤类型，则进一步过滤
-    if (filterType === 'up') {
-        // 上行站台：以B结尾
-        filteredStations = filteredStations.filter(station => /^[A-Z0-9]+[0-9]B$/.test(station.name));
-    } else if (filterType === 'down') {
-        // 下行站台：以A结尾
-        filteredStations = filteredStations.filter(station => /^[A-Z0-9]+[0-9]A$/.test(station.name));
-    }
-    
-    return filteredStations.map(station => ({
-        name: station.name,
-        x: station.location.x,
-        y: station.location.y,
-        z: station.location.z
-    }));
 }
 
 // 根据方向查找下一站
@@ -1054,35 +882,6 @@ function findNextStation(line, currentStation, direction) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.findNextStation(line, currentStation, direction);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    // 找到当前车站在线路中的位置
-    const stationIndex = line.route.findIndex(node => 
-        node.type === 'station' && node.code === currentStation.code);
-    
-    if (stationIndex === -1) return null;
-    
-    // 根据列车方向查找下一站
-    let nextStationIndex;
-    if (direction === 'down') {
-        // 下行方向，查找后面的车站
-        for (let i = stationIndex + 1; i < line.route.length; i++) {
-            if (line.route[i].type === 'station') {
-                nextStationIndex = i;
-                break;
-            }
-        }
-    } else if (direction === 'up') {
-        // 上行方向，查找前面的车站
-        for (let i = stationIndex - 1; i >= 0; i--) {
-            if (line.route[i].type === 'station') {
-                nextStationIndex = i;
-                break;
-            }
-        }
-    }
-    
-    return nextStationIndex !== undefined ? line.route[nextStationIndex] : null;
 }
 
 // 获取车站名称
@@ -1091,13 +890,6 @@ function getStationName(stationCode, lang) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.getStationName(stationCode, lang);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    const stationNames = window.strings.station_names;
-    if (stationNames[stationCode]) {
-        return stationNames[stationCode][lang] || stationNames[stationCode].zh_hans || stationCode;
-    }
-    return stationCode;
 }
 
 // 计算到车站的距离
@@ -1106,23 +898,6 @@ function calculateDistanceToStation(position, station, direction = null) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.calculateDistanceToStation(position, station, direction);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    const stationCoords = findStationCoordinates(station.code, direction);
-    if (stationCoords.length === 0) return Infinity;
-    
-    let minDistance = Infinity;
-    for (const coord of stationCoords) {
-        const distance = Math.sqrt(
-            Math.pow(position.x - coord.x, 2) +
-            Math.pow(position.z - coord.z, 2)
-        );
-        if (distance < minDistance) {
-            minDistance = distance;
-        }
-    }
-    
-    return minDistance;
 }
 
 // 计算两点间距离
@@ -1131,10 +906,6 @@ function calculateDistance(v, w) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.calculateDistance(v, w);
     }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    //console.log ('calculating distance: ',v, w);
-    return Math.sqrt(Math.pow(v.x - w.x, 2) + Math.pow(v.z - w.z, 2));
 }
 
 // 测量线路总长度
@@ -1243,67 +1014,6 @@ function checkAndUpdateTrainWarnings(train, position) {
     }
 }
 
-// 检查列车是否在车站的辅助函数
-function checkIfTrainAtStation(trainName, position) {
-    // 使用PositionUtils模块
-    if (typeof PositionUtils !== 'undefined') {
-        return PositionUtils.checkIfTrainAtStation(trainName, position);
-    }
-    
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    try {
-        // 获取所有线路信息
-        const lines = window.lines || [];
-        
-        // 查找列车所在的线路
-        let trainLine = null;
-        
-        // 优先通过trains_info.json数据获取列车线路信息
-        const lineFromData = getLineForTrain(trainName, 'id');
-        if (lineFromData) {
-            trainLine = window.lines.find(line => line.id === lineFromData);
-        }
-        
-        // 如果trains_info.json中没有线路信息，才通过位置信息来判断列车在哪条线路上
-        if (!trainLine) {
-            const closestTrack = findClosestTrack(position);
-            if (closestTrack) {
-                trainLine = closestTrack.line;
-            }
-        }
-        
-        // 检查列车是否在车站范围内
-        if (trainLine) {
-            // 检查列车是否在车站
-            for (const node of trainLine.route) {
-                if (node.type === 'station') {
-                    const stationCoords = findStationCoordinates(node.code, 'zh'); // 使用默认语言
-                    for (const coord of stationCoords) {
-                        // 确保坐标数据存在
-                        if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
-                            continue;
-                        }
-                        
-                        const distance = Math.sqrt(
-                            Math.pow(position.x - coord.x, 2) + 
-                            Math.pow(position.y - coord.y, 2) + 
-                            Math.pow(position.z - coord.z, 2)
-                        );
-                        
-                        if (distance <= 200) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        
-        return false;
-    } catch (e) {
-        console.warn('检查列车是否在车站时出错:', e);
-        return false;
-    }
-}
 
 // 添加防抖变量
 let searchTimeout;

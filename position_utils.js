@@ -513,11 +513,14 @@ const PositionUtils = (function() {
     }
     
     /**
-     * 检查并更新列车警告状态
+     * 检查列车警告条件
      * @param {Object} train - 列车对象
-     * @param {Object} position - 列车位置
+     * @param {Object} position - 列车位置（可选）
+     * @param {Element} trainItem - 列车DOM元素（可选）
+     * @param {boolean} isAtStation - 是否在车站（可选）
+     * @returns {Object} 警告信息对象
      */
-    function checkAndUpdateTrainWarnings(train, position) {
+    function checkTrainWarnings(train, position, trainItem, isAtStation) {
         try {
             // 从localStorage获取列车数据
             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
@@ -528,7 +531,7 @@ const PositionUtils = (function() {
             let warningReasons = [];
             
             // 条件1: 列车在轨道上的车速为0且不在任何车站
-            if (currentTrainData && currentTrainData.speed === 0) {
+            if (position && currentTrainData && currentTrainData.speed === 0) {
                 // 检查列车是否在任何车站
                 const isAtStation = checkIfTrainAtStation(train.name, position);
                 if (!isAtStation) {
@@ -548,13 +551,126 @@ const PositionUtils = (function() {
                 }
             }
             
+            // 条件3: 列车在车站内停靠超过3分钟
+            if (isAtStation && currentTrainData && currentTrainData.timestamp) {
+                const currentTime = Date.now();
+                const timeInStation = currentTime - currentTrainData.timestamp;
+                // 3分钟 = 180000毫秒
+                if (timeInStation > 180000) {
+                    shouldShowWarning = true;
+                    warningReasons.push('long_stop');
+                }
+            }
+            
+            // 条件4: 有多于一辆列车停靠在同一站台（不考虑AB后缀）且该列车不是离站台最近的列车
+            if (trainItem && isAtStation) {
+                // 获取当前列车所在站台（去除AB后缀）
+                const platformElement = trainItem.querySelector('.platform');
+                if (platformElement) {
+                    const platformText = platformElement.textContent.trim();
+                    const platformNumber = platformText.replace(/[A-Za-z]/g, '');
+                    
+                    // 获取当前列车所在的车站名称
+                    let currentStationName = '';
+                    const stationListItem = trainItem.closest('.station-list-item');
+                    if (stationListItem) {
+                        const stationNameElement = stationListItem.querySelector('.station-name');
+                        if (stationNameElement) {
+                            currentStationName = stationNameElement.textContent.trim();
+                        }
+                    }
+                    
+                    // 查找同一车站内相同站台编号的其他列车
+                    const samePlatformTrains = [];
+                    document.querySelectorAll('.station-list-item').forEach(stationElement => {
+                        const stationNameElement = stationElement.querySelector('.station-name');
+                        // 确保是同一个车站
+                        if (stationNameElement && stationNameElement.textContent.trim() === currentStationName) {
+                            const trainContainer = stationElement.querySelector('.train-container');
+                            if (trainContainer) {
+                                const trains = trainContainer.querySelectorAll('.train-item');
+                                trains.forEach(trainEl => {
+                                    const platElement = trainEl.querySelector('.platform');
+                                    if (platElement) {
+                                        const platText = platElement.textContent.trim();
+                                        const platNumber = platText.replace(/[A-Za-z]/g, '');
+                                        if (platNumber === platformNumber) {
+                                            const trainNameElement = trainEl.querySelector('.train-name');
+                                            if (trainNameElement) {
+                                                samePlatformTrains.push({
+                                                    element: trainEl,
+                                                    trainName: trainNameElement.textContent.trim()
+                                                });
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    
+                    // 如果有多于一辆列车在同一站台
+                    if (samePlatformTrains.length > 1) {
+                        // 获取所有列车的坐标数据
+                        const trainPositions = [];
+                        samePlatformTrains.forEach(trainObj => {
+                            const trainData = allTrainsData[trainObj.trainName];
+                            if (trainData && trainData.position) {
+                                trainPositions.push({
+                                    element: trainObj.element,
+                                    position: trainData.position,
+                                    name: trainObj.trainName
+                                });
+                            }
+                        });
+                        
+                        // 简化处理：如果有多个列车在同一站台，除了第一个，其他都显示警告
+                        if (trainPositions.length > 1) {
+                            // 找到当前列车在数组中的位置
+                            const currentIndex = trainPositions.findIndex(pos => pos.name === train.name);
+                            // 如果不是第一个（最靠近的），则显示警告
+                            if (currentIndex > 0) {
+                                shouldShowWarning = true;
+                                warningReasons.push('platform_conflict');
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return {
+                shouldShowWarning,
+                warningReasons
+            };
+        } catch (e) {
+            console.warn('检查列车警告条件时出错:', e);
+            return {
+                shouldShowWarning: false,
+                warningReasons: []
+            };
+        }
+    }
+    
+    /**
+     * 检查并更新列车警告状态
+     * @param {Object} train - 列车对象
+     * @param {Object} position - 列车位置
+     */
+    function checkAndUpdateTrainWarnings(train, position) {
+        // 使用统一的警告检测函数
+        const warningInfo = checkTrainWarnings(train, position);
+        
+        try {
+            // 从localStorage获取列车数据
+            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+            
             // 更新localStorage中的警告信息
             if (!allTrainsData[train.name]) {
                 allTrainsData[train.name] = {};
             }
             
-            if (shouldShowWarning) {
-                allTrainsData[train.name].warningReasons = warningReasons;
+            if (warningInfo.shouldShowWarning) {
+                allTrainsData[train.name].warningReasons = warningInfo.warningReasons;
             } else {
                 delete allTrainsData[train.name].warningReasons;
             }
@@ -630,116 +746,16 @@ const PositionUtils = (function() {
      * @param {boolean} isAtStation - 是否在车站
      */
     function checkAndAddWarningSign(train, trainItem, isAtStation) {
+        // 使用统一的警告检测函数
+        const warningInfo = checkTrainWarnings(train, null, trainItem, isAtStation);
+        
         // 从localStorage获取列车数据
         try {
             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-            const currentTrainData = allTrainsData[train.name];
-            
-            // 检查是否需要添加警告标志
-            let shouldShowWarning = false;
-            let warningReasons = [];
-            
-            // 条件1: 列车在车站内停靠超过3分钟
-            if (isAtStation && currentTrainData && currentTrainData.timestamp) {
-                const currentTime = Date.now();
-                const timeInStation = currentTime - currentTrainData.timestamp;
-                // 3分钟 = 180000毫秒
-                if (timeInStation > 180000) {
-                    shouldShowWarning = true;
-                    warningReasons.push('long_stop');
-                }
-            }
-            
-            // 条件2: 列车在轨道上的车速为0
-            // 修改条件：只有当列车不在任何车站时才显示警告
-            if (currentTrainData && currentTrainData.speed === 0) {
-                // 检查列车是否在任何车站
-                const isAtAnyStation = checkIfTrainAtAnyStation(train.name);
-                if (!isAtAnyStation) {
-                    shouldShowWarning = true;
-                    warningReasons.push('zero_speed');
-                }
-            }
-            
-            // 条件3: 有多于一辆列车停靠在同一站台（不考虑AB后缀）且该列车不是离站台最近的列车
-            if (isAtStation) {
-                // 获取当前列车所在站台（去除AB后缀）
-                const platformElement = trainItem.querySelector('.platform');
-                if (platformElement) {
-                    const platformText = platformElement.textContent.trim();
-                    const platformNumber = platformText.replace(/[A-Za-z]/g, '');
-                    
-                    // 获取当前列车所在的车站名称
-                    let currentStationName = '';
-                    const stationListItem = trainItem.closest('.station-list-item');
-                    if (stationListItem) {
-                        const stationNameElement = stationListItem.querySelector('.station-name');
-                        if (stationNameElement) {
-                            currentStationName = stationNameElement.textContent.trim();
-                        }
-                    }
-                    
-                    // 查找同一车站内相同站台编号的其他列车
-                    const samePlatformTrains = [];
-                    document.querySelectorAll('.station-list-item').forEach(stationElement => {
-                        const stationNameElement = stationElement.querySelector('.station-name');
-                        // 确保是同一个车站
-                        if (stationNameElement && stationNameElement.textContent.trim() === currentStationName) {
-                            const trainContainer = stationElement.querySelector('.train-container');
-                            if (trainContainer) {
-                                const trains = trainContainer.querySelectorAll('.train-item');
-                                trains.forEach(trainEl => {
-                                    const platElement = trainEl.querySelector('.platform');
-                                    if (platElement) {
-                                        const platText = platElement.textContent.trim();
-                                        const platNumber = platText.replace(/[A-Za-z]/g, '');
-                                        if (platNumber === platformNumber) {
-                                            const trainNameElement = trainEl.querySelector('.train-name');
-                                            if (trainNameElement) {
-                                                samePlatformTrains.push({
-                                                    element: trainEl,
-                                                    trainName: trainNameElement.textContent.trim()
-                                                });
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    });
-                    
-                    // 如果有多于一辆列车在同一站台
-                    if (samePlatformTrains.length > 1) {
-                        // 获取所有列车的坐标数据
-                        const trainPositions = [];
-                        samePlatformTrains.forEach(trainObj => {
-                            const trainData = allTrainsData[trainObj.trainName];
-                            if (trainData && trainData.position) {
-                                trainPositions.push({
-                                    element: trainObj.element,
-                                    position: trainData.position,
-                                    name: trainObj.trainName
-                                });
-                            }
-                        });
-                        
-                        // 简化处理：如果有多个列车在同一站台，除了第一个，其他都显示警告
-                        if (trainPositions.length > 1) {
-                            // 找到当前列车在数组中的位置
-                            const currentIndex = trainPositions.findIndex(pos => pos.name === train.name);
-                            // 如果不是第一个（最靠近的），则显示警告
-                            if (currentIndex > 0) {
-                                shouldShowWarning = true;
-                                warningReasons.push('platform_conflict');
-                            }
-                        }
-                    }
-                }
-            }
             
             // 根据检查结果添加或移除警告标志
             const existingWarning = trainItem.querySelector('.warning');
-            if (shouldShowWarning && !existingWarning) {
+            if (warningInfo.shouldShowWarning && !existingWarning) {
                 // 添加警告标志
                 const warningSpan = document.createElement('span');
                 warningSpan.className = 'warning';
@@ -753,9 +769,9 @@ const PositionUtils = (function() {
                 if (!allTrainsData[train.name]) {
                     allTrainsData[train.name] = {};
                 }
-                allTrainsData[train.name].warningReasons = warningReasons;
+                allTrainsData[train.name].warningReasons = warningInfo.warningReasons;
                 localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
-            } else if (!shouldShowWarning && existingWarning) {
+            } else if (!warningInfo.shouldShowWarning && existingWarning) {
                 // 移除警告标志
                 existingWarning.remove();
                 trainItem.style.color = ''; // 恢复默认颜色
