@@ -335,7 +335,7 @@ const PositionUtils = (function() {
             })
             .catch(error => {
                 clearTimeout(timeoutId);
-                console.warn('获取玩家数据失败:', error);
+                //console.warn('获取玩家数据失败:', error);
                 
                 // 如果直接访问失败，尝试通过代理访问
                 const proxyUrls = [
@@ -355,7 +355,7 @@ const PositionUtils = (function() {
      */
     function fetchProxyData(proxyUrls, index, originalUrl, callback) {
         if (index >= proxyUrls.length) {
-            console.warn('所有代理服务都尝试失败');
+            //console.warn('所有代理服务都尝试失败');
             return;
         }
         
@@ -407,7 +407,7 @@ const PositionUtils = (function() {
             })
             .catch(proxyError => {
                 clearTimeout(proxyTimeoutId);
-                console.warn(`通过代理${proxyUrls[index]}获取玩家数据失败:`, proxyError);
+                //console.warn(`通过代理${proxyUrls[index]}获取玩家数据失败:`, proxyError);
                 fetchProxyData(proxyUrls, index + 1, originalUrl, callback);
             });
     }
@@ -664,18 +664,56 @@ const PositionUtils = (function() {
             // 从localStorage获取列车数据
             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
             
-            // 更新localStorage中的警告信息
+            // 检查是否已有列车数据
             if (!allTrainsData[train.name]) {
                 allTrainsData[train.name] = {};
             }
             
-            if (warningInfo.shouldShowWarning) {
+            // 获取之前的警告状态
+            const previousWarningReasons = allTrainsData[train.name].warningReasons || [];
+            const hadWarning = previousWarningReasons.length > 0;
+            const hasWarning = warningInfo.shouldShowWarning;
+            
+            // 更新localStorage中的警告信息
+            if (hasWarning) {
                 allTrainsData[train.name].warningReasons = warningInfo.warningReasons;
             } else {
                 delete allTrainsData[train.name].warningReasons;
             }
             
             localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
+            
+            // 只有在首次触发警告时才发送通知（之前没有警告，现在有警告）
+            if (hasWarning && !hadWarning) {
+                // 获取列车速度
+                let trainSpeed = 0;
+                if (allTrainsData[train.name] && allTrainsData[train.name].speed !== undefined) {
+                    trainSpeed = allTrainsData[train.name].speed;
+                }
+                
+                // 尝试获取列车位置信息
+                let trainPosition = null;
+                try {
+                    if (allTrainsData[train.name] && allTrainsData[train.name].position) {
+                        trainPosition = {
+                            x: allTrainsData[train.name].position.x,
+                            y: allTrainsData[train.name].position.y,
+                            z: allTrainsData[train.name].position.z
+                        };
+                    }
+                } catch (e) {
+                    console.warn('获取列车位置信息失败:', e);
+                }
+                
+                // 调用script.js中的通知函数发送网络故障预警通知
+                if (typeof window.sendNetworkWarningNotification === 'function') {
+                    window.sendNetworkWarningNotification(
+                        train.name, 
+                        warningInfo.warningReasons, 
+                        trainPosition
+                    );
+                }
+            }
         } catch (e) {
             console.warn('检查并更新列车警告状态时出错:', e);
         }
@@ -753,9 +791,23 @@ const PositionUtils = (function() {
         try {
             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
             
+            // 检查是否已有列车数据
+            if (!allTrainsData[train.name]) {
+                allTrainsData[train.name] = {};
+            }
+            
+            // 获取之前的警告状态
+            const previousWarningReasons = allTrainsData[train.name].warningReasons || [];
+            const hadWarning = previousWarningReasons.length > 0;
+            const hasWarning = warningInfo.shouldShowWarning;
+
+            const trainPosition = train.cars[0].leading.location;
+
+            let notified = false;
+            
             // 根据检查结果添加或移除警告标志
             const existingWarning = trainItem.querySelector('.warning');
-            if (warningInfo.shouldShowWarning && !existingWarning) {
+            if (hasWarning && !existingWarning) {
                 // 添加警告标志
                 const warningSpan = document.createElement('span');
                 warningSpan.className = 'warning';
@@ -766,21 +818,38 @@ const PositionUtils = (function() {
                 trainItem.style.color = 'crimson';
                 
                 // 保存警告原因到localStorage
-                if (!allTrainsData[train.name]) {
-                    allTrainsData[train.name] = {};
-                }
                 allTrainsData[train.name].warningReasons = warningInfo.warningReasons;
                 localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
-            } else if (!warningInfo.shouldShowWarning && existingWarning) {
+                
+                // 只有在首次触发警告时才发送通知（之前没有警告，现在有警告）
+                if (!hadWarning) {
+                    // 获取列车速度
+                    let trainSpeed = 0;
+                    if (allTrainsData[train.name] && allTrainsData[train.name].speed !== undefined) {
+                        trainSpeed = allTrainsData[train.name].speed;
+                    }
+                    
+                    // 调用script.js中的通知函数发送网络故障预警通知
+                    if (typeof window.sendNetworkWarningNotification === 'function') {
+                        window.sendNetworkWarningNotification(
+                            train.name, 
+                            warningInfo.warningReasons, 
+                            trainPosition
+                        );
+                    }
+                }
+            } else if (!hasWarning && existingWarning) {
                 // 移除警告标志
                 existingWarning.remove();
                 trainItem.style.color = ''; // 恢复默认颜色
                 
                 // 清除localStorage中的警告原因
-                if (allTrainsData[train.name]) {
-                    delete allTrainsData[train.name].warningReasons;
-                    localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
-                }
+                delete allTrainsData[train.name].warningReasons;
+                localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
+            } else if (hasWarning && existingWarning) {
+                // 如果已经有警告标志，但警告原因可能发生变化，更新localStorage
+                allTrainsData[train.name].warningReasons = warningInfo.warningReasons;
+                localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
             }
         } catch (e) {
             console.warn('检查列车警告标志时出错:', e);

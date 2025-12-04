@@ -10,6 +10,38 @@ try {
 }
 window.prefs = prefs;
 
+// 请求通知权限
+function requestNotificationPermission() {
+    return new Promise((resolve) => {
+        if (!("Notification" in window)) {
+            console.log("This browser does not support notifications");
+            resolve(false);
+            return;
+        }
+        
+        if (Notification.permission === "granted") {
+            console.log("Notification permission already granted");
+            resolve(true);
+            return;
+        }
+        
+        if (Notification.permission === "denied") {
+            console.log("Notification permission denied");
+            resolve(false);
+            return;
+        }
+        
+        // 当权限是"default"时，请求权限
+        Notification.requestPermission().then(permission => {
+            console.log("Notification permission result:", permission);
+            resolve(permission === "granted");
+        }).catch(error => {
+            console.error("Error requesting notification permission:", error);
+            resolve(false);
+        });
+    });
+}
+
 // 从strings.json获取strings
 document.addEventListener('DOMContentLoaded', () => { 
     fetch('strings.json')
@@ -336,7 +368,7 @@ function initLanguageSelector() {
             if (strings[currentPage].page_title[langKey]) {
                 languages.push({
                     code: langKey,
-                    class: `lang-${langKey.replace('_', '-')}`,
+                class: `lang-${langKey.replace('_', '-')}`,
                     textKey: langKey
                 });
             }
@@ -738,6 +770,152 @@ function initBlurLayers() {
     });
 }
         
+// 发送列车网络故障预警通知
+async function sendNetworkWarningNotification(trainName, warningReasons, trainPosition, trainSpeed) {
+    // 检查用户是否启用了通知功能
+    if (!prefs.notifyNetworkWarning) {
+        console.log('Network warning notifications disabled in preferences');
+        return;
+    }
+    
+    // 请求通知权限（如果还没有获得）
+    const hasPermission = await requestNotificationPermission();
+    if (!hasPermission) {
+        console.log("No permission to send notifications");
+        return;
+    }
+    
+    // 初始化PositionUtils模块（如果尚未初始化）
+    try {
+        if (typeof PositionUtils !== 'undefined' && typeof window.trainsInfo !== 'undefined' && 
+            typeof window.lines !== 'undefined' && typeof window.stationsNetwork !== 'undefined' &&
+            typeof window.strings !== 'undefined') {
+            // 检查PositionUtils是否已初始化
+            // 通过尝试获取一个已知列车的线路信息来判断
+            const testLine = PositionUtils.getLineForTrain(trainName, 'id');
+            if (!testLine) {
+                // 如果返回null，则说明模块未初始化，需要初始化
+                PositionUtils.init({
+                    trainsInfo: window.trainsInfo,
+                    stationsNetwork: window.stationsNetwork,
+                    lines: window.lines,
+                    strings: window.strings,
+                    lang: lang
+                });
+                console.log('PositionUtils module initialized in script.js');
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to initialize PositionUtils:', e);
+    }
+    
+    // 构建通知标题和正文
+    let title = trainName;
+    if (warningReasons.includes('zero_speed')) {
+        title += ' ' + strings.lines_info.warning_zero_speed[lang];
+    } else if (warningReasons.includes('long_stop')) {
+        title += ' ' + strings.lines_info.warning_long_stop[lang];
+    } else if (warningReasons.includes('platform_conflict')) {
+        title += ' ' + strings.lines_info.warning_platform_conflict[lang];
+    }
+    
+    // 获取列车位置、线路和附近车站信息
+    let body = '';
+    if (trainPosition) {
+        // 获取线路信息
+        let lineInfo = strings.trains_info.line_unregistered[lang];
+        try {
+            if (typeof PositionUtils !== 'undefined') {
+                lineInfo = PositionUtils.getLineForTrain(trainName) || lineInfo;
+            } else {
+                // 降级处理：从localStorage中获取线路信息
+                const trainsInfo = JSON.parse(localStorage.getItem('trains_info') || '{}');
+                if (trainsInfo[trainName] && trainsInfo[trainName].line) {
+                    // 获取线路名称
+                    if (window.lines) {
+                        const line = window.lines.find(l => l.id === trainsInfo[trainName].line);
+                        if (line && line.name) {
+                            lineInfo = line.name[lang] || line.name.zh_hans || line.name.en || line.id;
+                        } else {
+                            lineInfo = trainsInfo[trainName].line;
+                        }
+                    } else {
+                        lineInfo = trainsInfo[trainName].line;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('获取列车线路信息失败:', e);
+        }
+        
+        // 获取附近车站信息
+        let nearbyStation = strings.lines_info.final_station[lang];
+        try {
+            // 尝试使用PositionUtils获取最近的车站
+            if (typeof PositionUtils !== 'undefined' && window.lines) {
+                // 查找最近的线路
+                const closestTrack = PositionUtils.findClosestTrackOnAllLines(trainPosition);
+                if (closestTrack && closestTrack.line) {
+                    const closestStation = PositionUtils.findClosestStation(closestTrack.line, trainPosition);
+                    if (closestStation && closestStation.station) {
+                        // 获取车站名称
+                        const stationCode = closestStation.station.code;
+                        if (stationCode) {
+                            nearbyStation = PositionUtils.getStationName(stationCode, lang);
+                        } else {
+                            nearbyStation = stationCode || strings.lines_info.final_station[lang];
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('获取附近车站信息失败:', e);
+        }
+        
+        body = `(${trainPosition.x.toFixed(0)}, ${trainPosition.y.toFixed(0)}, ${trainPosition.z.toFixed(0)}), ${lineInfo} ${strings.trains_info.near[lang] + nearbyStation}`;
+    } else {
+        body = '位置信息不可用';
+    }
+    
+    console.log('Sending notification:', title, body);
+    
+    // 使用标准 Notifications API
+    if ("Notification" in window && Notification.permission === "granted") {
+        console.log('Using standard Notification API');
+        try {
+            new Notification(title, {
+                body: body,
+                icon: './res/network_warning.png',
+                tag: 'network-warning-' + trainName,
+            });
+            console.log('Notification sent successfully');
+            return; // 成功发送通知，直接返回
+        } catch (error) {
+            console.error('Standard Notification API failed:', error);
+        }
+    }
+    
+    // 如果标准 Notifications API 不可用或失败，尝试使用 Service Worker
+    if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
+        console.log('Attempting to use Service Worker notification');
+        try {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration) {
+                await registration.showNotification(title, {
+                    body: body,
+                    icon: './res/network_warning.png',
+                    tag: 'network-warning-' + trainName,
+                });
+                console.log('Service Worker notification sent successfully');
+                return;
+            }
+        } catch (error) {
+            console.error('Service Worker notification failed:', error);
+        }
+    }
+    
+    console.log('Both Notification APIs failed, unable to send notification');
+}
 
 // 在DOM内容加载完成后调用hideNonActiveSelectionItems函数
 document.addEventListener('DOMContentLoaded', () => {
