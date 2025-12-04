@@ -82,8 +82,12 @@ function init() {
     followPlayersPref.textContent = strings.preferences.following_players[lang];
     const showPlayersPref = document.getElementById('showPlayersPref');
     showPlayersPref.textContent = strings.preferences.show_players_nearby[lang];
+    const allowNotificationsPref = document.getElementById('allowNotificationPref');
+    allowNotificationsPref.textContent = strings.preferences.allow_notifications[lang];
     const notifyTrainApproachingPref = document.getElementById('notifyTrainApproachingPref');
     notifyTrainApproachingPref.textContent = strings.preferences.notify_train_approaching[lang];
+    const networkWarningPref = document.getElementById('notifyNetworkWarningPref');
+    networkWarningPref.textContent = strings.preferences.notify_network_warning[lang];
 
     const generalPref = document.getElementById('generalPref');
     generalPref.textContent = strings.preferences.general[lang];
