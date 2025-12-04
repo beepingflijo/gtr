@@ -1830,7 +1830,7 @@ function handleWindowResize() {
     if (isVirtualKeyboardOpen || isInputFocused) return;
     
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
-    if (window.innerWidth < 600) {
+    if (window.innerWidth < 720) {
         sideBar.style.opacity = 0;
         sideBar.style.position = 'fixed';
         sideBar.style.right = '100%';

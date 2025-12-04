@@ -184,7 +184,7 @@
     margin-left: 18px;
 }
 
-.train-tooltip { 
+.train-tooltip, .player-tooltip { 
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -198,6 +198,13 @@
     color: var(--color-text);
     max-width: 108px;
     z-index: 10;
+}
+
+.tooltip-title {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
 }
 
 .train-tooltip .location-item { 

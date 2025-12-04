@@ -181,8 +181,14 @@ function initFollowPlayersPref() {
 function initShowPlayersSwitch() { 
     const prefs = getPreferences();
     const showPlayersSwitch = document.querySelector('.show-players');
-    if (prefs.showPlayers) { 
+    // 默认开启显示玩家开关
+    if (prefs.showPlayers !== false) { 
         showPlayersSwitch.classList.add('active');
+        // 确保首次使用时保存默认值
+        if (prefs.showPlayers === undefined) {
+            prefs.showPlayers = true;
+            savePreferences(prefs);
+        }
     } else { 
         showPlayersSwitch.classList.remove('active');
     }
@@ -196,8 +202,14 @@ function initShowPlayersSwitch() {
 function initTrainApproachingSwitch() {
     const prefs = getPreferences();
     const trainApproachingSwitch = document.querySelector('.notify-train-approaching');
-    if (prefs.notifyTrainApproaching) { 
+    // 默认开启列车接近通知开关
+    if (prefs.notifyTrainApproaching !== false) { 
         trainApproachingSwitch.classList.add('active');
+        // 确保首次使用时保存默认值
+        if (prefs.notifyTrainApproaching === undefined) {
+            prefs.notifyTrainApproaching = true;
+            savePreferences(prefs);
+        }
     } else { 
         trainApproachingSwitch.classList.remove('active');
     }
@@ -719,7 +731,7 @@ function handleWindowResize() {
     if (isVirtualKeyboardOpen || isInputFocused) return;
     
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
-    if (window.innerWidth < 640) {
+    if (window.innerWidth < 720) {
         searchBar.style.display = 'none';
 
         footer.style.opacity = 1;

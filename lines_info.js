@@ -410,6 +410,7 @@ function displayPlayers(players) {
         
         // 计算在该车站附近的玩家数量（距离小于200米）
         let nearbyPlayerCount = 0;
+        let nearbyPlayers = [];
         players.forEach(player => {
             let minDistance = Infinity;
             for (const coord of stationCoords) {
@@ -423,6 +424,7 @@ function displayPlayers(players) {
                 
                 if (minDistance <= 200) {
                     nearbyPlayerCount++;
+                    nearbyPlayers.push(player.name);
                     break;
                 }
             }
@@ -440,6 +442,22 @@ function displayPlayers(players) {
                     <span class="player-count">×${nearbyPlayerCount}</span>
                     <img class="icon player-icon" src="./res/group.png" alt="玩家图标"></img>
                 `;
+                playerItem.addEventListener('mouseover', () => {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip player-tooltip';
+                    tooltip.innerHTML = `
+                        <div class="tooltip-title">
+                            <img class="icon" src="./res/group.png" alt="玩家图标"></img>
+                            <h4 class="tooltip-title-text">${strings.lines_info.nearby_players[lang]}</h4>
+                        </div>
+                        <div class="tooltip-content">
+                            <span class="tooltip-content-text">${nearbyPlayers.join('<br />')}</span>
+                        </div>`
+                    playerItem.appendChild(tooltip);
+                })
+                playerItem.addEventListener('mouseout', () => {
+                    playerItem.removeChild(playerItem.querySelector('.tooltip'));
+                })
                 if (!trainContainer.querySelector('.player-count')) {
                     trainContainer.appendChild(playerItem);
                     // 如果没有玩家数量元素，则插入元素
@@ -1959,7 +1977,7 @@ function handleWindowResize() {
         activeTab.removeChild(activeTab.children[1]);
     }
     
-    if (window.innerWidth < 600) {
+    if (window.innerWidth < 720) {
         sideBar.style.opacity = 0;
         sideBar.style.position = 'fixed';
         sideBar.style.right = '100%';

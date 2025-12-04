@@ -224,7 +224,8 @@
             "en": "Station conflict or holding suspected", 
             "zh_hant":"疑似月臺衝突或信號前停車", 
             "uk": "Схоже на конфлікт станції або тимчасове зупинки"
-        }
+        },
+        "nearby_players":{"zh_hans":"附近玩家", "en": "Nearby players", "zh_hant":"附近玩家", "uk": "Близькі гравці"}
     },
     "ticket_calculator": {
         "page_title": {"zh_hans": "票价计算", "en": "Fare Calculator", "zh_hant": "票價計算", "uk": "Калькулятор тарифів"},
