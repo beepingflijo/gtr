@@ -302,6 +302,7 @@
         "line_unregistered":{"zh_hans":"未分配线路", "en": "Unregistered Line", "zh_hant":"未分配路線", "uk": "Незареєстрована лінія"},
         "searching_for":{"zh_hans":"正在搜索", "en": "Searching for ", "zh_hant":"正在搜尋", "uk": "Пошук "},
         "search_placeholder":{"zh_hans":"车号/站名/线路…","en": "Train/Station/Line...","zh_hant":"車號/站名/路線…","uk": "Потяг/Станція/Лінія..."},
-        "near":{"zh_hans":"近", "en": "near ", "zh_hant":"近", "uk": "близько "}
+        "near":{"zh_hans":"近", "en": "near ", "zh_hant":"近", "uk": "близько "},
+        "is_approaching":{"zh_hans":"正在接近", "en": " is approaching ", "zh_hant":"正在接近", "uk": " наближається до "}
     }
 }

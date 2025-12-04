@@ -917,6 +917,101 @@ async function sendNetworkWarningNotification(trainName, warningReasons, trainPo
     console.log('Both Notification APIs failed, unable to send notification');
 }
 
+// 修改为接受第三个参数body的函数
+async function sendTrainApproachingNotification(trainName, playerName, body) {
+    // 检查用户是否启用了通知功能
+    const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
+    if (!prefs.notifyTrainApproaching) {
+        console.log('Approaching warning notifications disabled in preferences');
+        return;
+    }
+    
+    // 请求通知权限（如果还没有获得）
+    const hasPermission = await requestNotificationPermission();
+    if (!hasPermission) {
+        console.log("No permission to send notifications");
+        return;
+    }
+    
+    // 初始化PositionUtils模块（如果尚未初始化）
+    try {
+        if (typeof PositionUtils !== 'undefined' && typeof window.trainsInfo !== 'undefined' && 
+            typeof window.lines !== 'undefined' && typeof window.stationsNetwork !== 'undefined' &&
+            typeof window.strings !== 'undefined') {
+            // 检查PositionUtils是否已初始化
+            // 通过尝试获取一个已知列车的线路信息来判断
+            const testLine = PositionUtils.getLineForTrain(trainName, 'id');
+            if (!testLine) {
+                // 如果返回null，则说明模块未初始化，需要初始化
+                PositionUtils.init({
+                    trainsInfo: window.trainsInfo,
+                    stationsNetwork: window.stationsNetwork,
+                    lines: window.lines,
+                    strings: window.strings,
+                    lang: lang
+                });
+                console.log('PositionUtils module initialized in script.js');
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to initialize PositionUtils:', e);
+    }
+
+    // 确保strings对象已加载
+    if (!window.strings) {
+        try {
+            const response = await fetch('strings.json');
+            window.strings = await response.json();
+        } catch (e) {
+            console.error('无法加载strings.json:', e);
+            return;
+        }
+    }
+
+    const title = trainName + (window.strings?.trains_info?.is_approaching?.[lang] || ' 接近 ') + playerName;
+    
+    console.log('准备发送通知:', title, body);
+    
+    // 使用 Notifications API
+    if ("Notification" in window && Notification.permission === "granted") {
+        console.log('Using standard Notification API');
+        try {
+            new Notification(title, {
+                body: body,
+                icon: './res/train_approaching.png',
+                tag: 'train-approaching-' + trainName,
+                renotify: true
+            });
+            console.log('Notification sent successfully');
+            return; // 成功发送通知，直接返回
+        } catch (error) {
+            console.error('Standard Notification API failed:', error);
+        }
+    }
+    
+    // 如果标准 Notifications API 不可用或失败，尝试使用 Service Worker
+    if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
+        console.log('Attempting to use Service Worker notification');
+        try {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration) {
+                await registration.showNotification(title, {
+                    body: body,
+                    icon: './res/train_approaching.png',
+                    tag: 'train-approaching-' + trainName,
+                    renotify: true
+                });
+                console.log('Service Worker notification sent successfully');
+                return;
+            }
+        } catch (error) {
+            console.error('Service Worker notification failed:', error);
+        }
+    }
+    
+    console.log('Both Notification APIs failed, unable to send notification');
+}
+
 // 在DOM内容加载完成后调用hideNonActiveSelectionItems函数
 document.addEventListener('DOMContentLoaded', () => {
     // 使用setTimeout确保在其他DOM操作完成后执行

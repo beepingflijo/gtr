@@ -235,7 +235,31 @@ function fetchTrainData() {
             const searchInput = document.querySelector('.search-input');
             const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
             
+            // 显示列车信息
             displayTrains(data.trains, mainContainer);
+            
+            // 检查列车是否接近关注的玩家
+            try {
+                // 从localStorage获取关注的玩家列表
+                const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
+                if (prefs.followPlayers && 
+                    typeof PositionUtils !== 'undefined' && typeof PositionUtils.checkTrainApproachingPlayers === 'function') {
+                    console.log('通过SSE检查列车接近玩家');
+                    // 遍历所有列车，逐个检查是否接近玩家
+                    if (Array.isArray(data.trains)) {
+                        data.trains.forEach(train => {
+                            // 确保train是有效对象后再调用
+                            if (train && typeof train === 'object') {
+                                PositionUtils.checkTrainApproachingPlayers(train, prefs.followPlayers);
+                            }
+                        });
+                    } else {
+                        console.warn('data.trains 不是数组格式:', data.trains);
+                    }
+                }
+            } catch (error) {
+                console.error('检查列车接近玩家时出错:', error);
+            }
             // 数据更新后，重新应用之前的搜索过滤
             applySearchFilter(searchTerm);
             loadUpdateTime();
@@ -1432,5 +1456,3 @@ function handleWindowResize() {
     }
     // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作
 }
-
-window.handleWindowResize = handleWindowResize;

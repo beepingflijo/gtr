@@ -43,23 +43,36 @@ const PositionUtils = (function() {
     }
     
     /**
-     * 获取列车线路信息
+     * 根据列车名称获取线路信息
      * @param {string} trainName - 列车名称
-     * @param {string} mode - 返回模式 ('name' 或 'id')
+     * @param {string} returnType - 返回类型 ('name' | 'id')
      * @returns {string|null} 线路名称或ID
      */
-    function getLineForTrain(trainName, mode = 'name') {
-        if (!trainsInfo) {
-            console.warn('Trains info data not loaded yet');
+    function getLineForTrain(trainName, returnType = 'name') {
+        if (!trainsInfo || !Array.isArray(trainsInfo)) {
+            console.warn('trainsInfo 数据不可用');
             return null;
         }
         
-        const trainInfo = trainsInfo.find(train => train.name === trainName);
-        if (trainInfo && trainInfo.line) {
-            if (mode === 'id') return trainInfo.line;
-            else return getLineName(trainInfo.line);
+        const train = trainsInfo.find(t => t.name === trainName);
+        if (!train || !train.line) {
+            console.warn(`未找到列车 ${trainName} 的线路信息`);
+            return null;
         }
-        return null;
+        
+        if (returnType === 'id') {
+            return train.line;
+        }
+        
+        // 根据线路ID获取线路名称
+        if (lines && Array.isArray(lines)) {
+            const line = lines.find(l => l.id === train.line);
+            if (line && line.name) {
+                return line.name[lang] || line.name.zh_hans || line.name.en || line.id;
+            }
+        }
+        
+        return train.line; // 如果找不到线路名称，返回线路ID
     }
     
     /**
@@ -83,21 +96,23 @@ const PositionUtils = (function() {
     }
     
     /**
-     * 获取列车车系信息
+     * 根据列车名称获取列车型号
      * @param {string} trainName - 列车名称
-     * @returns {string|null} 列车车系
+     * @returns {string} 列车型号
      */
     function getSeriesForTrain(trainName) {
-        if (!trainsInfo) {
-            console.warn('Trains info data not loaded yet');
-            return null;
+        if (!trainsInfo || !Array.isArray(trainsInfo)) {
+            console.warn('trainsInfo 数据不可用');
+            return '未知车型';
         }
         
-        const trainInfo = trainsInfo.find(train => train.name === trainName);
-        if (trainInfo && trainInfo.series) {
-            return trainInfo.series;
+        const train = trainsInfo.find(t => t.name === trainName);
+        if (!train) {
+            console.warn(`未找到列车 ${trainName} 的型号信息`);
+            return '未知车型';
         }
-        return null;
+        
+        return train.series || '未知车型';
     }
     
     /**
@@ -216,6 +231,74 @@ const PositionUtils = (function() {
             y: station.location.y,
             z: station.location.z
         }));
+    }
+    
+    /**
+     * 获取列车行驶方向
+     * @param {Object} line - 列车所在的线路
+     * @param {Object} position - 列车当前位置
+     * @param {Object} prevPosition - 列车上一位置
+     * @returns {string} 列车行驶方向 ('up', 'down', 'unknown')
+     */
+    function getTrainDirection(line, position, prevPosition) {
+        // 如果没有历史位置数据，则无法判断方向
+        if (!prevPosition) {
+            return 'unknown';
+        }
+        
+        // 查找线路上所有车站
+        const stations = line.route.filter(node => node.type === 'station');
+        if (stations.length < 2) {
+            return 'unknown';
+        }
+        
+        // 计算当前点到各个车站的距离
+        let minDistanceToStation = Infinity;
+        let closestStationIndex = -1;
+        
+        for (let i = 0; i < stations.length; i++) {
+            const stationCoords = findStationCoordinates(stations[i].code);
+            for (const coord of stationCoords) {
+                const distance = Math.sqrt(
+                    Math.pow(position.x - coord.x, 2) +
+                    Math.pow(position.z - coord.z, 2)
+                );
+                
+                if (distance < minDistanceToStation) {
+                    minDistanceToStation = distance;
+                    closestStationIndex = i;
+                }
+            }
+        }
+        
+        // 计算前一点到最近车站的距离
+        const closestStationCoords = findStationCoordinates(stations[closestStationIndex].code);
+        if (closestStationCoords.length === 0) {
+            return 'unknown';
+        }
+        
+        const closestCoord = closestStationCoords[0];
+        const currentDistance = Math.sqrt(
+            Math.pow(position.x - closestCoord.x, 2) +
+            Math.pow(position.z - closestCoord.z, 2)
+        );
+        
+        const prevDistance = Math.sqrt(
+            Math.pow(prevPosition.x - closestCoord.x, 2) +
+            Math.pow(prevPosition.z - closestCoord.z, 2)
+        );
+        
+        // 如果当前距离小于前一点距离，则朝向该车站，否则远离
+        if (currentDistance < prevDistance) {
+            // 朝向车站，需要判断是上行还是下行
+            return closestStationIndex < stations.length / 2 ? 'up' : 'down';
+        } else if (currentDistance > prevDistance) {
+            // 远离车站，方向相反
+            return closestStationIndex < stations.length / 2 ? 'down' : 'up';
+        }
+        
+        // 距离相等，无法判断方向
+        return 'unknown';
     }
     
     /**
@@ -801,7 +884,12 @@ const PositionUtils = (function() {
             const hadWarning = previousWarningReasons.length > 0;
             const hasWarning = warningInfo.shouldShowWarning;
 
-            const trainPosition = train.cars[0].leading.location;
+            // 安全地获取列车位置
+            let trainPosition = null;
+            if (train.cars && Array.isArray(train.cars) && train.cars.length > 0 && 
+                train.cars[0].leading && train.cars[0].leading.location) {
+                trainPosition = train.cars[0].leading.location;
+            }
 
             let notified = false;
             
@@ -822,7 +910,7 @@ const PositionUtils = (function() {
                 localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
                 
                 // 只有在首次触发警告时才发送通知（之前没有警告，现在有警告）
-                if (!hadWarning) {
+                if (!hadWarning && trainPosition) {
                     // 获取列车速度
                     let trainSpeed = 0;
                     if (allTrainsData[train.name] && allTrainsData[train.name].speed !== undefined) {
@@ -890,6 +978,180 @@ const PositionUtils = (function() {
         return false;
     }
     
+    /**
+     * 检查列车是否接近关注的玩家
+     * @param {Object} train - 列车对象
+     * @param {string} followedPlayers - 关注的玩家列表(逗号分隔)
+     */
+    function checkTrainApproachingPlayers(train, followedPlayers) {
+        try {
+            console.log('开始检查列车接近玩家:', train.name);
+            
+            // 检查是否启用了通知功能
+            const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
+            if (!prefs.notifyTrainApproaching) {
+                console.log('列车接近通知功能未启用');
+                return;
+            }
+            
+            // 解析关注的玩家列表
+            const players = followedPlayers.split(',').map(player => player.trim()).filter(player => player);
+            if (players.length === 0) {
+                console.log('没有关注的玩家');
+                return;
+            }
+            console.log('关注的玩家列表:', players);
+            
+            // 获取列车位置
+            if (!train.cars || !Array.isArray(train.cars) || train.cars.length === 0) {
+                console.log('列车车辆信息无效');
+                return;
+            }
+            
+            const trainPosition = train.cars[0].leading.location;
+            if (!trainPosition) {
+                console.log('列车位置信息无效');
+                return;
+            }
+            
+            // 获取列车速度
+            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+            const currentTrainData = allTrainsData[train.name];
+            const trainSpeed = currentTrainData && currentTrainData.speed !== undefined ? currentTrainData.speed : 0;
+            
+            // 获取列车线路和型号信息
+            const trainLine = getLineForTrain(train.name);
+            const trainSeries = getSeriesForTrain(train.name);
+            const carsCount = train.cars.length;
+            
+            console.log(`列车信息: ${train.name}, 位置: (${trainPosition.x}, ${trainPosition.y}, ${trainPosition.z}), 速度: ${trainSpeed}km/h`);
+            
+            // 检查每个关注的玩家
+            players.forEach(player => {
+                // 检查是否已经通知过该列车接近此玩家，避免重复通知
+                const notificationKey = `${train.name}-${player}-approaching`;
+                const notified = sessionStorage.getItem(notificationKey);
+                if (notified) {
+                    // 如果已经通知过，则在一定时间后清除标记（比如5分钟）
+                    const notifiedTime = parseInt(notified);
+                    const currentTime = Date.now();
+                    if (currentTime - notifiedTime < 5 * 60 * 1000) { // 5分钟内不再重复通知
+                        console.log(`近期已通知过玩家 ${player} 列车 ${train.name} 接近`);
+                        //return;
+                    }
+                }
+                
+                // 获取玩家位置
+                fetchAndDisplayPlayers((playersData) => {
+                    const playerData = playersData.find(p => p.name === player);
+                    if (!playerData) {
+                        console.log(`未找到玩家 ${player} 的位置信息`);
+                        return;
+                    }
+                    
+                    const playerPosition = {
+                        x: playerData.x,
+                        y: playerData.y,
+                        z: playerData.z
+                    };
+                    
+                    // 计算列车与玩家之间的距离
+                    const distance = Math.sqrt(
+                        Math.pow(trainPosition.x - playerPosition.x, 2) +
+                        Math.pow(trainPosition.y - playerPosition.y, 2) +
+                        Math.pow(trainPosition.z - playerPosition.z, 2)
+                    );
+                    
+                    console.log(`列车 ${train.name} 与玩家 ${player} 之间的距离: ${distance} 米`);
+                    
+                    // 基于单位时间内列车和玩家距离的变化量来计算相对速度
+                    let relativeSpeed = trainSpeed; // 默认使用列车速度
+                    
+                    // 基于单位时间内距离的变化量来计算相对速度
+                    if (currentTrainData && currentTrainData.position && currentTrainData.timestamp) {
+                        const playersPositions = JSON.parse(localStorage.getItem('players_positions') || '{}');
+                        const playerPrevData = playersPositions[player];
+                        
+                        if (playerPrevData && playerPrevData.timestamp) {
+                            // 计算当前时刻列车与玩家之间的距离
+                            const currentDistance = Math.sqrt(
+                                Math.pow(trainPosition.x - playerPosition.x, 2) +
+                                Math.pow(trainPosition.y - playerPosition.y, 2) +
+                                Math.pow(trainPosition.z - playerPosition.z, 2)
+                            );
+                            
+                            // 计算历史时刻列车与玩家之间的距离
+                            const previousDistance = Math.sqrt(
+                                Math.pow(currentTrainData.position.x - playerPrevData.x, 2) +
+                                Math.pow(currentTrainData.position.y - playerPrevData.y, 2) +
+                                Math.pow(currentTrainData.position.z - playerPrevData.z, 2)
+                            );
+                            
+                            // 计算时间差（毫秒）
+                            const timeDiffMs = Date.now() - Math.max(currentTrainData.timestamp, playerPrevData.timestamp);
+                            
+                            // 只有当时间差在合理范围内时才计算（避免数据更新不及时导致的异常值）
+                            // 合理范围：50ms 到 5s
+                            if (timeDiffMs > 50 && timeDiffMs < 5000) {
+                                // 计算单位时间内距离的变化量（mm/ms -> km/h）
+                                // 先计算距离变化量(mm)和时间变化量(ms)
+                                const distanceDiff = currentDistance - previousDistance; // mm
+                                // 转换为 km/h: (distanceDiff / timeDiffMs) * 3600 -> km/h
+                                relativeSpeed = Math.abs(distanceDiff / timeDiffMs) * 3.6;
+                                console.log(`计算得到相对速度: ${relativeSpeed} km/h`);
+                            }
+                        }
+                    }
+                    
+                    console.log(`列车 ${train.name} 接近玩家 ${player}，距离: ${distance} 米，相对速度: ${relativeSpeed} km/h`);
+                    
+                    // 如果距离小于500米且相对速度大于20km/h，则发送通知
+                    if (distance <= 500 && relativeSpeed > 20) {
+                        console.log(`列车 ${train.name} 接近玩家 ${player}，距离: ${distance} 米，相对速度: ${relativeSpeed} km/h`);
+                        
+                        // 标记已通知
+                        sessionStorage.setItem(notificationKey, Date.now().toString());
+                        
+                        // 获取列车方向
+                        let directionText = '';
+                        try {
+                            if (typeof window.lines !== 'undefined') {
+                                const lineId = getLineForTrain(train.name, 'id');
+                                const line = window.lines.find(l => l.id === lineId);
+                                if (line && currentTrainData && currentTrainData.position) {
+                                    // 简化方向判断逻辑
+                                    const trainDirection = 'running_direction_'+getTrainDirection(line, currentTrainData.position, trainPosition);
+                                    console.log(`获取列车方向: ${trainDirection}`);
+                                    directionText = ' ' + strings.lines_info[trainDirection][lang];
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('获取列车方向时出错:', e);
+                        }
+                        
+                        // 构造通知正文
+                        const lineName = trainLine || '未知线路';
+                        const series = trainSeries || '未知车型';
+                        const speed = Math.round(trainSpeed) || 0;
+                        const count = carsCount || 0;
+                        
+                        const body = `${lineName}${directionText}，车速${speed}km/h\n${series} ${count}节编组\n(${currentTrainData.position.x.toFixed(0)},${currentTrainData.position.y.toFixed(0)},${currentTrainData.position.z.toFixed(0)})`;
+                        
+                        // 发送通知
+                        if (typeof window.sendTrainApproachingNotification === 'function') {
+                            console.log(`发送列车接近通知: ${train.name} 接近 ${player}`);
+                            window.sendTrainApproachingNotification(train.name, player, body);
+                        } else {
+                            console.log('sendTrainApproachingNotification 函数未定义');
+                        }
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('检查列车接近玩家时出错:', error);
+        }
+    }
+    
     // 公共接口
     return {
         init,
@@ -912,6 +1174,8 @@ const PositionUtils = (function() {
         checkAndUpdateTrainWarnings,
         checkIfTrainAtStation,
         checkAndAddWarningSign,
-        checkIfTrainAtAnyStation
+        checkIfTrainAtAnyStation,
+        getTrainDirection,
+        checkTrainApproachingPlayers
     };
 })();
