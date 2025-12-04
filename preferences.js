@@ -7,7 +7,9 @@ document.addEventListener('DOMContentLoaded', function () {
             init();
             initFollowPlayersPref();
             initShowPlayersSwitch();
+            initAllowNotificationsSwitch();
             initTrainApproachingSwitch();
+            initNetworkWarningSwitch();
             initLanguageSelector();
             initThemeSelector();
             initFontSelector();
@@ -199,11 +201,38 @@ function initShowPlayersSwitch() {
     });
 }
 
+function initAllowNotificationsSwitch() { 
+    const prefs = getPreferences();
+    const allowNotificationsSwitch = document.querySelector('.allow-notifications');
+    // 默认关闭允许通知开关
+    if (prefs.allowNotifications) { 
+        allowNotificationsSwitch.classList.add('active');
+        // 请求通知权限
+        Notification.requestPermission().then(function(permission) { 
+            if (permission === 'granted') { 
+                // 允许通知，保存权限状态
+                prefs.allowNotifications = true;
+                savePreferences(prefs);
+            }
+        });
+    } else { 
+        allowNotificationsSwitch.classList.remove('active');
+    }
+
+    allowNotificationsSwitch.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        prefs.allowNotifications = isActive;
+        savePreferences(prefs);
+        initTrainApproachingSwitch();
+        initNetworkWarningSwitch();
+    });
+}
+
 function initTrainApproachingSwitch() {
     const prefs = getPreferences();
     const trainApproachingSwitch = document.querySelector('.notify-train-approaching');
     // 默认开启列车接近通知开关
-    if (prefs.notifyTrainApproaching !== false) { 
+    if (prefs.notifyTrainApproaching === true || prefs.notifyTrainApproaching === undefined) { 
         trainApproachingSwitch.classList.add('active');
         // 确保首次使用时保存默认值
         if (prefs.notifyTrainApproaching === undefined) {
@@ -214,9 +243,48 @@ function initTrainApproachingSwitch() {
         trainApproachingSwitch.classList.remove('active');
     }
 
+    // 如果没有通知权限则淡化switch
+    if (!prefs.allowNotifications) { 
+        trainApproachingSwitch.style.opacity = '0.1';
+        trainApproachingSwitch.style.cursor = 'not-allowed';
+    } else { 
+        trainApproachingSwitch.style.opacity = '1';
+        trainApproachingSwitch.style.cursor = 'pointer';
+    }
+
     trainApproachingSwitch.addEventListener('click', function() { 
         const isActive = this.classList.toggle('active');
         prefs.notifyTrainApproaching = isActive;
+        savePreferences(prefs);
+    });
+}
+
+function initNetworkWarningSwitch() { 
+    const prefs = getPreferences();
+    const networkWarningSwitch = document.querySelector('.notify-network-warning');
+    // 默认开启网络警告开关
+    if (prefs.notifyNetworkWarning !== false) { 
+        networkWarningSwitch.classList.add('active');
+        // 确保首次使用时保存默认值
+        if (prefs.notifyNetworkWarning === undefined) {
+            prefs.notifyNetworkWarning = true;
+            savePreferences(prefs);
+        }
+    } else { 
+        networkWarningSwitch.classList.remove('active');
+    }
+
+    // 如果没有通知权限则淡化switch
+    if (!prefs.allowNotifications) { 
+        networkWarningSwitch.style.opacity = '0.1';
+        networkWarningSwitch.style.cursor = 'not-allowed';
+    } else { 
+        networkWarningSwitch.style.opacity = '1';
+        networkWarningSwitch.style.cursor = 'pointer';
+    }
+    networkWarningSwitch.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        prefs.notifyNetworkWarning = isActive;
         savePreferences(prefs);
     });
 }

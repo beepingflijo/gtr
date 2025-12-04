@@ -197,7 +197,7 @@
     border-radius: 8px;
     color: var(--color-text);
     max-width: 108px;
-    z-index: 10;
+    z-index: 100;
 }
 
 .tooltip-title {
@@ -215,6 +215,11 @@
 
 .station-line .train-container {
     height: 60px;
+}
+
+.train-icon, .station-name-original {
+    position: relative;
+    z-index: 1;
 }
 
 .update-time {

@@ -48,8 +48,16 @@
                 <div class="switch show-players"></div>
             </div>
             <div class="pref-item"> 
+                <span id="allowNotificationPref">推送通知</span>
+                <div class="switch allow-notifications"></div>
+            </div>
+            <div class="pref-item"> 
                 <span id="notifyTrainApproachingPref">列车接近预警</span>
                 <div class="switch notify-train-approaching"></div>
+            </div>
+            <div class="pref-item"> 
+                <span id="notifyNetworkWarningPref">线网故障通知</span>
+                <div class="switch notify-network-warning"></div>
             </div>
         </div>
         <div class="item pref-list">
@@ -100,7 +108,7 @@
             </div>
             <div class="pref-item"> 
                 <span id="versionPref">版本</span>
-                <span class="pref-value" id="version">20251204-01</span>
+                <span class="pref-value" id="version">20251204-02</span>
             </div>
             <div class="icon-btn">
                 <a id="refreshPref">刷新所有文件</a>
@@ -126,6 +134,7 @@
     </footer>
 </div>
 <script src="preferences.js" type="module"></script>
+<script src="position_utils.js"></script>
 <script src="script.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </body>

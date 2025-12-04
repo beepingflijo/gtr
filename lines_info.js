@@ -36,6 +36,16 @@ document.addEventListener('DOMContentLoaded', function () {
                                 .then(trainsInfoResponse => trainsInfoResponse.json())
                                 .then(trainsInfoData => {
                                     window.trainsInfo = trainsInfoData.trains;
+                                    // 初始化PositionUtils模块
+                                    if (typeof PositionUtils !== 'undefined') {
+                                        PositionUtils.init({
+                                            trainsInfo: window.trainsInfo,
+                                            stationsNetwork: window.stationsNetwork,
+                                            lines: window.lines,
+                                            strings: window.strings,
+                                            lang: lang
+                                        });
+                                    }
                                     init();
                                     initLanguageSelector();
                                     handleWindowResize();
@@ -276,211 +286,12 @@ function displayStations(line) {
     //highlightTrainsForCurrentLine();
 }
 
-// 获取并显示玩家信息
-function fetchAndDisplayPlayers() {
-    const timestamp = Date.now();
-    const playerDataUrl = `https://map.nitrogen.hydcraft.cn/up/world/world/${timestamp}`;
-    console.log(playerDataUrl);
-    
-    // 添加超时控制
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
-    
-    // 首先尝试直接访问
-    fetch(playerDataUrl, { 
-        signal: controller.signal,
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json'
-        }
-    })
-        .then(response => {
-            clearTimeout(timeoutId);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('获取玩家数据成功:', data);
-            if (data.players && data.players.length > 0) {
-                console.log('即将调用displayPlayers');
-                displayPlayers(data.players);
-            }
-        })
-        .catch(error => {
-            clearTimeout(timeoutId);
-            console.warn('直接获取玩家数据失败，尝试通过代理获取:', error);
-            
-            // 如果直接访问失败，尝试通过代理访问
-            // 使用不同的代理服务
-            const proxyUrls = [
-                `https://api.allorigins.win/get?url=${encodeURIComponent(playerDataUrl)}&callback=?`
-            ];
-            
-            // 尝试第一个代理
-            fetchProxyData(proxyUrls, 0, playerDataUrl);
-        });
-}
-
-// 递归尝试不同的代理服务
-function fetchProxyData(proxyUrls, index, originalUrl) {
-    if (index >= proxyUrls.length) {
-        console.warn('所有代理服务都尝试失败');
-        return;
-    }
-    
-    const proxyController = new AbortController();
-    const proxyTimeoutId = setTimeout(() => proxyController.abort(), 10000); // 10秒超时
-    
-    fetch(proxyUrls[index], { 
-        signal: proxyController.signal,
-        method: 'GET'
-    })
-        .then(response => {
-            clearTimeout(proxyTimeoutId);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            // 处理allorigins.win返回的数据格式
-            if (proxyUrls[index].includes('allorigins.win')) {
-                try {
-                    // 如果返回的是JSONP格式或包装过的数据
-                    if (typeof data === 'string') {
-                        // 尝试解析JSONP
-                        const jsonData = JSON.parse(data.replace(/^\?\(|\)$/g, ''));
-                        if (jsonData.contents) {
-                            const playersData = JSON.parse(jsonData.contents);
-                            if (playersData.players && playersData.players.length > 0) {
-                                displayPlayers(playersData.players);
-                            }
-                        }
-                    } else if (data.contents) {
-                        // 直接返回的对象格式
-                        const playersData = JSON.parse(data.contents);
-                        if (playersData.players && playersData.players.length > 0) {
-                            displayPlayers(playersData.players);
-                        }
-                    } else {
-                        // 直接就是我们需要的数据
-                        if (data.players && data.players.length > 0) {
-                            displayPlayers(data.players);
-                        }
-                    }
-                } catch (parseError) {
-                    console.error('解析代理返回数据失败:', parseError);
-                    // 尝试下一个代理
-                    fetchProxyData(proxyUrls, index + 1, originalUrl);
-                }
-            } else {
-                // 处理其他代理服务返回的数据
-                if (data.players && data.players.length > 0) {
-                    displayPlayers(data.players);
-                }
-            }
-        })
-        .catch(proxyError => {
-            clearTimeout(proxyTimeoutId);
-            console.warn(`通过代理${proxyUrls[index]}获取玩家数据失败:`, proxyError);
-            // 尝试下一个代理
-            fetchProxyData(proxyUrls, index + 1, originalUrl);
-        });
-}
-
-// 显示玩家信息
-function displayPlayers(players) {
-    if (!prefs.showPlayers) return;
-    // 获取所有车站元素
-    const stationElements = document.querySelectorAll('.station-list-item');
-    
-    // 为每个车站计算附近的玩家数量
-    stationElements.forEach(stationElement => {
-        const stationNameElement = stationElement.querySelector('.station-name');
-        if (!stationNameElement) return;
-        
-        const stationName = stationNameElement.textContent.trim();
-        
-        // 查找车站坐标（需要从network.json中获取）
-        const stationCode = getStationCode(stationName);
-        const stationCoords = findStationCoordinates(stationCode);
-        if (!stationCoords) return;
-        
-        // 计算在该车站附近的玩家数量（距离小于200米）
-        let nearbyPlayerCount = 0;
-        let nearbyPlayers = [];
-        players.forEach(player => {
-            let minDistance = Infinity;
-            for (const coord of stationCoords) {
-                const distance = Math.sqrt(
-                    Math.pow(player.x - coord.x, 2) + 
-                    Math.pow(player.z - coord.z, 2)
-                );
-                if (distance < minDistance) {
-                    minDistance = distance;
-                }
-                
-                if (minDistance <= 200) {
-                    nearbyPlayerCount++;
-                    nearbyPlayers.push(player.name);
-                    break;
-                }
-            }
-        });
-        console.log(`在车站${stationName}附近的玩家数量为: ${nearbyPlayerCount}`);
-        
-        // 如果有玩家在附近，显示玩家数量
-        if (nearbyPlayerCount > 0) {
-            const trainContainer = stationElement.querySelector('.train-container');
-            if (trainContainer) {
-                // 创建玩家数量显示元素
-                const playerItem = document.createElement('div');
-                playerItem.className = 'player-count-container';
-                playerItem.innerHTML = `
-                    <span class="player-count">×${nearbyPlayerCount}</span>
-                    <img class="icon player-icon" src="./res/group.png" alt="玩家图标"></img>
-                `;
-                playerItem.addEventListener('mouseover', () => {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'tooltip player-tooltip';
-                    tooltip.innerHTML = `
-                        <div class="tooltip-title">
-                            <img class="icon" src="./res/group.png" alt="玩家图标"></img>
-                            <h4 class="tooltip-title-text">${strings.lines_info.nearby_players[lang]}</h4>
-                        </div>
-                        <div class="tooltip-content">
-                            <span class="tooltip-content-text">${nearbyPlayers.join('<br />')}</span>
-                        </div>`
-                    playerItem.appendChild(tooltip);
-                })
-                playerItem.addEventListener('mouseout', () => {
-                    playerItem.removeChild(playerItem.querySelector('.tooltip'));
-                })
-                if (!trainContainer.querySelector('.player-count')) {
-                    trainContainer.appendChild(playerItem);
-                    // 如果没有玩家数量元素，则插入元素
-                }
-            }
-        }
-    });
-}
-
 // 根据显示名称查找三字码
 function getStationCode(displayName) {
-    // 遍历window.stationsNetwork查找匹配的车站
-    if (!window.stationsNetwork) return null;
-    
-    for (const station of window.stationsNetwork) {
-        // 提取前三个大写字母作为三字码
-        const stationCode = station.name.match(/[A-Z]/g)?.slice(0, 3).join('') || '';
-        if (getStationName(stationCode, lang) === displayName) {
-            return stationCode;
-        }
+    // 使用PositionUtils模块
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.getStationCode(displayName);
     }
-    
-    return null;
 }
 
 let offlineToastShown = false;
@@ -1046,7 +857,12 @@ function displayTrains() {
                             const trainItemEventMap = new Map();
                             
                             // 更新完列车信息后，获取并显示玩家信息
-                            fetchAndDisplayPlayers();
+                            PositionUtils.fetchAndDisplayPlayers((players) => {
+                                // 使用PositionUtils模块显示玩家信息
+                                if (typeof PositionUtils !== 'undefined') {
+                                    PositionUtils.displayPlayers(players, () => prefs.showPlayers);
+                                }
+                            });
                             trainItems.forEach(item => { 
                                 // 需要和train的信息对应
                                 const trainNameElement = item.querySelector('.train-name');
@@ -1735,26 +1551,10 @@ function getDirection(trainName, carPos, isStopped) {
 
 // 查找车站的坐标
 function findStationCoordinates(stationCode, filterType = null) {
-    if (!window.stationsNetwork) return [];
-    
-    let filteredStations = window.stationsNetwork
-        .filter(station => station.name.startsWith(stationCode));
-    
-    // 如果提供了过滤类型，则进一步过滤
-    if (filterType === 'up') {
-        // 上行站台：以B结尾
-        filteredStations = filteredStations.filter(station => /^[A-Z0-9]+[0-9]B$/.test(station.name));
-    } else if (filterType === 'down') {
-        // 下行站台：以A结尾
-        filteredStations = filteredStations.filter(station => /^[A-Z0-9]+[0-9]A$/.test(station.name));
+    // 使用PositionUtils模块
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.findStationCoordinates(stationCode, filterType);
     }
-    
-    return filteredStations.map(station => ({
-        name: station.name,
-        x: station.location.x,
-        y: station.location.y,
-        z: station.location.z
-    }));
 }
 
 function findSegmentDuration(lineId, index) { 
@@ -1770,17 +1570,10 @@ function findSegmentDuration(lineId, index) {
 
 // 计算3D空间中点到线段的距离
 function distanceFromSegment(p, v, w) {
-    const l2 = Math.pow(v.x - w.x, 2) + Math.pow(v.z - w.z, 2);
-    //console.log(l2,p,v,w)
-    if (l2 === 0) return Math.sqrt(Math.pow(p.x - v.x, 2) + Math.pow(p.z - v.z, 2)); // v == w case
-    
-    let t = ((p.x - v.x) * (w.x - v.x) + (p.z - v.z) * (w.z - v.z)) / l2;
-    t = Math.max(0, Math.min(1, t));
-    const projection = {
-        x: v.x + t * (w.x - v.x),
-        z: v.z + t * (w.z - v.z)
-    };
-    return Math.sqrt(Math.pow(p.x - projection.x, 2) + Math.pow(p.z - projection.z, 2));
+    // 使用PositionUtils模块
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.distanceFromSegment(p, v, w);
+    }
 }
 
 function calculateTotalDistance(p, track, index) { 
@@ -1828,21 +1621,26 @@ function calculateTotalDistance(p, track, index) {
 }
 
 function calculateDistance(v, w) {
-    //console.log ('calculating distance: ',v, w);
-    // 检查参数是否定义
-    if (!v || !w) {
-        console.warn('Undefined parameters passed to calculateDistance', v, w);
-        return 0;
+    // 使用PositionUtils模块
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.calculateDistance(v, w);
     }
-    
-    // 检查必需的属性是否存在
-    if (typeof v.x !== 'number' || typeof v.z !== 'number' || 
-        typeof w.x !== 'number' || typeof w.z !== 'number') {
-        console.warn('Invalid coordinate data in calculateDistance', v, w);
-        return 0;
+}
+
+// 获取线路颜色
+function getLineColor(lineId = '') {
+    // 使用PositionUtils模块
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.getLineColor(lineId);
     }
-    
-    return Math.sqrt(Math.pow(v.x - w.x, 2) + Math.pow(v.z - w.z, 2));
+}
+
+// 获取车站名称
+function getStationName(stationCode, language) {
+    // 使用PositionUtils模块
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.getStationName(stationCode, language);
+    }
 }
 
 function highlightTrainsForCurrentLine() {
@@ -2107,173 +1905,17 @@ function updateTrainDirectionArrows() {
 
 // 添加检查并添加警告标志的函数
 function checkAndAddWarningSign(train, trainItem, isAtStation) {
-    // 从localStorage获取列车数据
-    try {
-        const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-        const currentTrainData = allTrainsData[train.name];
-        
-        // 检查是否需要添加警告标志
-        let shouldShowWarning = false;
-        let warningReasons = [];
-        
-        // 条件1: 列车在车站内停靠超过3分钟
-        if (isAtStation && currentTrainData && currentTrainData.timestamp) {
-            const currentTime = Date.now();
-            const timeInStation = currentTime - currentTrainData.timestamp;
-            // 3分钟 = 180000毫秒
-            if (timeInStation > 180000) {
-                shouldShowWarning = true;
-                warningReasons.push('long_stop');
-            }
-        }
-        
-        // 条件2: 列车在轨道上的车速为0
-        // 修改条件：只有当列车不在任何车站时才显示警告
-        if (currentTrainData && currentTrainData.speed === 0) {
-            // 检查列车是否在任何车站
-            const isAtAnyStation = checkIfTrainAtAnyStation(train.name);
-            if (!isAtAnyStation) {
-                shouldShowWarning = true;
-                warningReasons.push('zero_speed');
-            }
-        }
-        
-        // 条件3: 有多于一辆列车停靠在同一站台（不考虑AB后缀）且该列车不是离站台最近的列车
-        if (isAtStation) {
-            // 获取当前列车所在站台（去除AB后缀）
-            const platformElement = trainItem.querySelector('.platform');
-            if (platformElement) {
-                const platformText = platformElement.textContent.trim();
-                const platformNumber = platformText.replace(/[A-Za-z]/g, '');
-                
-                // 获取当前列车所在的车站名称
-                let currentStationName = '';
-                const stationListItem = trainItem.closest('.station-list-item');
-                if (stationListItem) {
-                    const stationNameElement = stationListItem.querySelector('.station-name');
-                    if (stationNameElement) {
-                        currentStationName = stationNameElement.textContent.trim();
-                    }
-                }
-                
-                // 查找同一车站内相同站台编号的其他列车
-                const samePlatformTrains = [];
-                document.querySelectorAll('.station-list-item').forEach(stationElement => {
-                    const stationNameElement = stationElement.querySelector('.station-name');
-                    // 确保是同一个车站
-                    if (stationNameElement && stationNameElement.textContent.trim() === currentStationName) {
-                        const trainContainer = stationElement.querySelector('.train-container');
-                        if (trainContainer) {
-                            const trains = trainContainer.querySelectorAll('.train-item');
-                            trains.forEach(trainEl => {
-                                const platElement = trainEl.querySelector('.platform');
-                                if (platElement) {
-                                    const platText = platElement.textContent.trim();
-                                    const platNumber = platText.replace(/[A-Za-z]/g, '');
-                                    if (platNumber === platformNumber) {
-                                        const trainNameElement = trainEl.querySelector('.train-name');
-                                        if (trainNameElement) {
-                                            samePlatformTrains.push({
-                                                element: trainEl,
-                                                trainName: trainNameElement.textContent.trim()
-                                            });
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    }
-                });
-                
-                // 如果有多于一辆列车在同一站台
-                if (samePlatformTrains.length > 1) {
-                    // 获取所有列车的坐标数据
-                    const trainPositions = [];
-                    samePlatformTrains.forEach(trainObj => {
-                        const trainData = allTrainsData[trainObj.trainName];
-                        if (trainData && trainData.position) {
-                            trainPositions.push({
-                                element: trainObj.element,
-                                position: trainData.position,
-                                name: trainObj.trainName
-                            });
-                        }
-                    });
-                    
-                    // 简化处理：如果有多个列车在同一站台，除了第一个，其他都显示警告
-                    if (trainPositions.length > 1) {
-                        // 找到当前列车在数组中的位置
-                        const currentIndex = trainPositions.findIndex(pos => pos.name === train.name);
-                        // 如果不是第一个（最靠近的），则显示警告
-                        if (currentIndex > 0) {
-                            shouldShowWarning = true;
-                            warningReasons.push('platform_conflict');
-                        }
-                    }
-                }
-            }
-        }
-        
-        // 根据检查结果添加或移除警告标志
-        const existingWarning = trainItem.querySelector('.warning');
-        if (shouldShowWarning && !existingWarning) {
-            // 添加警告标志
-            const warningSpan = document.createElement('span');
-            warningSpan.className = 'warning';
-            warningSpan.style.color = 'crimson';
-            warningSpan.style.fontWeight = 'bold';
-            warningSpan.textContent = '! ';
-            trainItem.appendChild(warningSpan);
-            trainItem.style.color = 'crimson';
-            
-            // 保存警告原因到localStorage
-            if (!allTrainsData[train.name]) {
-                allTrainsData[train.name] = {};
-            }
-            allTrainsData[train.name].warningReasons = warningReasons;
-            localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
-        } else if (!shouldShowWarning && existingWarning) {
-            // 移除警告标志
-            existingWarning.remove();
-            trainItem.style.color = ''; // 恢复默认颜色
-            
-            // 清除localStorage中的警告原因
-            if (allTrainsData[train.name]) {
-                delete allTrainsData[train.name].warningReasons;
-                localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
-            }
-        }
-    } catch (e) {
-        console.warn('检查列车警告标志时出错:', e);
+    // 使用PositionUtils模块
+    if (typeof PositionUtils !== 'undefined') {
+        PositionUtils.checkAndAddWarningSign(train, trainItem, isAtStation);
+        return;
     }
 }
 
 // 添加一个辅助函数，用于检查列车是否在任何车站
 function checkIfTrainAtAnyStation(trainName) {
-    // 检查页面上是否存在该列车的车站元素
-    const trainElements = document.querySelectorAll('.train-item');
-    for (const trainElement of trainElements) {
-        const trainNameElement = trainElement.querySelector('.train-name');
-        if (trainNameElement && trainNameElement.textContent.includes(trainName)) {
-            // 如果列车元素有.platform子元素，则表示在车站
-            const platformElement = trainElement.querySelector('.platform');
-            if (platformElement) {
-                return true;
-            }
-        }
+    // 使用PositionUtils模块
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.checkIfTrainAtAnyStation(trainName);
     }
-    
-    // 如果在当前页面没有找到，进一步检查列车是否属于其他线路的车站
-    // 通过列车名称前缀判断所属线路
-    const linePrefix = trainName.match(/^([A-Z]+)/)?.[1];
-    if (linePrefix) {
-        // 检查所有线路中是否有与列车前缀匹配的线路
-        const belongsToLine = window.lines?.find(line => line.id === linePrefix);
-        if (belongsToLine) {
-            // 如果列车属于某条线路，那么它在该线路的车站上是正常的，不应触发警告
-            return true;
-        }
-    }
-    
-    return false;
 }
