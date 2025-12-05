@@ -872,7 +872,7 @@ async function sendNetworkWarningNotification(trainName, warningReasons, trainPo
             console.warn('获取附近车站信息失败:', e);
         }
         
-        body = `(${trainPosition.x.toFixed(0)}, ${trainPosition.y.toFixed(0)}, ${trainPosition.z.toFixed(0)}), ${lineInfo} ${strings.trains_info.near[lang] + nearbyStation}`;
+        body = `${lineInfo}, ${strings.trains_info.near[lang] + nearbyStation}\n(${trainPosition.x.toFixed(0)}, ${trainPosition.y.toFixed(0)}, ${trainPosition.z.toFixed(0)})`;
     } else {
         body = '位置信息不可用';
     }
@@ -883,10 +883,14 @@ async function sendNetworkWarningNotification(trainName, warningReasons, trainPo
     if ("Notification" in window && Notification.permission === "granted") {
         console.log('Using standard Notification API');
         try {
-            new Notification(title, {
+            let notification = new Notification(title, {
                 body: body,
                 icon: './res/network_warning.png',
                 tag: 'network-warning-' + trainName,
+            });
+            // 添加点击事件
+            notification.addEventListener('click', () => {
+                window.open(`trains_info.html?q=${trainName}&lang=${lang}`, '_self');
             });
             console.log('Notification sent successfully');
             return; // 成功发送通知，直接返回
@@ -894,27 +898,6 @@ async function sendNetworkWarningNotification(trainName, warningReasons, trainPo
             console.error('Standard Notification API failed:', error);
         }
     }
-    
-    // 如果标准 Notifications API 不可用或失败，尝试使用 Service Worker
-    if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
-        console.log('Attempting to use Service Worker notification');
-        try {
-            const registration = await navigator.serviceWorker.getRegistration();
-            if (registration) {
-                await registration.showNotification(title, {
-                    body: body,
-                    icon: './res/network_warning.png',
-                    tag: 'network-warning-' + trainName,
-                });
-                console.log('Service Worker notification sent successfully');
-                return;
-            }
-        } catch (error) {
-            console.error('Service Worker notification failed:', error);
-        }
-    }
-    
-    console.log('Both Notification APIs failed, unable to send notification');
 }
 
 // 修改为接受第三个参数body的函数
@@ -976,11 +959,15 @@ async function sendTrainApproachingNotification(trainName, playerName, body) {
     if ("Notification" in window && Notification.permission === "granted") {
         console.log('Using standard Notification API');
         try {
-            new Notification(title, {
+            let notification = new Notification(title, {
                 body: body,
                 icon: './res/train_approaching.png',
                 tag: 'train-approaching-' + trainName,
                 renotify: true
+            });
+            // 添加点击事件
+            notification.addEventListener('click', () => {
+                window.open(`trains_info.html?q=${trainName}&lang=${lang}`, '_self');
             });
             console.log('Notification sent successfully');
             return; // 成功发送通知，直接返回
@@ -988,28 +975,6 @@ async function sendTrainApproachingNotification(trainName, playerName, body) {
             console.error('Standard Notification API failed:', error);
         }
     }
-    
-    // 如果标准 Notifications API 不可用或失败，尝试使用 Service Worker
-    if ('serviceWorker' in navigator && 'showNotification' in ServiceWorkerRegistration.prototype) {
-        console.log('Attempting to use Service Worker notification');
-        try {
-            const registration = await navigator.serviceWorker.getRegistration();
-            if (registration) {
-                await registration.showNotification(title, {
-                    body: body,
-                    icon: './res/train_approaching.png',
-                    tag: 'train-approaching-' + trainName,
-                    renotify: true
-                });
-                console.log('Service Worker notification sent successfully');
-                return;
-            }
-        } catch (error) {
-            console.error('Service Worker notification failed:', error);
-        }
-    }
-    
-    console.log('Both Notification APIs failed, unable to send notification');
 }
 
 // 在DOM内容加载完成后调用hideNonActiveSelectionItems函数

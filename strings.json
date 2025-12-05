@@ -199,8 +199,9 @@
             "uk": "Місцезнаходження та швидкість лише для довідки"
         },
         "share_route":{"zh_hans":"分享路线", "en": "Share Route", "zh_hant":"分享路線", "uk": "Поділитися маршрутом"},
-        "copied":{"zh_hans":"已复制", "en": "Copied", "zh_hant":"已複製", "uk": "Скопійовано"},
-        "copy_failed":{"zh_hans":"复制失败", "en": "Copy failed", "zh_hant":"複製失敗", "uk": "Помилка копіювання"},
+        "copied":{"zh_hans":"已复制", "en": "Copied", "zh_hant":"已拷貝", "uk": "Скопійовано"},
+        "copy_failed":{"zh_hans":"复制失败", "en": "Copy failed", "zh_hant":"拷貝失敗", "uk": "Помилка копіювання"},
+        "players_copied":{"zh_hans":"已复制玩家ID", "en": "Player IDs copied", "zh_hant":"已拷貝玩家ID", "uk": "Географічні координати скопійовані"},
         "train":{"zh_hans":"列车", "en": "Train", "zh_hant":"列車", "uk": "Потяг"},
         "next_station":{"zh_hans":"下一站", "en": "Next Station", "zh_hant":"下一站", "uk": "Наступна станція"},
         "final_station":{"zh_hans":"终点站", "en": "Terminal Station", "zh_hant":"終點站", "uk": "Кінцева станція"},

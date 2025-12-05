@@ -56,7 +56,7 @@ const PositionUtils = (function() {
         
         const train = trainsInfo.find(t => t.name === trainName);
         if (!train || !train.line) {
-            console.warn(`未找到列车 ${trainName} 的线路信息`);
+            //console.warn(`未找到列车 ${trainName} 的线路信息`);
             return null;
         }
         
@@ -108,7 +108,7 @@ const PositionUtils = (function() {
         
         const train = trainsInfo.find(t => t.name === trainName);
         if (!train) {
-            console.warn(`未找到列车 ${trainName} 的型号信息`);
+            //console.warn(`未找到列车 ${trainName} 的型号信息`);
             return '未知车型';
         }
         
@@ -568,6 +568,12 @@ const PositionUtils = (function() {
                         const tooltip = playerItem.querySelector('.tooltip');
                         if (tooltip) playerItem.removeChild(tooltip);
                     });
+
+                    playerItem.addEventListener('click', () => {
+                        // 复制所有玩家ID，用逗号隔开
+                        navigator.clipboard.writeText(nearbyPlayers.join(','));
+                        showToast(strings.lines_info?.players_copied?.[lang] || '已复制玩家ID');
+                    });
                     
                     if (!trainContainer.querySelector('.player-count')) {
                         trainContainer.appendChild(playerItem);
@@ -635,11 +641,11 @@ const PositionUtils = (function() {
             }
             
             // 条件3: 列车在车站内停靠超过3分钟
-            if (isAtStation && currentTrainData && currentTrainData.timestamp) {
+            if (isAtStation && currentTrainData && currentTrainData.timestamp && currentTrainData.speed < 10) {
                 const currentTime = Date.now();
                 const timeInStation = currentTime - currentTrainData.timestamp;
                 // 3分钟 = 180000毫秒
-                if (timeInStation > 180000) {
+                if (isAtStation && timeInStation > 180000) {
                     shouldShowWarning = true;
                     warningReasons.push('long_stop');
                 }
@@ -740,6 +746,8 @@ const PositionUtils = (function() {
      * @param {Object} position - 列车位置
      */
     function checkAndUpdateTrainWarnings(train, position) {
+        
+        const isAtStation = checkIfTrainAtStation(train.name, position);
         // 使用统一的警告检测函数
         const warningInfo = checkTrainWarnings(train, position);
         
@@ -1113,7 +1121,7 @@ const PositionUtils = (function() {
                         sessionStorage.setItem(notificationKey, Date.now().toString());
                         
                         // 获取列车方向
-                        let directionText = '';
+                        let directionText = strings.trains_info.unknown_direction[lang];
                         try {
                             if (typeof window.lines !== 'undefined') {
                                 const lineId = getLineForTrain(train.name, 'id');
@@ -1135,7 +1143,7 @@ const PositionUtils = (function() {
                         const speed = Math.round(trainSpeed) || 0;
                         const count = carsCount || 0;
                         
-                        const body = `${lineName}${directionText}，车速${speed}km/h\n${series} ${count}节编组\n(${currentTrainData.position.x.toFixed(0)},${currentTrainData.position.y.toFixed(0)},${currentTrainData.position.z.toFixed(0)})`;
+                        const body = `${lineName}${directionText}, ${strings.lines_info.speed[lang]+speed}km/h\n${series+strings.trains_info.series[lang]}, ${count+strings.trains_info.cars[lang]}\n(${currentTrainData.position.x.toFixed(0)}, ${currentTrainData.position.y.toFixed(0)}, ${currentTrainData.position.z.toFixed(0)})`;
                         
                         // 发送通知
                         if (typeof window.sendTrainApproachingNotification === 'function') {
