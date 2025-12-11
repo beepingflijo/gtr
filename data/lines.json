@@ -64,22 +64,30 @@
             "color": "#5bae23",
             "route": [
                 {"type": "station", "code": "GBA"},
-                {"type": "track","duration":132,"nodes": [
+                {"type": "track","duration":75,"nodes": [
                         {"x": -4400, "z": 860},
                         {"x": -4500, "z": 840},
                         {"x": -4950, "z": 850},
                         {"x": -5000, "z": 890},
                         {"x": -5280, "z": 1180},
                         {"x": -5300, "z": 1230},
+                        {"x": -5300, "z": 2400}
+                ]},
+                {"type": "station", "code": "GPA"},
+                {"type": "track","duration":55,"nodes": [
+                        {"x": -5300, "z": 2600},
                         {"x": -5300, "z": 4100}
                 ]},
                 {"type": "station", "code": "GYZ"},
-                {"type": "track","duration":129,"nodes": [
+                {"type": "track","duration":50,"nodes": [
                         {"x": -5300, "z": 4300},
                         {"x": -5300, "z": 4550},
                         {"x": -5460, "z": 4720},
                         {"x": -5460, "z": 5560},
-                        {"x": -5440, "z": 5610},
+                        {"x": -5440, "z": 5610}
+                ]},
+                {"type": "station", "code": "GMP"},
+                {"type": "track","duration":65,"nodes": [
                         {"x": -5390, "z": 5640},
                         {"x": -3170, "z": 5640}
                 ]},

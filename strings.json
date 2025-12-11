@@ -162,7 +162,10 @@
     "station_names":{
         "AFN":{"original": "船橋", "zh_hans": "船桥", "en": "Funabashi", "zh_hant": "船橋", "uk": "Фунабаші"},
         "AGS":{"zh_hans": "格林布希","en": "Greenbush", "zh_hant": "格林布希","uk":"Грінбуш"},
+        "AJE":{"original": "傑維斯港東", "zh_hans": "杰维斯港东", "en": "Port Jervis East", "zh_hant": "傑維斯港東", "uk": "Порт Джервіс Схід"},
         "GBA":{"zh_hans": "北安", "en": "Bei'an", "zh_hant": "北安","uk":"Бейань"},
+        "GMP":{"zh_hans":"马家堡南", "en": "Majiapu South", "zh_hant":"馬家堡南","uk":"Мацзяпу Південь"},
+        "GPA":{"zh_hans":"平安里", "en": "Ping'anli", "zh_hant":"平安里","uk":"Пінъаньлі"},
         "GYZ":{"zh_hans": "广阳", "en": "Guangyang", "zh_hant": "廣陽","uk": "Ґуанъян"},
         "JBH":{"zh_hans": "滨海", "en": "Binhai", "zh_hant": "濱海", "uk":"Біньхай"},
         "JBX":{"zh_hans": "新华门", "en": "Xinhuamen", "zh_hant": "新華門", "uk":"Сїньхуамень"},
@@ -174,8 +177,10 @@
         "QBL":{"zh_hans": "北麓", "en": "Beilu", "zh_hant": "北麓", "uk":"Бейлу"},
         "QGL":{"zh_hans": "沁京观澜", "en": "Qingjing Guanlan", "zh_hant": "沁京觀澜", "uk":"Цїньцзїн Ґуаньлань"},
         "SMC":{"zh_hans": "静见中央车站","en": "Shizumi Central", "zh_hant": "靜見中央車站","uk":"Центральний Шідзумі"},
+        "SNC":{"zh_hans": "宁海川东","en": "Ninghaichuan East", "zh_hant": "寜海川东","uk":"Нінхайчуань Схід"},
         "XYD":{"zh_hans": "圆湖东","en": "Yuanhu East", "zh_hant": "圓湖東", "uk":"Юаньху Схід"},
-        "YBK":{"zh_hans": "颐北煤矿", "en": "Coal Mine of North Yiheng", "zh_hant": "頣北煤礦", "uk":"Вугільна шахта Північного Їхена"}
+        "XNB":{"zh_hans": "南岭北", "en": "Nanling North", "zh_hant": "南嶺北", "uk":"Наньлин Північ"},
+        "YBK":{"zh_hans": "颐北煤矿", "en": "Coal Mine of North Yiheng", "zh_hant": "頣北煤礦", "uk":"Вугільна Шахта Північного Їхена"}
     },
     "lines_info":{
         "page_title":{"zh_hans":"线路信息", "en": "Lines Info", "zh_hant":"路線資訊", "uk": "Інформація про лінії"},
