@@ -1410,6 +1410,9 @@ function handleWindowResize() {
     const isInputFocused = input && input === document.activeElement;
 
     if (isVirtualKeyboardOpen || isInputFocused) return;
+    const swapFooterItems = prefs.swapFooterItems;
+    if (swapFooterItems) footer.classList.add('swapped');
+    else footer.classList.remove('swapped');
     
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
     if (window.innerWidth < 720) {

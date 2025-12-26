@@ -1718,7 +1718,7 @@ function getLineColor(lineId = '') {
 }
 
 // 获取车站名称
-function getStationName(stationCode, language) {
+function getStationName(stationCode, language = lang) {
     // 使用PositionUtils模块
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.getStationName(stationCode, language);
@@ -1863,6 +1863,9 @@ function handleWindowResize() {
     while (activeTab && activeTab.children.length > 1) {
         activeTab.removeChild(activeTab.children[1]);
     }
+    const swapFooterItems = prefs.swapFooterItems;
+    if (swapFooterItems) footer.classList.add('swapped');
+    else footer.classList.remove('swapped');
     
     if (window.innerWidth < 720) {
         sideBar.style.opacity = 0;

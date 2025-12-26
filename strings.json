@@ -60,6 +60,7 @@
         "font":{"zh_hans":"字体", "en": "Font", "zh_hant":"字體", "uk": "Шрифт"},
         "sans_serif":{"zh_hans":"无衬线字体", "en": "Sans-serif", "zh_hant":"無襯線字體", "uk": "Без засічок"},
         "collapse_sidebar":{"zh_hans":"宽屏模式下收起侧边栏", "en": "Collapse side bar in wide screen", "zh_hant":"寬屏模式下折疊側欄", "uk": "Згорнути бічну панель на широкому екрані"},
+        "swap_footer_items":{"zh_hans":"交换底栏控件顺序", "en": "Swap footer items", "zh_hant":"交換底欄控件順序", "uk": "Поміняти місцями елементи нижнього колонтитула"},
         "reduce_motion_and_transparency":{"zh_hans":"减弱特效", "en": "Reduce effects", "zh_hant":"減少特效", "uk": "Зменшити ефекти"},
         "storage":{"zh_hans":"本地存储", "en": "Storage", "zh_hant":"保存的資料", "uk": "Збережені дані"},
         "manage_storage":{"zh_hans":"管理存储", "en": "Manage storage", "zh_hant":"管理保存的資料", "uk": "Керувати збереженими даними"},

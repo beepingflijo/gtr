@@ -219,7 +219,7 @@
 
 .train-icon, .station-name-original {
     position: relative;
-    z-index: 1;
+    z-index: 0;
 }
 
 .update-time {

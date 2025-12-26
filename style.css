@@ -340,12 +340,22 @@ footer {
     gap: 8px;
 }
 
+footer.swapped {
+    align-items: flex-start;
+}
+
 @media (width > 480px) {
     footer { 
         flex-direction: row;
         justify-content: space-between;
         gap: 0;
     }    
+    footer.swapped { 
+        flex-direction: row-reverse;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 0;
+    }
     footer .tabs {
         width: fit-content;
     }

@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initThemeSelector();
             initFontSelector();
             initCollapseSwitch();
+            initSwapFooterSwitch();
             initReduceMotionSwitch();
             initStorageList();
             handleWindowResize();
@@ -99,6 +100,8 @@ function init() {
     fontPref.textContent = strings.preferences.font[lang];
     const collapsePref = document.getElementById('collapseSideBarPref');
     collapsePref.textContent = strings.preferences.collapse_sidebar[lang];
+    const swapFooterPref = document.getElementById('swapFooterPref');
+    swapFooterPref.textContent = strings.preferences.swap_footer_items[lang];
     const reduceMotionPref = document.getElementById('reduceMotionPref');
     reduceMotionPref.textContent = strings.preferences.reduce_motion_and_transparency[lang];
     const storagePref = document.getElementById('storagePref');
@@ -692,6 +695,25 @@ function initCollapseSwitch() {
     });
 }
 
+function initSwapFooterSwitch() { 
+    const swapFooterSwitch = document.querySelector('.swap-footer');
+    if (!swapFooterSwitch) return;
+
+    const prefs = getPreferences();
+    if (prefs.swapFooterItems) { 
+        swapFooterSwitch.classList.add('active');
+    } else { 
+        swapFooterSwitch.classList.remove('active');
+    }
+
+    swapFooterSwitch.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        prefs.swapFooterItems = isActive;
+        savePreferences(prefs);
+        handleWindowResize();
+    });
+}
+
 // 初始化减弱特效开关
 function initReduceMotionSwitch() {
     const reduceMotionSwitch = document.querySelector('.reduce-motion');
@@ -746,15 +768,6 @@ function handleWindowResize() {
         item.style.alignItems = 'center';
         item.style.justifyContent = 'space-between';
         item.style.height = '30px';
-        // 如果item的子元素有#followPlayers
-        if (item.querySelector('#followPlayers')) { 
-            item.style.height = 'fit-content';
-        }
-        // 如果item的id是moreLinkPref
-        if (item.id === 'moreLinkPref') { 
-            item.style.justifyContent = 'flex-start';
-            item.style.height = 'fit-content';
-        }
 
         item.querySelector('*').style.width = 'fit-content';
         let itemTotalWidth = 0;
@@ -771,6 +784,16 @@ function handleWindowResize() {
             item.style.justifyContent = 'flex-start';
             item.style.height = itemTotalHeight + 8 + 'px';
             item.querySelector('*').style.width = '-webkit-fill-available';
+        }
+        // 如果item的子元素有#followPlayers
+        if (item.querySelector('#followPlayers')) { 
+            item.style.height = 'fit-content';
+        }
+        // 如果item的id是moreLinkPref
+        if (item.id === 'moreLinkPref') { 
+            item.style.justifyContent = 'flex-start';
+            item.style.alignItems = 'flex-start';
+            item.style.height = 'fit-content';
         }
     });
     
@@ -799,16 +822,16 @@ function handleWindowResize() {
     // 检查输入框是否处于焦点状态
     const input = document.querySelector('.search-input');
     const isInputFocused = input && input === document.activeElement;
+    const swapFooterItems = getPreferences().swapFooterItems;
+    if (swapFooterItems) footer.classList.add('swapped');
+    else footer.classList.remove('swapped');
 
     if (isVirtualKeyboardOpen || isInputFocused) return;
     
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
     if (window.innerWidth < 720) {
         searchBar.style.display = 'none';
-
         footer.style.opacity = 1;
-        footer.style.opacity = 1;
-        footer.style.justifyContent = 'flex-end';
     } else {
         footer.style.opacity = 0;
         searchBar.style.display = 'flex';
