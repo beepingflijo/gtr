@@ -16,6 +16,10 @@ footer .search-controls{
     align-items: flex-end;
 }
 
+footer.swapped .search-controls{
+    align-items: flex-start;
+}
+
 .side-bar .selection.no-collapse { 
     margin: 0;
     filter: none;
