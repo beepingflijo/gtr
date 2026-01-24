@@ -174,13 +174,14 @@
         "JXN":{"zh_hans": "旧巷", "en": "Jiuxiang", "zh_hant": "舊巷", "uk":"Цзюсян"},
         "JXX":{"zh_hans": "旧巷南", "en": "Jiuxiang South", "zh_hant": "舊巷南", "uk":"Цзюсян Південь"},
         "NZZ":{"zh_hans": "莒南总站","en": "Junan Terminal", "zh_hant": "莒南總站","uk":"Термінал Цзюйнань"},
+        "NMM":{"zh_hans": "前桥西", "en": "Maebashi West", "zh_hant": "前橋西", "uk":"Маебаші Захід"},
         "OWL":{"zh_hans": "欧文北","en": "Owl State North", "zh_hant": "歐文北","uk":"Штат Оул Північ"},
         "QBL":{"zh_hans": "北麓", "en": "Beilu", "zh_hant": "北麓", "uk":"Бейлу"},
         "QGL":{"zh_hans": "沁京观澜", "en": "Qingjing Guanlan", "zh_hant": "沁京觀澜", "uk":"Цїньцзїн Ґуаньлань"},
         "SMC":{"zh_hans": "静见中央车站","en": "Shizumi Central", "zh_hant": "靜見中央車站","uk":"Центральний Шідзумі"},
-        "SNC":{"zh_hans": "宁海川东","en": "Ninghaichuan East", "zh_hant": "寜海川东","uk":"Нінхайчуань Схід"},
+        "SNC":{"zh_hans": "宁海川","en": "Ninghaichuan", "zh_hant": "寜海川","uk":"Нінхайчуань"},
         "XYD":{"zh_hans": "圆湖东","en": "Yuanhu East", "zh_hant": "圓湖東", "uk":"Юаньху Схід"},
-        "XNB":{"zh_hans": "南岭北", "en": "Nanling North", "zh_hant": "南嶺北", "uk":"Наньлин Північ"},
+        "XNL":{"zh_hans": "南岭北", "en": "Nanling North", "zh_hant": "南嶺北", "uk":"Наньлин Північ"},
         "YBK":{"zh_hans": "颐北煤矿", "en": "Coal Mine of North Yiheng", "zh_hant": "頣北煤礦", "uk":"Вугільна Шахта Північного Їхена"}
     },
     "lines_info":{

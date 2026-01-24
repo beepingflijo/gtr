@@ -566,7 +566,7 @@ function initFontSelector() {
     
     // 创建字体选项
     const fonts = [
-        { id: 'inter', label: 'HydCraft (Inter/MiSans)' },
+        { id: 'inter', label: 'HydCraft (Bricolage Grotesque)' },
         { id: 'harmonyos', label: strings.mainpage.gt[lang]+' (HarmonyOS Sans)' },
         { id: 'sans-serif', label: strings.preferences.sans_serif },
         { id: 'system', label: strings.preferences.system }
@@ -585,7 +585,7 @@ function initFontSelector() {
         let fontFamily;    
         switch (font.id) {
             case 'inter':
-                fontFamily = '"Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif';
+                fontFamily = '"Bricolage Grotesque", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;';
                 break;
             case 'harmonyos':
                 fontFamily = '"HarmonyOS Sans SC", "HarmonyOS Sans", "MiSans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", "Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", Arial, sans-serif';
@@ -598,7 +598,7 @@ function initFontSelector() {
                 break;
             default:
                 // 默认使用 Inter 字体
-                fontFamily = '"Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif';
+                fontFamily = '"Bricolage Grotesque", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;';
                 break;
         }
         item.setAttribute('style', `font-family: ${fontFamily};`);
@@ -657,7 +657,7 @@ function applyFont(font) {
     
     switch (font) {
         case 'inter':
-            fontFamily = '"Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif';
+            fontFamily = '"Bricolage Grotesque", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;';
             break;
         case 'harmonyos':
             fontFamily = '"HarmonyOS Sans SC", "HarmonyOS Sans", "MiSans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", "Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", Arial, sans-serif';
@@ -670,7 +670,7 @@ function applyFont(font) {
             break;
         default:
             // 默认使用 Inter 字体
-            fontFamily = '"Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif';
+            fontFamily = '"Bricolage Grotesque", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;';
             break;
     }
     

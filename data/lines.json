@@ -147,29 +147,50 @@
             "color": "#0eb0c9",
             "route": [
                 {"type": "station", "code": "NZZ"},
-                {"type": "track","duration":111,"nodes": [
+                {"type": "track","duration":72,"nodes": [
                         {"x": 6605, "z": -1960},
+                        {"x": 6605, "z": -960}
+                ]},
+                {"type": "station", "code": "NMM"},
+                {"type": "track","duration":90,"nodes": [
+                        {"x": 6605, "z": -700},
                         {"x": 6605, "z": 830},
                         {"x": 6580, "z": 910},
                         {"x": 6580, "z": 1240}
                 ]},
                 {"type": "station", "code": "SMC"},
-                {"type": "track","duration":160,"nodes": [
+                {"type": "track","duration":75,"nodes": [
                         {"x": 6580, "z": 1440},
                         {"x": 6580, "z": 2120},
+                        {"x": 6580, "z": 1240},
                         {"x": 6550, "z": 2220},
+                        {"x": 6250, "z": 2520}
+                ]},
+                {"type": "station", "code": "SNC"},
+                {"type": "track","duration":110,"nodes": [
+                        {"x": 6050, "z": 2720},
                         {"x": 4920, "z": 3835},
+                        {"x": 4490, "z": 3835}
+                ]},
+                {"type": "station", "code": "AJE"},
+                {"type": "track","duration":64,"nodes": [
+                        {"x": 4390, "z": 3835},
                         {"x": 3190, "z": 3835}
                 ]},
                 {"type": "station", "code": "AGS"},
-                {"type": "track","duration":104,"nodes": [
+                {"type": "track","duration":72,"nodes": [
                         {"x": 2990, "z": 3835},
+                        {"x": 1490, "z": 3835}
+                ]},
+                {"type": "station", "code": "XNL"},
+                {"type": "track","duration":104,"nodes": [
+                        {"x": 1390, "z": 3835},
                         {"x": 1055, "z": 3835},
                         {"x": 1026, "z": 3856},
                         {"x": 450, "z": 4430}
                 ]},
                 {"type": "station", "code": "AFN"},
-                {"type": "track","duration":96,"nodes": [
+                {"type": "track","duration":72,"nodes": [
                         {"x": 250, "z": 4630},
                         {"x": 0, "z": 4880},
                         {"x": -30, "z": 4940},

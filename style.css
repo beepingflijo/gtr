@@ -23,7 +23,7 @@
     --color-text: #333;
     --color-text-secondary: #666;
     --color-text-on-primary: #fff;
-    --font-family: "Inter", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    --font-family: "Bricolage Grotesque", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
 }
 
 * { 
@@ -33,12 +33,12 @@
 
 @font-face {
     font-family: "MiSans Latin";
-    src: url(https://h2-wiki-1254268741.cos.ap-shanghai.myqcloud.com/font/MiSans_Latin.woff2) format('woff2')
+    src: url(https://assets.wiki.hydcraft.cn/font/MiSans_Latin.woff2) format('woff2')
 }
 
 @font-face {
-    font-family: "Inter";
-    src: url(https://h2-wiki-1254268741.cos.ap-shanghai.myqcloud.com/font/Inter.woff2) format('woff2')
+    font-family: "Bricolage Grotesque";
+    src: url(https://assets.wiki.hydcraft.cn/font/Bricolage_Grotesque.woff2) format('woff2')
 }
 
 @font-face {
@@ -189,6 +189,7 @@
 .effect-reduced *, .effect-reduced *::before, .effect-reduced *::after { 
     box-shadow: none !important;
     transition: none !important;
+    backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     box-shadow: none !important;
     text-shadow: none !important;
@@ -293,6 +294,7 @@ header .gradient-blur {
     top: 0;
     left: 0;
     z-index: 996;
+    backdrop-filter: blur(7px);
     -webkit-backdrop-filter: blur(7px);
     -webkit-mask-image: -webkit-linear-gradient(white 30%, transparent 60%);
     mask-image: linear-gradient(white 30%, transparent 60%);
@@ -305,6 +307,7 @@ header .gradient-blur {
     top: 0;
     left: 0;
     z-index: 997;
+    backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
     -webkit-mask-image: -webkit-linear-gradient(white 50%, transparent 80%);
     mask-image: linear-gradient(white 50%, transparent 80%);
@@ -317,6 +320,7 @@ header .gradient-blur {
     top: 0;
     left: 0;
     z-index: 998;
+    backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px);
     -webkit-mask-image: -webkit-linear-gradient(white 75%, transparent 90%);
     mask-image: linear-gradient(white 75%, transparent 90%);
@@ -382,7 +386,8 @@ header * {
     transition: all 0.2s ease-in-out;
     text-wrap: wrap;
     font-weight: normal;
-    box-shadow: inset 0 -3px 3px rgba(255, 255, 255, 0.15);    
+    box-shadow: inset 0 -3px 3px rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(6px) saturate(140%) contrast(160%) brightness(90%);    
     -webkit-backdrop-filter: blur(6px) saturate(140%) contrast(160%) brightness(90%);
     max-width: 90vw;
 }
@@ -418,6 +423,7 @@ header * {
     background: var(--color-background-card-transparent);
     height: calc(100dvh - 36px);
     width: 100vw;
+    backdrop-filter: var(--background-filter-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
     padding: 8px;
     margin-right: 8px;
@@ -480,6 +486,7 @@ header * {
 .side-bar .selection, .side-bar .selection.no-collapse { 
     background-color: transparent;
     background: transparent;
+    backdrop-filter: unset;
     -webkit-backdrop-filter: unset;
     box-shadow: unset;
     position: relative;
@@ -565,8 +572,8 @@ header * {
     box-shadow: var(--item-shadow-inset);
     filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.2));
     color: var(--color-text);
-    -webkit-backdrop-filter: none;
     z-index: 999;
+    backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 }
 
@@ -595,6 +602,7 @@ header * {
 
 .actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .tooltip, button:hover, .side-bar.collapsed:hover { 
     filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.2));
+    backdrop-filter: var(--background-filter-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
     border-radius: 24px;
 }
@@ -881,6 +889,7 @@ datalist {
     width: fit-content;
     transition: all 0.3s ease;
     background-color: var(--color-background-card);
+    backdrop-filter: var(--background-filter-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
     justify-content: flex-start;
 }

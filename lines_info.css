@@ -129,7 +129,7 @@
 .station-line-block { 
     display: block;
     height: max-content;
-    min-height: 72px;
+    min-height: 60px;
     width: 6px;
     margin-left: 6px;
     background-color: var(--current-color);
