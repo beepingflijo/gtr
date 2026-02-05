@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <!-- 添加视口元标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>动态导览 - 通运铁路信息</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="preferences.css">
+    <link rel="stylesheet" href="pov-frame.css">
+</head>
+<body>
+<div class="app-container">
+    <div class="preview-container">
+        <div class="preview-background" style="opacity: 0"></div>
+        <div class="frame-container">
+            <div class="frame-background"></div>
+            <div class="frame-text-container">
+                <div class="frame-text-lines line-name-container">
+                    <div class="frame-text line-name">示例线路</div>
+                    <div class="frame-text-secondary line-name-en">Sample Line</div>
+                </div>
+                <div class="station-name-container">
+                    <div class="station-name this-station">
+                        <div class="frame-text-accent station-name-accent">下一站</div>
+                        <div class="frame-text-lines station-name-secondary">
+                            <div class="frame-text station-name-hant">当前车站</div>
+                            <div class="frame-text-secondary station-name-en">Sample Station</div>
+                        </div>
+                    </div>
+                    <div class="platform-container current-platform">
+                        <div class="frame-text-accent platform-accent">1</div>
+                        <div class="frame-text-lines platform-secondary">
+                            <div class="frame-text platform-text">站台</div>
+                            <div class="frame-text-secondary platform-text-en">Platform</div>
+                        </div>
+                    </div>
+                    <div class="next-arrow-container">
+                        <div class="frame-text-accent next-arrow">→</div>
+                        <div class="frame-text-lines next-secondary">
+                            <div class="frame-text next-text">下一站</div>
+                            <div class="frame-text-secondary next-text-en">Next Station</div>
+                        </div>
+                    </div>
+                    <div class="station-name next-station">
+                        <div class="frame-text-accent station-name-accent">下一站</div>
+                        <div class="frame-text-lines station-name-secondary">
+                            <div class="frame-text station-name-hant">下一车站</div>
+                            <div class="frame-text-secondary station-name-en">Sample Station</div>
+                        </div>
+                    </div>
+                    <div class="platform-container next-platform">
+                        <div class="frame-text-accent platform-accent">2</div>
+                        <div class="frame-text-lines platform-secondary">
+                            <div class="frame-text platform-text">站台</div>
+                            <div class="frame-text-secondary platform-text-en">Platform</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <main>
+        <div class="item pref-list">
+            <div class="item-title icon-btn">
+                <img src="./res/profile.png" alt="profile" class="icon"></img>
+                <h3 id="basicPref">基础设置</h3>
+            </div>
+            <div class="pref-item"> 
+                <span id="modePref">模式</span>
+                <div class="selection mode-selector collapsed">
+                    <div class="selection-item active" data-mode="manual">手动控制</div>
+                    <div class="selection-item" data-mode="follow">跟随车辆</div>
+                </div>
+            </div>
+            <div class="pref-item"> 
+                <span id="setBackgroundPref">自定义背景</span>
+                <div class="switch set-background"></div>
+            </div>
+            <div class="pref-item"> 
+                <span id="backgroundInputPref">背景</span>
+                <textarea rows="1" class="pref-value" id="backgroundInput" spellcheck="false"></textarea>
+            </div>
+        </div>
+        <div class="item pref-list"> 
+            <div class="item-title icon-btn">
+                <img src="./res/stack.png" alt="storage" class="icon"></img>
+                <h3 id="stationsPref">车站列表</h3>
+            </div>
+            <div class="pref-item"> 
+                <span id="linePref">线路</span>
+                <div class="selection line-selector collapsed">
+                    <div class="selection-item active" data-mode="manual">选择线路</div>
+                </div>
+            </div>
+            <div class="pref-item"> 
+                <span id="setUpwardsPref">切换为上行</span>
+                <div class="switch set-upwards"></div>
+            </div>
+            <div class="pref-item station-list"> 
+                <span id="stationManagePref">管理报站数据</span>
+            </div>
+        </div>
+        <div class="disclaimer"> 
+            <span id="disclaimerText">本站提及的各类地名、组织名、品牌名均为虚构。本站不对用户输入的内容做任何担保。部分代码使用AI生成，图标来自</span>
+            <a href="https://icons8.com/">Icons8</a>
+        </div>
+    </main>
+    <footer>
+        <div class="actions"> 
+            <div class="icon-btn back-btn">
+                <img src="./res/back.png" alt="back" class="icon"></img>
+            </div>
+        </div>
+        <div class="expand-window-text">
+            <span id="expandWindowText" style="transition: all 0.3s ease;">向下延伸窗口以控制导览内容</span>
+        </div>
+        <div class="actions"> 
+            <div class="icon-btn prev-btn">
+                <img src="./res/prev.png" alt="prev" class="icon"></img>
+            </div>
+            <div class="icon-btn next-btn">
+                <img src="./res/next.png" alt="next" class="icon"></img>
+            </div>
+        </div>
+    </footer>
+</div>
+<script src="pov-frame.js" type="module"></script>
+<script src="position_utils.js"></script>
+<script src="script.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</body>
+</html>
