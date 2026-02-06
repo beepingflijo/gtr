@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             window.lines = data.lines;
             init();
+            initBackgroundModeSelector();
             initLineSelector();
             initUpwardsSwitch();
             initStationList();
@@ -40,6 +41,170 @@ function init() {
         refreshFrame();
         refreshStationList();
     });
+    const previewContainer = document.querySelector('.preview-container');
+    previewContainer.addEventListener('wheel', (e) => { 
+        e.preventDefault();
+        // 根据滚动方向调整activeStepIndex
+        if (e.deltaY > 0) { 
+            // 向上滚动，前进
+            activeStepIndex++;
+            if (activeStepIndex > actionList.length - 1) activeStepIndex = actionList.length - 1;
+            refreshFrame();
+            refreshStationList();
+        } else { 
+            // 向下滚动，后退
+            activeStepIndex--;
+            if (activeStepIndex < 0) activeStepIndex = 0;
+            refreshFrame();
+            refreshStationList();
+        }
+    });
+}
+
+function initBackgroundModeSelector() { 
+    const selector = document.querySelector('.background-mode-selector');
+    if (!selector) return;
+
+    selector.innerHTML = ''; // 清空现有选项
+    // 为每个背景模式创建选项
+    const modes = [
+        { id: 'transparent', name: '透明（直接叠加）' },
+        { id: 'color', name: '纯色（抠像）' },
+        { id: 'video', name: '导入视频' },
+        { id: 'capture', name: '屏幕捕获（电脑）' },
+    ];
+    modes.forEach(mode => {
+        const item = document.createElement('div');
+        item.className = 'selection-item';
+        item.textContent = mode.name;
+        item.dataset.background = mode.id;
+        selector.appendChild(item);
+    });
+    // 添加点击事件
+    selector.querySelectorAll('.selection-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // 移除之前的激活状态
+            const previousActive = selector.querySelector('.selection-item.active');
+            if (previousActive) {
+                previousActive.classList.remove('active');
+            }
+            // 添加当前项的激活状态
+            this.classList.add('active');
+            // 获取当前激活的选项的data-background属性
+            const background = this.dataset.background;
+            applyBackgroundMode(background);
+        });
+    });
+    selector.querySelectorAll('.selection-item')[0].click(); // 默认选择第一个选项
+}
+
+function applyBackgroundMode(mode) {
+    const previewBackground = document.querySelector('.preview-background');
+    const customBackground = document.querySelector('.custom-background');
+    if (!previewBackground || !customBackground) return;
+    previewBackground.innerHTML = ''; // 清空现有背景
+    // 停止所有的屏幕共享
+    const existingVideos = previewBackground.querySelectorAll('video');
+    existingVideos.forEach(video => {
+        const stream = video.srcObject;
+        if (stream) {
+            stream.getTracks().forEach(track => {
+                track.stop();
+                video.srcObject = null;
+                video.remove();
+            });
+        }
+    });
+    // 修复：将 HTMLCollection 转换为数组后再使用 forEach
+    Array.from(customBackground.children).forEach(child => {
+        child.style.width = 0;
+        child.style.minWidth = 0;
+        child.style.margin = 0;
+        child.style.opacity = 0;
+        child.style.whiteSpace = 'nowrap';
+    });
+    customBackground.parentElement.style.height = 0;
+    customBackground.parentElement.style.opacity = 0;
+    customBackground.style.overflow = 'hidden';
+    customBackground.parentElement.style.padding = '0 12px';
+    const colorInput = document.getElementById('backgroundColorInput');
+    const videoInput = document.getElementById('backgroundVideoInput');
+    videoInput.value = ''; // 重置视频输入
+    const videoControls = document.querySelector('.video-controls');
+
+    switch (mode) {
+        case 'transparent':
+            previewBackground.style.backgroundColor = 'transparent';
+            break;
+        case 'color':
+            customBackground.parentElement.style.height = '30px';
+            customBackground.parentElement.style.opacity = 1;
+            customBackground.parentElement.style.padding = '4px 12px';
+            colorInput.style.width = '24px';
+            colorInput.style.opacity = 1;
+            colorInput.style.margin = 'unset';
+            previewBackground.style.backgroundColor = colorInput.value;
+            colorInput.addEventListener('input', (e) => {
+                const color = e.target.value;
+                previewBackground.style.backgroundColor = color;
+            });
+            break;
+        case 'video':
+            customBackground.parentElement.style.height = '30px';
+            customBackground.parentElement.style.opacity = 1;
+            customBackground.parentElement.style.padding = '4px 12px';            
+            // 添加视频背景
+            videoInput.style.width = '240px';
+            videoInput.style.opacity = 1;
+            videoInput.style.margin = 'unset';
+            //videoControls.style.width = '120px';
+            //videoControls.style.opacity = 1; 视频控制暂不支持
+            videoInput.addEventListener('change', (e) => { 
+                const video = e.target.files[0];
+                if (video) { 
+                    const videoURL = URL.createObjectURL(video);
+                    previewBackground.innerHTML = ''; // 清空现有背景
+                    const videoElement = document.createElement('video');
+                    videoElement.src = videoURL;
+                    videoElement.autoplay = true;
+                    videoElement.loop = true;
+                    videoElement.muted = true;
+                    videoElement.style.width = '100%';
+                    videoElement.style.height = '100%';
+                    videoElement.style.objectFit = 'cover';
+                    previewBackground.appendChild(videoElement);
+                }
+            });
+            break;
+        case 'capture':
+            customBackground.parentElement.style.height = '30px';
+            customBackground.parentElement.style.opacity = 1;
+            customBackground.parentElement.style.padding = '4px 12px';  
+            // 添加屏幕捕获背景
+            const captureButton = document.querySelector('.capture-screen-btn');
+            captureButton.style.width = '120px';
+            captureButton.style.opacity = 1;
+            customBackground.style.overflow = 'visible';
+            captureButton.addEventListener('click', async () => {
+                try {
+                    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    previewBackground.innerHTML = ''; // 清空现有背景
+                    const videoElement = document.createElement('video');
+                    videoElement.srcObject = stream;
+                    videoElement.autoplay = true;
+                    videoElement.style.width = '100%';
+                    videoElement.style.height = '100%';
+                    videoElement.style.objectFit = 'cover';
+                    previewBackground.appendChild(videoElement);
+                } catch (err) {
+                    console.error('Error accessing display media:', err);
+                }
+            });
+            break;
+        default:
+            console.error('Invalid background mode:', mode);    
+    }
 }
 
 function initLineSelector() { 
@@ -72,6 +237,7 @@ function initLineSelector() {
             this.style.setProperty('--color-primary', line.color);
 
             initStationList();
+            actionListAssembled = false;
             refreshFrame();
             //handleWindowResize();
             
@@ -79,6 +245,30 @@ function initLineSelector() {
         
         selector.appendChild(item);
         if (index === 0) item.click(); // 默认选择第一条线路
+    });
+
+    const editItem = selector.querySelectorAll('.selection-item')[0];
+    editItem.addEventListener('click', function(e) { 
+        e.stopPropagation();
+        const exampleLine = { 
+            id: 'manual',
+            name: { zh_hans: '自定义线路', en: 'Custom Line' },
+            color: '#E77000',
+            route: [
+                { code: 'S001', name:['第一站','First Station'], type: 'station' },
+                { code: 'S002', name:['终点站','終點站','Terminal Station'], type: 'station' },
+            ]
+        };
+        activeLine = exampleLine;
+        activeLineId = this.dataset.line;
+        this.parentElement.querySelectorAll('.selection-item').forEach(child => child.classList.remove('active'));
+        this.style.setProperty('--color-primary', exampleLine.color);
+        this.classList.add('active');
+
+        initStationList();
+        actionListAssembled = false;
+        refreshFrame();
+        //handleWindowResize();
     });
 }
 
@@ -187,6 +377,22 @@ function refreshFrame() {
         setInterval(function() { 
             stationNameContainer.style.opacity = 1;
         }, 1200);
+    } else if (stationNameContainer) {
+        // 站台信息可能会在组装后才会更新
+        actionList.forEach((action,index) => {
+            if (action.type === 'arrive') {
+                const platformElement = stationNameContainer.querySelector(`[data-id="platform-${action.station}"]`);
+                if (platformElement) {
+                    const platformText = platformElement.querySelector('.platform-accent');
+                    if (platformText) {
+                        platformText.textContent = action.platform;
+                    } else {
+                        platformElement.classList.add(index > activeStepIndex ? 'collapsed' : 'hidden');
+                        platformElement.width = 0;
+                    }
+                }
+            }
+        });
     }
 
     // 安全检查：确保必要元素存在
@@ -223,10 +429,28 @@ function refreshFrame() {
     }
     let stationFound = false;
     let pastStations = [];
-    stations.forEach(station => { 
+    const prevBtn = document.querySelector('.prev-btn');
+    const nextBtn = document.querySelector('.next-btn');
+    stations.forEach((station,index) => { 
         if (station.code === activeStep.station) { 
             // 当前车站
             stationFound = true;
+            if (index === stations.length - 1) {
+                prevBtn.style.opacity = 1;
+                prevBtn.style.cursor = 'pointer';
+                nextBtn.style.opacity = 0.1;
+                nextBtn.style.cursor = 'not-allowed';
+            } else if (index === 0) { 
+                prevBtn.style.opacity = 0.1;
+                prevBtn.style.cursor = 'not-allowed';
+                nextBtn.style.cursor = 'pointer';
+                nextBtn.style.opacity = 1;
+            } else { 
+                prevBtn.style.opacity = 1;
+                prevBtn.style.cursor = 'pointer';
+                nextBtn.style.cursor = 'pointer';
+                nextBtn.style.opacity = 1;
+            }
             //查找dataset-id为station.code的元素
             const stationElement = document.querySelector(`[data-id="${station.code}"]`);
             if (stationElement) { 
@@ -234,9 +458,9 @@ function refreshFrame() {
                 stationElement.classList.remove('hidden','out','collapsed');
                 // 修正：需要访问.name属性才能获取字符串长度
                 stationElement.style.width = 
-                    getLanguageListForStation(station.code)[0].name.length * 4.2 +
-                    Math.max(getLanguageListForStation(station.code)[1].name.length * 1.25 ,
-                    getLanguageListForStation(station.code)[2].name.length * 0.8 ) + 'em';
+                    calculateTextWidth(getLanguageListForStation(station.code)[0].name) * 4.2 +
+                    Math.max(calculateTextWidth(getLanguageListForStation(station.code)[1].name) * 2.2 ,
+                    calculateTextWidth(getLanguageListForStation(station.code)[2].name) * 1.4) + 1 + 'em';
             }
             switch (activeStep.type) { 
                 case 'nextStation':
@@ -244,7 +468,7 @@ function refreshFrame() {
                     if (platformForNext) { 
                         platformForNext.classList.remove('out','collapsed');
                         platformForNext.classList.add('hidden');
-                        //platform.style.width = widthList.find(item => item.id === `platform-${station.code}`).width;
+                        platformForNext.style.width = 0;
                     }
                     const nextStation = document.querySelector(`[data-id="next-${station.code}"]`);
                     if (nextStation) { 
@@ -263,7 +487,7 @@ function refreshFrame() {
                     const platform = document.querySelector(`[data-id="platform-${station.code}"]`);
                     if (platform) { 
                         platform.classList.remove('hidden','out','collapsed');
-                        //platform.style.width = widthList.find(item => item.id === `platform-${station.code}`).width;
+                        platform.style.width = calculateTextWidth(activeStep.platform) * 4.2 + 8 + 'em';
                     }
                     
             }
@@ -286,7 +510,7 @@ function refreshFrame() {
             if (platform) { 
                 platform.classList.remove('out','collapsed');
                 platform.classList.add('hidden');
-                //platform.style.width = 0;
+                platform.style.width = 0;
             }
         } else { 
             // 已过车站
@@ -307,25 +531,51 @@ function refreshFrame() {
             if (platform) { 
                 platform.classList.remove('out','hidden');
                 platform.classList.add('collapsed');
-                //platform.style.width = 0;
+                platform.style.width = 0;
             }
         }
     });
 }
 
+function calculateTextWidth(string) {
+    // 部分字符可记为半字宽
+    const halfWidthCharacters = '023456789abcdefghknopqrstuvxyzабвгґеєзийкнопрстхцчья';
+    const quarterWidthCharacters = '1ilI.,\'ії"\/\\|!` ';
+    let width = 0;
+    for (let char of string) {
+        if (halfWidthCharacters.includes(char)) {
+            width += 0.5;
+        } else if (quarterWidthCharacters.includes(char)) {
+            width += 0.25;
+        } else {
+            width += 1;
+        }
+    }
+    return width;
+}
+
 function getLanguageListForStation(stationCode) {
     const stationNames = window.strings.station_names[stationCode];
     const languages = [];
-    // 如果stationCode以A开头则添加乌克兰语
-    const addUk = stationCode.startsWith('A');
-    if (stationNames.original) languages.push({ code: 'original', name: stationNames.original });
-    if (stationNames.zh_hans) languages.push({ code: 'zh_hans', name: stationNames.zh_hans });
-    if (stationNames.zh_hant && stationNames.zh_hant != languages[0].name) languages.push({ code: 'zh_hant', name: stationNames.zh_hant });
-    console.log(languages);
-    if (stationNames.en) languages.push({ code: 'en', name: stationNames.en + (languages.length >= 2 && addUk ? (' / ' + stationNames.uk) : '') });
-    if (addUk) languages.push({ code: 'uk', name: stationNames.uk });
-    if (languages.length < 3) {
-        languages.push({ code: 'end', name: '' });
+    if (activeLineId === 'manual') { 
+        const stationNamesForManual = activeLine.route.find(station => station.code === stationCode).name;
+        for (let index = 0; index < 3; index++) { 
+            const name = stationNamesForManual[index];
+            if (name) languages.push({ code: 'manual-' + index, name: name });
+            else languages.push({ code: 'end', name: '' });
+        }
+    } else { 
+        // 如果stationCode以A开头则添加乌克兰语
+        const addUk = stationCode.startsWith('A');
+        if (stationNames.original) languages.push({ code: 'original', name: stationNames.original });
+        if (stationNames.zh_hans) languages.push({ code: 'zh_hans', name: stationNames.zh_hans });
+        if (stationNames.zh_hant && stationNames.zh_hant != languages[0].name) languages.push({ code: 'zh_hant', name: stationNames.zh_hant });
+        console.log(languages);
+        if (stationNames.en) languages.push({ code: 'en', name: stationNames.en + (languages.length >= 2 && addUk ? (' / ' + stationNames.uk) : '') });
+        if (addUk) languages.push({ code: 'uk', name: stationNames.uk });
+        if (languages.length < 3) {
+            languages.push({ code: 'end', name: '' });
+        }
     }
     return languages;
 }
@@ -342,6 +592,7 @@ function initUpwardsSwitch() {
     switchElement.addEventListener('click', () => {
         isUpwards = !isUpwards;
         switchElement.classList.toggle('active');
+        actionListAssembled = false;
         initStationList();
         refreshStationList();
     });
@@ -362,7 +613,7 @@ function initStationList() {
         if (index > 0){
             const nextStaItem = document.createElement('div');
             nextStaItem.className = 'pref-item station-item';
-            nextStaItem.textContent = '下一站 ' + window.strings.station_names[station.code].zh_hans;
+            nextStaItem.textContent = '下一站 ' + getLanguageListForStation(station.code)[0].name;
             nextStaItem.addEventListener('click', () => { 
                 activeStepIndex = index * 2 - 1;
                 refreshFrame();
@@ -377,19 +628,80 @@ function initStationList() {
         }
         const item = document.createElement('div');
         item.className = 'pref-item station-item';
-        item.textContent = '到达 ' + window.strings.station_names[station.code].zh_hans;
+        item.textContent = '到达 ' + getLanguageListForStation(station.code)[0].name;
         item.addEventListener('click', () => { 
             activeStepIndex = index * 2;
             refreshFrame();
             refreshStationList();
         });
+
+        const stationInputContainer = document.createElement('div');
+        
+        if (activeLineId === 'manual') {
+            for (let i = 0; i < 3; i++) { 
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.placeholder = '站名';
+                nameInput.className = 'name-input';
+                nameInput.id = 'name-input-' + i + '-' + station.code;
+                nameInput.style.minWidth = 0;
+                nameInput.style.width = '40px';
+                nameInput.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+                nameInput.addEventListener('input', (e) => { 
+                    const value = e.target.value;
+                    // 更新activeLine中的对应车站名称
+                    const stationInRoute = activeLine.route.find(s => s.code === station.code);
+                    if (stationInRoute) {
+                        stationInRoute.name[i] = value;
+                    }
+                    // 如果是第0个输入框，更新item的文本内容
+                    if (i === 0) {
+                        item.textContent = '到达 ' + value;
+                    }
+                    refreshFrame();
+                    refreshStationList();
+                });
+                stationInputContainer.appendChild(nameInput);
+            }
+        }
+
+        const platformInput = document.createElement('input');
+        platformInput.type = 'text';
+        platformInput.placeholder = '站台';
+        platformInput.className = 'platform-input';
+        platformInput.style.minWidth = 0;
+        platformInput.style.width = '36px';
+        platformInput.id = 'platform-input-' + station.code;
+        platformInput.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        platformInput.addEventListener('input', (e) => { 
+            const value = e.target.value;
+            // 更新actionList中的对应平台信息
+            const actionIndex = actionList.findIndex(action => action.type === 'arrive' && action.station === station.code);
+            if (actionIndex !== -1) {
+                actionList[actionIndex].platform = value;
+            }
+            refreshFrame();
+        });
+        stationInputContainer.appendChild(platformInput);
+        item.appendChild(stationInputContainer);
+
         list.appendChild(item);
         actionList.push({ 
             type: 'arrive', 
             station: station.code,
-            platform: ''
+            platform: platformInput.value || ''
         });
     });
+    if (activeLineId === 'manual') { 
+        const addStationItem = document.createElement('div');
+        addStationItem.className = 'pref-item station-item add-station-item';
+        addStationItem.textContent = '+ 添加车站';
+        list.appendChild(addStationItem);
+    }
     refreshFrame();
     refreshStationList();
 }
@@ -452,6 +764,7 @@ function handleWindowResize() {
             item.style.alignItems = 'center';
             item.style.justifyContent = 'space-between';
             item.style.height = '30px';
+            initBackgroundModeSelector();
 
             // 修复：添加空值检查
             const firstChild = item.querySelector('*');
@@ -491,7 +804,7 @@ function handleWindowResize() {
         }
     });
 
-    const expandWindowText = document.querySelector('#expandWindowText');
+    const expandWindowText = document.querySelector('.expand-window-text');
     if (window.innerHeight < window.innerWidth * 0.8) {
         expandWindowText.style.opacity = 1;
     } else { 

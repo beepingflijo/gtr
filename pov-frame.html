@@ -13,7 +13,7 @@
 <body>
 <div class="app-container">
     <div class="preview-container">
-        <div class="preview-background" style="opacity: 0"></div>
+        <div class="preview-background"></div>
         <div class="frame-container">
             <div class="frame-background"></div>
             <div class="frame-text-container">
@@ -64,7 +64,7 @@
     <main>
         <div class="item pref-list">
             <div class="item-title icon-btn">
-                <img src="./res/profile.png" alt="profile" class="icon"></img>
+                <img src="./res/settings.png" alt="settings" class="icon"></img>
                 <h3 id="basicPref">基础设置</h3>
             </div>
             <div class="pref-item"> 
@@ -75,12 +75,35 @@
                 </div>
             </div>
             <div class="pref-item"> 
-                <span id="setBackgroundPref">自定义背景</span>
-                <div class="switch set-background"></div>
+                <span id="backgroundModePref">背景模式</span>
+                <div class="selection background-mode-selector collapsed">
+                    <div class="selection-item active" data-background="transparent">透明（直接叠加）</div>
+                    <div class="selection-item" data-background="color">纯色（抠像）</div>
+                    <div class="selection-item" data-background="video">视频</div>
+                    <div class="selection-item" data-background="capture">屏幕捕获（电脑）</div>
+                </div>
             </div>
             <div class="pref-item"> 
-                <span id="backgroundInputPref">背景</span>
-                <textarea rows="1" class="pref-value" id="backgroundInput" spellcheck="false"></textarea>
+                <span id="customBackgroundPref">自定义背景</span>
+                <div class="custom-background">
+                    <input type="color" class="pref-value" id="backgroundColorInput"></input>
+                    <input type="file" accept="video/*" class="pref-value" id="backgroundVideoInput"></input>
+                    <div class="video-controls">
+                        <div class="icon-btn replay-btn">
+                            <img src="./res/replay.png" alt="replay" class="icon"></img>
+                        </div>
+                        <div class="icon-btn rewind-btn"> 
+                            <img src="./res/rewind.png" alt="rewind" class="icon"></img>
+                        </div>
+                        <div class="icon-btn play-btn">
+                            <img src="./res/play.png" alt="pause" class="icon"></img>
+                        </div>
+                        <div class="icon-btn forward-btn">
+                            <img src="./res/forward.png" alt="forward" class="icon"></img>
+                        </div>
+                    </div>
+                    <button class="capture-screen-btn">开始屏幕捕获</button>
+                </div>
             </div>
         </div>
         <div class="item pref-list"> 
@@ -91,7 +114,7 @@
             <div class="pref-item"> 
                 <span id="linePref">线路</span>
                 <div class="selection line-selector collapsed">
-                    <div class="selection-item active" data-mode="manual">选择线路</div>
+                    <div class="selection-item active" data-line="manual">自定义……</div>
                 </div>
             </div>
             <div class="pref-item"> 
@@ -113,8 +136,8 @@
                 <img src="./res/back.png" alt="back" class="icon"></img>
             </div>
         </div>
-        <div class="expand-window-text">
-            <span id="expandWindowText" style="transition: all 0.3s ease;">向下延伸窗口以控制导览内容</span>
+        <div class="expand-window-text" style="transition: all 0.3s ease;border: none;">
+            <span id="expandWindowText">向下延伸窗口以控制导览内容</span>
         </div>
         <div class="actions"> 
             <div class="icon-btn prev-btn">

@@ -16,16 +16,17 @@ main {
 }
 
 .preview-container { 
-    width: 100vw;
+    width: 100svw;
     aspect-ratio: 16/9;
 }
 
 .preview-container > * {
     width: 1920px;
     height: 1080px;
-    transform: scale(calc(100vw / 1920px));
+    transform: scale(calc(100svw / 1920px));
     transform-origin: top left;
     position:absolute;
+    transition: all 0.5s ease-in-out;
 }
 
 .frame-container { 
@@ -37,7 +38,7 @@ main {
 }
 
 .frame-container * { 
-    transition: all 0.3s ease-in-out;
+    transition: all 0.5s ease-in-out;
     text-wrap: nowrap;
     width: fit-content;
 }
@@ -69,6 +70,7 @@ main {
     justify-content: space-between;
     padding: 0 120px;
     font-weight: normal;
+    text-shadow: 0 6px 12px rgba(0,0,0,0.2);
 }
 
 .frame-text-container .frame-text {
@@ -127,14 +129,12 @@ main {
 }
 
 .station-name-container .platform-container {
-    font-weight: bold;
     width: 12em;
     display: flex;
     justify-content: flex-end;
 }
 
 .station-name-container .next-arrow-container {
-    font-weight: bold;
     width: 12em;
     display: flex;
     justify-content: flex-end;
@@ -188,11 +188,38 @@ main {
     align-items: center;
     padding: 0 12px;
     border-radius: 8px;
-    transition: all 0.2s ease-in-out;
+    transition: all 0.5s ease-in-out;
 }
 
 .station-item.active { 
     font-weight: bold;
-    background-color: var(--color-secondary-hover);
+    background-color: var(--color-background-actions);
+    box-shadow: var(--item-shadow-inset);
     color: var(--color-primary);
+    padding: 4px 12px;
+    border-radius: 36px;
+}
+
+.effect-reduced .station-item.active { 
+    border: 2px solid var(--color-primary);
+    color: var(--color-primary);
+}
+
+.effect-reduced .station-item:hover { 
+    text-decoration: underline;
+}
+
+.custom-background, .custom-background > * { 
+    transition: all 0.3s ease-in-out;
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.video-controls { 
+    display: flex;
+    flex-direction: row;
 }

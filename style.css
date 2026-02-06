@@ -828,7 +828,7 @@ main {
     transition: all 0.3s ease;
 }
 
-button {
+button, input[type="button"], input[type="submit"], input#file-upload-button {
     padding: 6px 12px;
     border: none;
     border-radius: 16px;
@@ -867,6 +867,28 @@ input, input#endInput, textarea {
     font-family: var(--font-family);
     background-color: var(--color-background-card);
     min-height: 16px;
+}
+
+input[type="file"] { 
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    height: -webkit-fill-available;
+    width: 160px;
+}
+
+input[type="color"] { 
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    border:none;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border: none;
 }
 
 datalist { 
