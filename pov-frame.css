@@ -26,7 +26,7 @@ main {
     transform: scale(calc(100svw / 1920px));
     transform-origin: top left;
     position:absolute;
-    transition: all 0.5s ease-in-out;
+    transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out;
 }
 
 .frame-container { 
@@ -38,7 +38,7 @@ main {
 }
 
 .frame-container * { 
-    transition: all 0.5s ease-in-out;
+    transition: all 0.3s ease-in-out;
     text-wrap: nowrap;
     width: fit-content;
 }
@@ -177,7 +177,7 @@ main {
     display: flex;
     flex-direction: column;
     background-color: var(--color-secondary);
-    border-radius: 12px;
+    border-radius: 18px;
     margin-top: 8px;
 }
 
@@ -187,8 +187,8 @@ main {
     justify-content: space-between;
     align-items: center;
     padding: 0 12px;
-    border-radius: 8px;
-    transition: all 0.5s ease-in-out;
+    border-radius: 36px;
+    transition: all 0.3s ease-in-out;
 }
 
 .station-item.active { 
@@ -197,7 +197,14 @@ main {
     box-shadow: var(--item-shadow-inset);
     color: var(--color-primary);
     padding: 4px 12px;
-    border-radius: 36px;
+}
+
+.station-item input, .pref-item input { 
+    padding: 2px 6px;
+}
+
+.line-name-input { 
+    width: 6em;
 }
 
 .effect-reduced .station-item.active { 
@@ -222,4 +229,31 @@ main {
 .video-controls { 
     display: flex;
     flex-direction: row;
+}
+
+input[type="color"] {
+    padding: 0;
+    border: none; 
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border: none;
+}
+
+@media (width > 0) {
+    footer { 
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 0;
+    }    
+    footer.swapped { 
+        flex-direction: row-reverse;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 0;
+    }
+    footer .tabs {
+        width: fit-content;
+    }
 }

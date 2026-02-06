@@ -5,6 +5,7 @@ let widthList = [];
 let actionListAssembled = false;
 let activeStepIndex = 0;
 let isUpwards = false;
+let newStationCount = 2;
 
 document.addEventListener('DOMContentLoaded', function () { 
     fetch('./data/lines.json')
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
             init();
             initBackgroundModeSelector();
             initLineSelector();
+            initLineNameInputs();
             initUpwardsSwitch();
             initStationList();
             handleWindowResize();
@@ -121,6 +123,7 @@ function applyBackgroundMode(mode) {
         child.style.width = 0;
         child.style.minWidth = 0;
         child.style.margin = 0;
+        child.style.padding = 0;
         child.style.opacity = 0;
         child.style.whiteSpace = 'nowrap';
     });
@@ -144,6 +147,7 @@ function applyBackgroundMode(mode) {
             colorInput.style.width = '24px';
             colorInput.style.opacity = 1;
             colorInput.style.margin = 'unset';
+            colorInput.style.padding = '';
             previewBackground.style.backgroundColor = colorInput.value;
             colorInput.addEventListener('input', (e) => {
                 const color = e.target.value;
@@ -158,6 +162,7 @@ function applyBackgroundMode(mode) {
             videoInput.style.width = '240px';
             videoInput.style.opacity = 1;
             videoInput.style.margin = 'unset';
+            videoInput.style.padding = '';
             //videoControls.style.width = '120px';
             //videoControls.style.opacity = 1; 视频控制暂不支持
             videoInput.addEventListener('change', (e) => { 
@@ -186,6 +191,7 @@ function applyBackgroundMode(mode) {
             captureButton.style.width = '120px';
             captureButton.style.opacity = 1;
             customBackground.style.overflow = 'visible';
+            captureButton.style.padding = 'unset';
             captureButton.addEventListener('click', async () => {
                 try {
                     const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -225,6 +231,10 @@ function initLineSelector() {
         // 添加点击事件
         item.addEventListener('click', function(e) {
             e.stopPropagation();
+            if (activeLineId === 'manual') {
+                // 保存activeLine到window.lines
+                window.lines.push(activeLine);
+            }
             // 移除之前的激活状态
             const previousActive = selector.querySelector('.selection-item.active');
             if (previousActive) {
@@ -250,25 +260,59 @@ function initLineSelector() {
     const editItem = selector.querySelectorAll('.selection-item')[0];
     editItem.addEventListener('click', function(e) { 
         e.stopPropagation();
-        const exampleLine = { 
-            id: 'manual',
-            name: { zh_hans: '自定义线路', en: 'Custom Line' },
-            color: '#E77000',
-            route: [
-                { code: 'S001', name:['第一站','First Station'], type: 'station' },
-                { code: 'S002', name:['终点站','終點站','Terminal Station'], type: 'station' },
-            ]
-        };
-        activeLine = exampleLine;
-        activeLineId = this.dataset.line;
+        if (window.lines.find(line => line.id === 'manual')) {
+            activeLine = window.lines.find(line => line.id === 'manual');
+            activeLineId = this.dataset.line;
+        } else {
+            const exampleLine = { 
+                id: 'manual',
+                name: { zh_hans: '自定义线路', en: 'Custom Line' },
+                color: '#E77000',
+                route: [
+                    { code: 'M001', name:['第一站','First Station'], type: 'station' },
+                    { code: 'M002', name:['终点站','終點站','Terminal Station'], type: 'station' },
+                ]
+            };
+            activeLine = exampleLine;
+            activeLineId = this.dataset.line;
+        }
         this.parentElement.querySelectorAll('.selection-item').forEach(child => child.classList.remove('active'));
-        this.style.setProperty('--color-primary', exampleLine.color);
+        this.style.setProperty('--color-primary', activeLine.color);
         this.classList.add('active');
+        
 
         initStationList();
         actionListAssembled = false;
         refreshFrame();
         //handleWindowResize();
+    });
+}
+
+function initLineNameInputs() {
+    const lineNameInputContainer = document.querySelector('.line-name-input-container');
+    if (!lineNameInputContainer) return;
+    lineNameInputContainer.parentElement.style.height = activeLineId === 'manual' ? '30px' : '0px';
+    lineNameInputContainer.parentElement.style.overflow = 'hidden';
+    lineNameInputContainer.parentElement.style.minHeight = 0;
+    lineNameInputContainer.parentElement.style.padding = activeLineId === 'manual' ? '4px 12px' : '0px 12px';
+    lineNameInputContainer.parentElement.style.opacity = activeLineId === 'manual' ? 1 : 0;
+    const nameInput1 = document.querySelector('#lineNameInput1');
+    const nameInput2 = document.querySelector('#lineNameInput2');
+    const colorInput = document.querySelector('#lineColorInput');
+    nameInput1.value = activeLine.name.zh_hans;
+    nameInput1.addEventListener('input', function() { 
+        activeLine.name.zh_hans = this.value;
+        refreshFrame();
+    });
+    nameInput2.value = activeLine.name.en;
+    nameInput2.addEventListener('input', function() { 
+        activeLine.name.en = this.value;
+        refreshFrame();
+    });
+    colorInput.value = activeLine.color;
+    colorInput.addEventListener('input', function() { 
+        activeLine.color = this.value;
+        refreshFrame();
     });
 }
 
@@ -297,7 +341,7 @@ function refreshFrame() {
     // 根据actionList组装station-name-container
     const stationNameContainer = frame.querySelector('.station-name-container');
     if (actionListAssembled === false && stationNameContainer) {
-        console.log('Assembling station name container...');
+        //console.log('Assembling station name container...');
         stationNameContainer.innerHTML = ''; // 清空现有内容
         widthList = [];
         stationNameContainer.style.opacity = 0;
@@ -370,7 +414,7 @@ function refreshFrame() {
                 }
             });
             actionListAssembled = true;
-            console.log('Station name container assembled');
+            //console.log('Station name container assembled');
         } else {
             console.warn('No actionList data available');
         }
@@ -415,8 +459,8 @@ function refreshFrame() {
     }
 
     // 修复：使用正确的子元素遍历方式，添加详细的调试信息
-    console.log('Active step:', activeStep);
-    console.log('Children count:', stationNameContainer.children.length);
+    //console.log('Active step:', activeStep);
+    //console.log('Children count:', stationNameContainer.children.length);
     
     const children = stationNameContainer.children;
     let stations;
@@ -435,7 +479,7 @@ function refreshFrame() {
         if (station.code === activeStep.station) { 
             // 当前车站
             stationFound = true;
-            if (index === stations.length - 1) {
+            if (index === stations.length - 1 && activeStep.type === 'arrive') {
                 prevBtn.style.opacity = 1;
                 prevBtn.style.cursor = 'pointer';
                 nextBtn.style.opacity = 0.1;
@@ -570,7 +614,7 @@ function getLanguageListForStation(stationCode) {
         if (stationNames.original) languages.push({ code: 'original', name: stationNames.original });
         if (stationNames.zh_hans) languages.push({ code: 'zh_hans', name: stationNames.zh_hans });
         if (stationNames.zh_hant && stationNames.zh_hant != languages[0].name) languages.push({ code: 'zh_hant', name: stationNames.zh_hant });
-        console.log(languages);
+        //console.log(languages);
         if (stationNames.en) languages.push({ code: 'en', name: stationNames.en + (languages.length >= 2 && addUk ? (' / ' + stationNames.uk) : '') });
         if (addUk) languages.push({ code: 'uk', name: stationNames.uk });
         if (languages.length < 3) {
@@ -601,7 +645,7 @@ function initUpwardsSwitch() {
 function initStationList() {
     const list = document.querySelector('.station-list');
     if (!list) return;
-    console.log('initStationList');
+    //console.log('initStationList');
     list.innerHTML = ''; // 清空现有列表
     actionList = [];
     actionListAssembled = false;
@@ -628,7 +672,9 @@ function initStationList() {
         }
         const item = document.createElement('div');
         item.className = 'pref-item station-item';
-        item.textContent = '到达 ' + getLanguageListForStation(station.code)[0].name;
+        const actionSpan = document.createElement('span');
+        actionSpan.textContent = '到达 ' + getLanguageListForStation(station.code)[0].name;
+        item.appendChild(actionSpan);
         item.addEventListener('click', () => { 
             activeStepIndex = index * 2;
             refreshFrame();
@@ -636,12 +682,17 @@ function initStationList() {
         });
 
         const stationInputContainer = document.createElement('div');
+        stationInputContainer.className = 'station-input-container';
+        stationInputContainer.style.display = 'flex';
+        stationInputContainer.style.flexDirection = 'row';
+        stationInputContainer.style.alignItems = 'center';
+        stationInputContainer.style.justifyContent = 'flex-end';
         
         if (activeLineId === 'manual') {
             for (let i = 0; i < 3; i++) { 
                 const nameInput = document.createElement('input');
                 nameInput.type = 'text';
-                nameInput.placeholder = '站名';
+                nameInput.placeholder = '站名' + (i + 1);
                 nameInput.className = 'name-input';
                 nameInput.id = 'name-input-' + i + '-' + station.code;
                 nameInput.style.minWidth = 0;
@@ -658,11 +709,13 @@ function initStationList() {
                     }
                     // 如果是第0个输入框，更新item的文本内容
                     if (i === 0) {
-                        item.textContent = '到达 ' + value;
+                        actionSpan.textContent = '到达 ' + value;
                     }
+                    actionListAssembled = false;
                     refreshFrame();
                     refreshStationList();
                 });
+                nameInput.value = activeLine.route.find(s => s.code === station.code).name[i] || '';
                 stationInputContainer.appendChild(nameInput);
             }
         }
@@ -672,7 +725,7 @@ function initStationList() {
         platformInput.placeholder = '站台';
         platformInput.className = 'platform-input';
         platformInput.style.minWidth = 0;
-        platformInput.style.width = '36px';
+        platformInput.style.width = '24px';
         platformInput.id = 'platform-input-' + station.code;
         platformInput.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -687,6 +740,31 @@ function initStationList() {
             refreshFrame();
         });
         stationInputContainer.appendChild(platformInput);
+
+        if (activeLineId === 'manual') {
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-button';
+            deleteButton.textContent = '×';
+            deleteButton.addEventListener('mouseover', (e) => {
+                deleteButton.style.color = '#ff4d4d';
+                deleteButton.style.fontWeight = 'bold';
+            });
+            deleteButton.addEventListener('mouseout', (e) => {
+                deleteButton.style.color = ''; // 恢复初始颜色
+                deleteButton.style.fontWeight = '';
+            });
+            deleteButton.addEventListener('click', (e) => { 
+                e.stopPropagation();
+                const index = activeLine.route.findIndex(s => s.code === station.code);
+                if (index !== -1) {
+                    activeLine.route.splice(index, 1);
+                    initStationList();
+                    actionListAssembled = false;
+                    refreshFrame();
+                }
+            });
+            stationInputContainer.appendChild(deleteButton);
+        }
         item.appendChild(stationInputContainer);
 
         list.appendChild(item);
@@ -700,10 +778,23 @@ function initStationList() {
         const addStationItem = document.createElement('div');
         addStationItem.className = 'pref-item station-item add-station-item';
         addStationItem.textContent = '+ 添加车站';
+        addStationItem.addEventListener('click', () => { 
+            newStationCount++;
+            const newStationCode = 'M' + newStationCount.toString().padStart(3, '0');
+            activeLine.route.push({
+                type: 'station',
+                code: newStationCode,
+                name: [newStationCode + '站', '', '']
+            });
+            initStationList();
+            actionListAssembled = false;
+            refreshFrame();
+        });
         list.appendChild(addStationItem);
     }
     refreshFrame();
     refreshStationList();
+    initLineNameInputs();
 }
 
 function refreshStationList() { 
@@ -714,8 +805,22 @@ function refreshStationList() {
             if (index === activeStepIndex) {
                 item.classList.add('active');
             }
+            const action = actionList[index];
+            if (action) {
+                const stationNames = getLanguageListForStation(action.station);
+                if (action.type === 'nextStation') {
+                    item.textContent = '下一站 ' + stationNames[0].name;
+                }
+            }
         });
     }
+    const deleteButtons = document.querySelectorAll('.delete-button');
+    if (list.length <= 4) {
+        deleteButtons.forEach(button => button.style.display = 'none');
+    } else {
+        deleteButtons.forEach(button => button.style.display = 'inline');
+    }
+    initLineNameInputs();
 }
 
 // 获取偏好设置
@@ -765,6 +870,7 @@ function handleWindowResize() {
             item.style.justifyContent = 'space-between';
             item.style.height = '30px';
             initBackgroundModeSelector();
+            initLineNameInputs();
 
             // 修复：添加空值检查
             const firstChild = item.querySelector('*');

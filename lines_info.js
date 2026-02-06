@@ -133,7 +133,7 @@ function init() {
     mapBtn.title = strings.lines_info.route_map[lang];
     mapBtn.addEventListener('click', () => {
         if(confirm(strings.lines_info.data_warning[lang])===true) {
-            window.open('https://track.nitrogen.hydcraft.cn', '_blank');
+            window.open('pov-frame.html', '_blank');
         }
     });
     
