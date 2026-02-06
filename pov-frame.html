@@ -12,6 +12,10 @@
 </head>
 <body>
 <div class="app-container">
+    <div class="title">
+        <h1>动态导览</h1>
+        <span style="padding-left: 0.5em; color:var(--color-text-secondary)">缩略模式</span>
+    </div>
     <div class="preview-container">
         <div class="preview-background"></div>
         <div class="frame-container">
@@ -145,7 +149,7 @@
             </div>
         </div>
         <div class="expand-window-text" style="transition: all 0.3s ease;border: none;">
-            <span id="expandWindowText">向下延伸窗口以控制导览内容</span>
+            <span id="expandWindowText">向下延伸窗口或切换至缩略模式以控制导览内容</span>
         </div>
         <div class="actions"> 
             <div class="icon-btn prev-btn">
@@ -153,6 +157,9 @@
             </div>
             <div class="icon-btn next-btn">
                 <img src="./res/next.png" alt="next" class="icon"></img>
+            </div>
+            <div class="icon-btn fullscreen-btn active">
+                <img src="./res/fullscreen.png" alt="fullscreen" class="icon"></img>
             </div>
         </div>
     </footer>
