@@ -1514,7 +1514,7 @@ function renderSearchResults(routes, container) {
         let routeHTML = `
             <div class="route-header">
                 <div class="route-title"> 
-                    <h3>${strings.ticket_calculator.route[lang] || '路线'} ${index + 1}: ${route.segments ? route.segments.map((segment, segIndex) => segment ? segment.line : '').join('→') : ''}</h3>
+                    <h3>${strings.ticket_calculator.route[lang] || '路线'} ${index + 1}: ${route.segments ? route.segments.map((segment, segIndex) => segment ? segment.line : '').join(' → ') : ''}</h3>
                     <span class="fare">¥${route.fare.toFixed(2)}</span>
                 </div>
                 <div class="route-summary">

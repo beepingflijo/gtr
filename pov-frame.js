@@ -93,6 +93,7 @@ function toggleFullscreen() {
     previewContainer.style.margin = fullscreenBtn.classList.contains('active') ? '0' : '64px 24px';
     previewContainer.style.borderRadius = fullscreenBtn.classList.contains('active') ? '0' : '16px';
     previewContainer.style.backgroundColor = fullscreenBtn.classList.contains('active') ? '' : previewBackgroundColor;
+    previewContainer.style.boxShadow = fullscreenBtn.classList.contains('active') ? 'none' : 'var(--item-shadow-inset)';
     title.style.opacity = fullscreenBtn.classList.contains('active') ? 0 : 1;
     disclaimer.style.position = fullscreenBtn.classList.contains('active') ? 'relative' : 'fixed';
     disclaimer.style.left = fullscreenBtn.classList.contains('active') ? '0' : '24px';
