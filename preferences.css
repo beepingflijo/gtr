@@ -2,7 +2,7 @@ button {
     min-width: fit-content;
 }
 
-.item {
+.item:not(.dialog-container) {
     width: -webkit-fill-available;
     padding: 18px;
     padding-bottom: 24px;

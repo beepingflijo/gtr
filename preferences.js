@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initLanguageSelector();
             initThemeSelector();
             initFontSelector();
+            initUseDialogSwitch();
             initCollapseSwitch();
             initSwapFooterSwitch();
             initReduceMotionSwitch();
@@ -98,6 +99,8 @@ function init() {
     themePref.textContent = strings.preferences.theme_mode[lang];
     const fontPref = document.getElementById('fontPref');
     fontPref.textContent = strings.preferences.font[lang];
+    const useDialogPref = document.getElementById('useDialogPref');
+    useDialogPref.textContent = strings.preferences.use_system_dialog[lang];
     const collapsePref = document.getElementById('collapseSideBarPref');
     collapsePref.textContent = strings.preferences.collapse_sidebar[lang];
     const swapFooterPref = document.getElementById('swapFooterPref');
@@ -310,16 +313,21 @@ function forceRefresh() {
 // 重置所有数据
 function resetAllData() {
     // 确认对话框
-    if (confirm(strings.preferences.reset_all_data_confirm[lang])) {
-        // 清空localStorage
-        localStorage.clear();
-        
-        // 重新加载页面以应用更改
-        location.reload();
-        
-        // 显示提示
-        showToast(strings.preferences.reset_all_data_success[lang], 2000);
-    }
+    pushDialog(strings.preferences.reset_all_data_confirm[lang], 'confirm-danger')
+            .then(confirmed => {
+                if (confirmed) {
+                    // 清空localStorage
+                    localStorage.clear();
+                    
+                    // 重新加载页面以应用更改
+                    location.reload();
+                    
+                    // 显示提示
+                    showToast(strings.preferences.reset_all_data_success[lang], 2000);
+                } else {
+                    return;
+                }
+            });
 }
 
 // 初始化存储列表
@@ -444,21 +452,26 @@ function getStorageDescription(key, value) {
 // 从存储中移除项
 function removeFromStorage(key, element) {
     // 确认对话框
-    if (confirm(`${strings.preferences.confirm_remove_item[lang] || '确定要移除'} "${key}" ${strings.preferences.confirm_remove_item_end[lang] || '吗？'}`)) {
-        if (key === 'preferences') {
-            // 如果移除的是preferences项，则清空所有偏好设置
-            localStorage.removeItem('preferences');
-        } else {
-            localStorage.removeItem(key);
-        }
-        // 从DOM中移除元素
-        if (element && element.parentNode) {
-            element.parentNode.removeChild(element);
-        }
-        // 显示提示
-        showToast(`${strings.preferences.item_removed[lang] || '已移除'} "${key}"`, 2000);
-        initStorageList();
-    }
+    pushDialog(`${strings.preferences.confirm_remove_item[lang] || '确定要移除'} "${key}" ${strings.preferences.confirm_remove_item_end[lang] || '吗？'}`, 'confirm-danger')
+            .then(confirmed => {
+                if (confirmed) {
+                    if (key === 'preferences') {
+                        // 如果移除的是preferences项，则清空所有偏好设置
+                        localStorage.removeItem('preferences');
+                    } else {
+                        localStorage.removeItem(key);
+                    }
+                    // 从DOM中移除元素
+                    if (element && element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                    // 显示提示
+                    showToast(`${strings.preferences.item_removed[lang] || '已移除'} "${key}"`, 2000);
+                    initStorageList();
+                } else {
+                    return;
+                }
+            });
 }
 
 // 初始化主题选择器
@@ -675,6 +688,24 @@ function applyFont(font) {
     }
     
     root.style.setProperty('--font-family', fontFamily);
+}
+
+function initUseDialogSwitch() { 
+    const useDialogSwitch = document.querySelector('.use-system-dialog');
+    if (!useDialogSwitch) return;
+
+    const prefs = getPreferences();
+    if (prefs.useSystemDialog !== false) { 
+        useDialogSwitch.classList.add('active');
+    } else { 
+        useDialogSwitch.classList.remove('active');
+    }
+    useDialogSwitch.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        const prefs = getPreferences();
+        prefs.useSystemDialog = isActive;
+        savePreferences(prefs);
+    });
 }
 
 function initCollapseSwitch() { 

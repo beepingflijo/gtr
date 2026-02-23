@@ -996,3 +996,133 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', toggleSidebar);
     });
 });
+
+function pushDialog(content, type = 'confirm', title = '') {
+    // 返回Promise以支持异步等待
+    return new Promise((resolve) => {
+        if (window.prefs.useSystemDialog === false) {
+            const appContainer = document.querySelector('main');
+            const existingDialog = document.querySelectorAll('.modal-overlay');
+            if (existingDialog && existingDialog.length > 0) {
+                existingDialog.forEach(dialog => {
+                    dialog.remove();
+                });
+            }
+            
+            // 使用自定义对话框
+            const modalOverlay = document.createElement('div');
+            modalOverlay.classList.add('modal-overlay');
+            modalOverlay.addEventListener('click', (e) => {
+                // 只有点击遮罩层才关闭，避免点击对话框内容时关闭
+                if (e.target === modalOverlay) {
+                    closeDialog(modalOverlay);
+                    resolve(false); // 用户取消
+                }
+            });
+            modalOverlay.style.opacity = 0;
+            modalOverlay.style.backdropFilter = 'blur(1px)';
+            
+            const dialogContainer = document.createElement('div');
+            dialogContainer.classList.add('dialog-container');
+            dialogContainer.classList.add('item');
+            dialogContainer.style.opacity = 0;
+            dialogContainer.style.transform = 'scale(1.1)';
+
+            const dialogTitle = document.createElement('h3');
+            dialogTitle.classList.add('dialog-title');
+            dialogTitle.textContent = title;
+            dialogContainer.appendChild(dialogTitle);
+
+            const dialogContent = document.createElement('div');
+            dialogContent.classList.add('dialog-content');
+            dialogContent.textContent = content;
+            dialogContainer.appendChild(dialogContent);
+
+            const dialogButtons = document.createElement('div');
+            dialogButtons.classList.add('dialog-buttons');
+            
+            // 取消按钮
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = strings.general.cancel[lang];
+            cancelButton.addEventListener('click', () => {
+                closeDialog(modalOverlay);
+                resolve(false); // 用户取消
+            });
+            if (type !== 'alert') dialogButtons.appendChild(cancelButton);
+            
+            // 确认按钮
+            const confirmButton = document.createElement('button');
+            if (type === 'confirm-danger') confirmButton.style.color = 'crimson';
+            else confirmButton.classList.add('active');
+            confirmButton.textContent = strings.general.confirm[lang];
+            confirmButton.addEventListener('click', () => {
+                closeDialog(modalOverlay);
+                resolve(true); // 用户确认
+            });
+            dialogButtons.appendChild(confirmButton);
+            
+            dialogContainer.appendChild(dialogButtons);
+            modalOverlay.appendChild(dialogContainer);
+            appContainer.appendChild(modalOverlay);
+            
+            // 动画显示
+            setTimeout(() => {
+                modalOverlay.style.opacity = 1;
+                modalOverlay.style.backdropFilter = '';
+                setTimeout(() => {
+                    dialogContainer.style.opacity = 1;
+                    dialogContainer.style.transform = 'scale(1)';
+                }, 10);
+            }, 10);
+        } else { 
+            // 使用系统对话框
+            let result;
+            switch (type) {
+                case 'alert':
+                    window.alert(content);
+                    result = true; // alert总是返回true
+                    break;
+                default:
+                    result = window.confirm(content);
+            }
+            resolve(result);
+        }
+    });
+}
+
+function closeDialog(modalOverlay, callback) {
+    modalOverlay.style.opacity = 0;
+    modalOverlay.style.backdropFilter = 'blur(1px)';
+    setTimeout(() => {
+        modalOverlay.remove();
+        if (callback && typeof callback === 'function') {
+            callback();
+        }
+    }, 300); 
+}
+
+// 使用示例：
+// 1. 异步/await 方式（推荐）
+// async function handleDelete() {
+//     const confirmed = await pushDialog('确定要删除吗？', 'confirm', '删除确认');
+//     if (confirmed) {
+//         // 执行删除操作
+//         console.log('用户确认删除');
+//     } else {
+//         console.log('用户取消删除');
+//     }
+// }
+
+// 2. Promise.then() 方式
+// pushDialog('确定要继续吗？', 'confirm', '操作确认')
+//     .then(confirmed => {
+//         if (confirmed) {
+//             // 用户确认后的操作
+//             console.log('用户确认');
+//         } else {
+//             console.log('用户取消');
+//         }
+//     });
+
+// 3. Alert模式（只有确定按钮）
+// await pushDialog('操作成功！', 'alert', '提示');

@@ -132,9 +132,7 @@ function init() {
     const mapBtn = document.querySelector('.map-btn');
     mapBtn.title = strings.lines_info.route_map[lang];
     mapBtn.addEventListener('click', () => {
-        if(confirm(strings.lines_info.data_warning[lang])===true) {
-            window.open('pov-frame.html', '_blank');
-        }
+        window.open('pov-frame.html', '_blank');
     });
     
     // 修改以下代码以处理多个按钮实例
