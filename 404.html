@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <!-- 添加视口元标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>通运铁路信息</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="preferences.css">
+</head>
+<body>
+<div class="app-container">
+    <header>
+        <div class="actions"> 
+            <div class="icon-btn back-btn">
+                <img src="./res/back.png" alt="back" class="icon"></img>
+            </div>
+        </div>
+        <div class="title">
+            <img src="./res/gtr.png" alt="logo">
+            <h1></h1>
+        </div>
+        <div class="gradient-blur"></div>
+    </header>
+    <main>
+    </main>
+</div>
+<script src="script.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+    // 修复：将事件处理器声明为async函数
+    document.addEventListener("DOMContentLoaded", async function() {
+        fetch ('strings.json')
+        .then(response => response.json())
+        .then(async data => {
+            strings = data;
+            await pushDialog(strings['404'].check_your_link_and_try_again[lang], 'alert', strings['404'].page_not_found[lang]);
+            location.href = './index.html?lang=' + lang;
+        })
+        .catch(error => {
+            console.error('Error loading strings.json:', error);
+        });
+    });
+</script>
+</body>
+</html>

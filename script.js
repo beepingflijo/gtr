@@ -1096,11 +1096,11 @@ function pushDialog(content, type = 'confirm', title = '') {
             let result;
             switch (type) {
                 case 'alert':
-                    window.alert(content);
+                    window.alert(title + ' ' + content);
                     result = true; // alert总是返回true
                     break;
                 default:
-                    result = window.confirm(content);
+                    result = window.confirm(title + ' ' + content);
             }
             resolve(result);
         }

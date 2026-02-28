@@ -9,6 +9,10 @@
         "back":{"zh_hans":"返回", "en": "Back", "zh_hant":"返回", "uk": "Назад"},
         "back_to":{"zh_hans":"返回", "en": "Back to ", "zh_hant":"返回", "uk": "Назад до "}
     },
+    "404":{
+        "page_not_found":{"zh_hans":"找不到页面", "en": "Page not found", "zh_hant":"找不到頁面", "uk": "Сторінка не знайдена"},
+        "check_your_link_and_try_again":{"zh_hans":"请检查您的链接，并重新尝试。", "en": "Please check your link and try again.", "zh_hant":"請檢查您的連結，並重新嘗試。", "uk": "Будь ласка, перевірте свій посилання та спробуйте знову."}
+    },
     "mainpage":{
         "page_title":{"zh_hans":"主页","zh_hant":"主頁","en": "Home","uk": "Головна"},
         "slogan":{
