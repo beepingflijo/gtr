@@ -131,29 +131,58 @@ function init() {
     // 添加强制刷新按钮的事件监听器
     refreshPref.addEventListener('click', forceRefresh);
 
-    // 实现languageHintPref每2秒显示不同语言的功能（排除当前页面语言）
-    const languageHintPref = document.getElementById('languageHintPref');
-    if (languageHintPref) {
-        languageHintPref.textContent = '';
+    // 实现languageHintPref每2秒轮流显示不同语言的功能
+    const languageHintContainer = document.getElementById('languageHintPref');
+    if (languageHintContainer) {
+        languageHintContainer.innerHTML = ''; // 清空容器
+        
         // 获取所有支持的语言，但排除当前页面语言
         const allLanguages = Object.keys(strings.preferences.language);
         const languages = allLanguages.filter(language => language !== lang);
+        
+        // 为每种语言创建一个span元素
+        const languageElements = [];
+        languages.forEach((languageCode, index) => {
+            const langSpan = document.createElement('span');
+            langSpan.className = 'language-hint-item';
+            langSpan.textContent = strings.preferences.language[languageCode];
+            langSpan.style.display = 'inline-block';
+            langSpan.style.opacity = '0';
+            langSpan.style.width = '0';
+            langSpan.style.overflow = 'hidden';
+            langSpan.style.whiteSpace = 'nowrap';
+            langSpan.style.transition = 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            langSpan.style.marginRight = '4px';
+            languageHintContainer.appendChild(langSpan);
+            languageElements.push({
+                element: langSpan,
+                index: index
+            });
+        });
+        
         let currentIndex = 0;
         
-        // 每2秒更新一次显示的语言，带有淡入淡出效果
+        // 每2秒轮流显示一种语言
         setInterval(() => {
-            if (languages.length > 0) {
-                // 淡出效果
-                languageHintPref.style.opacity = '0';
+            if (languageElements.length > 0) {
                 const prefs = getPreferences();
-                const transitionTimeout = prefs.reduceMotion ? 0 : 200;
+                const transitionDuration = prefs.reduceMotion ? 0 : 300;
                 
-                // 在淡出完成后更新文本并淡入
+                // 先隐藏当前显示的语言
+                languageElements.forEach(item => {
+                    item.element.style.opacity = '0';
+                    item.element.style.width = '0';
+                    item.element.style.margin = '0';
+                });
+                
+                // 延迟后显示下一个语言
                 setTimeout(() => {
-                    languageHintPref.textContent = strings.preferences.language[languages[currentIndex]];
-                    languageHintPref.style.opacity = '1';
-                    currentIndex = (currentIndex + 1) % languages.length;
-                }, transitionTimeout); // 与CSS过渡时间匹配
+                    const currentItem = languageElements[currentIndex];
+                    currentItem.element.style.opacity = '1';
+                    currentItem.element.style.width = calculateTextWidth(currentItem.element.textContent) + 'em';
+                    currentItem.element.style.margin = '4px';
+                    currentIndex = (currentIndex + 1) % languageElements.length;
+                }, transitionDuration);
             }
         }, 2000);
     }

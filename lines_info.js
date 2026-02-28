@@ -130,7 +130,7 @@ function init() {
     //lineSelection.appendChild(divider);
     
     const mapBtn = document.querySelector('.map-btn');
-    mapBtn.title = strings.lines_info.route_map[lang];
+    mapBtn.title = strings.pov_frame.page_title[lang];
     mapBtn.addEventListener('click', () => {
         window.open('pov-frame.html', '_blank');
     });
@@ -1121,6 +1121,12 @@ function displayTrains() {
             const activeLineId = getActiveLineId();
             updateLineInfoDisplay(activeLineId);
             loadSegmentInfo();
+            PositionUtils.fetchAndDisplayPlayers((players) => {
+                // 使用PositionUtils模块显示玩家信息
+                if (typeof PositionUtils !== 'undefined') {
+                    PositionUtils.displayPlayers(players, () => prefs.showPlayers);
+                }
+            });
         }
     };
     xhr.send();

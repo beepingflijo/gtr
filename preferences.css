@@ -86,8 +86,25 @@ button {
 #languageHintPref { 
     font-size: 0.8em;
     color: var(--color-text-secondary);
-    transition: all 0.2s ease-in-out;
-    opacity: 1;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    overflow: hidden;
+}
+
+.language-hint-item {
+    display: inline-block;
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 4px;
+}
+
+/* 减少动态效果时的样式 */
+.effect-reduced .language-hint-item {
+    transition: none !important;
 }
 
 .storage-list {

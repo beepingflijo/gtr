@@ -23,6 +23,9 @@
     --color-text: #333;
     --color-text-secondary: #666;
     --color-text-on-primary: #fff;
+    --mask-image-overflow-y: linear-gradient(transparent 1%, white 5%, white 95%, transparent 99%);
+    --mask-image-overflow-y-top: linear-gradient(white 95%, transparent 99%);
+    --mask-image-overflow-y-bottom: linear-gradient(transparent 1%, white 5%);
     --font-family: "Bricolage Grotesque", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
 }
 
@@ -124,6 +127,9 @@
         --color-secondary: #282828;
         --color-secondary-hover: #333;
         --color-toast-background: #000000;
+        --mask-image-overflow-y: unset;
+        --mask-image-overflow-y-top: unset;
+        --mask-image-overflow-y-bottom: unset;
     }
 }
 
@@ -133,6 +139,9 @@
     --color-secondary: #f5f5f5;
     --color-secondary-hover: #eee;
     --color-toast-background: #000000;
+    --mask-image-overflow-y: unset;
+    --mask-image-overflow-y-top: unset;
+    --mask-image-overflow-y-bottom: unset;
 }
 
 .effect-reduced.dark {
@@ -141,6 +150,9 @@
     --color-secondary: #282828;
     --color-secondary-hover: #333;
     --color-toast-background: #000000;
+    --mask-image-overflow-y: unset;
+    --mask-image-overflow-y-top: unset;
+    --mask-image-overflow-y-bottom: unset;
 }
 
 .effect-reduced header { 
@@ -491,6 +503,8 @@ header * {
 .side-bar:not(.collapsed) .side-bar-navigation { 
     height: -webkit-fill-available;
     overflow-y: auto;
+    container-type: scroll-state;
+    container-name: side-bar-navigation;
 }
 
 .side-bar .side-bar-item { 

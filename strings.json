@@ -315,5 +315,8 @@
         "search_placeholder":{"zh_hans":"车号/站名/线路…","en": "Train/Station/Line...","zh_hant":"車號/站名/路線…","uk": "Потяг/Станція/Лінія..."},
         "near":{"zh_hans":"近", "en": "near ", "zh_hant":"近", "uk": "близько "},
         "is_approaching":{"zh_hans":"正在接近", "en": " is approaching ", "zh_hant":"正在接近", "uk": " наближається до "}
+    },
+    "pov_frame": {
+        "page_title":{"zh_hans":"动态导览", "en": "Dynamic Guide (in Chinese)", "zh_hant":"動態導覽（簡體）", "uk": "Динамічний посібник (китайською)"}
     }
 }

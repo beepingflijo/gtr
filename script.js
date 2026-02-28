@@ -692,7 +692,7 @@ function applySearchFilter(searchTerm = '', config = {}) {
             searchTitle = document.createElement('h3');
             searchTitle.className = searchTitleClass;
             // 使用通用文本，具体文本可以在调用时通过strings设置
-            searchTitle.textContent = `Searching for "${searchTerm}"`;
+            searchTitle.textContent = strings.trains_info.searching_for[lang] + ' "' + searchTerm + '"';
             searchTitle.style.padding = '8px 24px';
             searchTitle.style.fontWeight = '500';
             searchTitle.style.color = 'var(--color-text-primary)';
@@ -703,7 +703,7 @@ function applySearchFilter(searchTerm = '', config = {}) {
         searchTitle.remove();
     } else if (searchTerm && searchTitle) {
         // 如果有搜索词且有标题，则更新标题内容
-        searchTitle.textContent = `Searching for "${searchTerm}"`;
+            searchTitle.textContent = strings.trains_info.searching_for[lang] + ' "' + searchTerm + '"';
     }
     
     // 遍历所有项目应用搜索过滤
@@ -724,6 +724,23 @@ function applySearchFilter(searchTerm = '', config = {}) {
             const itemText = element.textContent.toLowerCase();
             if (searchTerm === '' || itemText.includes(searchTerm)) {
                 element.style.display = '';
+                if (searchTerm !== '') {
+                    // 高亮对应文字所在的容器
+                    Array.from(element.children).forEach(child => {
+                        if (child.textContent.toLowerCase().includes(searchTerm)) {
+                            // 保存原始背景色
+                            const originalBg = child.style.backgroundColor;
+                            child.style.backgroundColor = 'var(--color-primary-transparent)';
+                            child.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            setTimeout(() => {
+                                // 只在当前背景色仍为我们设置的高亮色时才移除
+                                if (child.style.backgroundColor === 'var(--color-primary-transparent)') {
+                                    child.style.backgroundColor = originalBg || '';
+                                }
+                            }, 500);
+                        }
+                    });
+                }
             } else {
                 element.style.display = 'none';
             }
@@ -1126,3 +1143,20 @@ function closeDialog(modalOverlay, callback) {
 
 // 3. Alert模式（只有确定按钮）
 // await pushDialog('操作成功！', 'alert', '提示');
+
+function calculateTextWidth(string) {
+    // 部分字符可记为半字宽
+    const halfWidthCharacters = '023456789abcdefghknopqrstuvxyzабвгґеєзийкнопрстхцчья';
+    const quarterWidthCharacters = '1ilI.,\'ії"\/\\|!` ';
+    let width = 0;
+    for (let char of string) {
+        if (halfWidthCharacters.includes(char)) {
+            width += 0.5;
+        } else if (quarterWidthCharacters.includes(char)) {
+            width += 0.25;
+        } else {
+            width += 1;
+        }
+    }
+    return width;
+}
