@@ -649,11 +649,13 @@ header * {
     background-color: var(--color-background-card);
 }
 
-.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .tooltip, .side-bar.collapsed:hover { 
+.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), 
+.tooltip, .side-bar.collapsed:hover, .dialog-container { 
     box-shadow: var(--item-shadow-inset-hover);
 }
 
-.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), .tooltip, button:hover, .side-bar.collapsed:hover { 
+.actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), 
+.tooltip, button:hover, .side-bar.collapsed:hover, .dialog-container { 
     filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.2));
     backdrop-filter: var(--background-filter-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
