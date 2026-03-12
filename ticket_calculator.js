@@ -1449,11 +1449,18 @@ function calculateRouteDuration(route) {
     // 换乘时间（每次换乘2分钟）
     let transferTime = (route.segments.length - 1) * 120;
     
-    route.segments.forEach(segment => {
+    route.segments.forEach((segment,index) => {
+        segment.duration += (segment.stations.length - 2) * 30
         travelTime += segment.duration;
+        if (
+            index > 0 && (
+                segment.line.startsWith(route.segments[index - 1].line) ||
+                route.segments[index-1].line.startsWith(segment.line)
+            )
+        ) transferTime += 120;
     });
     
-    return travelTime + stopTime + transferTime;
+    return travelTime + transferTime;
 }
 
 // 计算票价（基于计费基准路线）
