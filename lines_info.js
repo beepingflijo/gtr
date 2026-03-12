@@ -99,23 +99,25 @@ function init() {
     const lineSelectors = document.querySelectorAll('.line-selector');
     window.lines.forEach(line => {
         lineSelectors.forEach(lineSelector => {
-            const item = document.createElement('div');
-            item.className = `selection-item ${line.id}`;
-            item.innerHTML = `
-            <div class="line-name-container">
-                ${line.name[lang]}
-                <span class="line-name-original">${!lang.startsWith('zh') ? line.name['zh_hans'] : ''}</span>
-            </div>
-            `;
-            item.addEventListener('click', () => {
-                //displayStations(line);
-                //displayTrains();
-                // 点击后添加对应的url参数
-                window.location.href = `?line=${line.id}&lang=${lang}`;
-            })
-            lineSelector.appendChild(item);
-            if (line.id === getActiveLineId()) {
-                item.classList.add('active');
+            if (!line.id.match('-R')) {
+                const item = document.createElement('div');
+                item.className = `selection-item ${line.id}`;
+                item.innerHTML = `
+                <div class="line-name-container">
+                    ${line.name[lang]}
+                    <span class="line-name-original">${!lang.startsWith('zh') ? line.name['zh_hans'] : ''}</span>
+                </div>
+                `;
+                item.addEventListener('click', () => {
+                    //displayStations(line);
+                    //displayTrains();
+                    // 点击后添加对应的url参数
+                    window.location.href = `?line=${line.id}&lang=${lang}`;
+                })
+                lineSelector.appendChild(item);
+                if (line.id === getActiveLineId()) {
+                    item.classList.add('active');
+                }
             }
         });
     });
@@ -246,18 +248,28 @@ function displayStations(line) {
     ul.classList.add('item');
     
     // 如果是GX线路，添加GX类名
-    if (line.id.startsWith('GX')) {
+    if (line.id.startsWith('GX') || line.id.match('-R')) {
         ul.classList.add('GX');
     }
 
+    const rapidLine = (!line.id.startsWith('GX'))?window.lines.find(ln => ln.id === line.id+'-R'):null;
+    const rapidStations = rapidLine ? rapidLine.route.filter(node => node.type === 'station') : [];
+
     // 遍历线路中的每个节点，筛选出车站并创建列表项
     line.route.filter(node => node.type === 'station').forEach(station => {
+        const isRapidStation = rapidStations.some(stn => stn.code === station.code);
         const li = document.createElement('li');
         li.classList.add('station-list-item');
         li.innerHTML = `
             <div class="train-container"></div>
-            <div class="station-circle" style="border-color: ${line.color}"></div>
-            <div class="station-name-container">
+            <div class="station-circle" style="
+                border-color: ${isRapidStation ? 'var(--color-background-card)' : line.color};
+                background-color: ${isRapidStation ? line.color : ''};
+            "></div>
+            <div class="station-name-container" style="
+                font-weight: ${isRapidStation ? 'bold' : ''};
+                text-decoration: ${isRapidStation ? 'underline' : ''};
+            ">
                 <span class="station-name">${getStationName(station.code,lang)}</span>
                 <span class="station-name-original">${getStationName(station.code,'original')!==getStationName(station.code) ? getStationName(station.code,'original') : ''}</span>
             </div>

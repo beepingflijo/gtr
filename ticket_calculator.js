@@ -411,34 +411,50 @@ function getStationCode(stationInputValue) {
 
 // 更新URL参数的函数
 function updateURLParams(startCode, endCode, sort = null) {
-    const url = new URL(window.location);
-    const params = new URLSearchParams(url.search);
+   const url = new URL(window.location);
+   const params = new URLSearchParams(url.search);
     
-    // 移除或添加start参数
+    // 将 lastVisitedParams 字符串转换为 URLSearchParams 对象
+    let lastVisitedParamsObj;
+    try {
+       const lastVisitedParamsStr = prefs.lastVisitedParams || '';
+        lastVisitedParamsObj = new URLSearchParams(lastVisitedParamsStr);
+    } catch (e) {
+       console.error('Error parsing lastVisitedParams:', e);
+        lastVisitedParamsObj = new URLSearchParams('');
+    }
+    
+    // 移除或添加 start 参数
     if (startCode) {
         params.set('start', startCode);
     } else {
         params.delete('start');
     }
     
-    // 移除或添加end参数
+    // 移除或添加 end 参数
     if (endCode) {
         params.set('end', endCode);
     } else {
         params.delete('end');
     }
     
-    // 移除或添加sort参数
+    // 移除或添加 sort 参数
     if (sort && sort !== 'time') {
-        // 只有当排序方式不是默认的time时才添加sort参数
+        // 只有当排序方式不是默认的 time 时才添加 sort 参数
         params.set('sort', sort);
     } else {
         params.delete('sort');
     }
     
-    // 更新URL但不重新加载页面
+    // 更新URL 但不重新加载页面
     url.search = params.toString();
     window.history.replaceState({}, '', url);
+
+    // 更新 lastVisitedParams 中的对应参数
+    if (params.toString()) {
+        prefs.lastVisitedParams = params.toString();
+       localStorage.setItem('preferences', JSON.stringify(prefs));
+    }
 }
 
 // 初始化datalist元素
@@ -1036,7 +1052,7 @@ function buildGraph(excludeGXLines) {
     // 根据参数决定是否排除GX开头的线路
     let validLines = window.lines;
     if (excludeGXLines) {
-        validLines = window.lines.filter(line => !line.id.startsWith("GX"));
+        validLines = window.lines.filter(line => !line.id.startsWith("GX") && !line.id.match('-R'));
     }
     
     validLines.forEach(line => {
@@ -1539,7 +1555,11 @@ function renderSearchResults(routes, container) {
 
                 routeHTML += `
                     <div class="segment">
-                        <div class="line-info" style="border-color: ${line.color}">
+                        <div class="line-info" style="
+                            border-color: ${line.color};
+                            border-left-style:${(line.id.match('-R')||line.id.startsWith('GX'))?
+                                'double':''}
+                        ">
                             <span class="line-name">${line.name[lang]}</span>
                             <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]}</span>
                             <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
