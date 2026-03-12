@@ -999,6 +999,14 @@ function findShortestRoutes(startCode, endCode) {
         billingRoute = routesWithoutGX[0];
     }
     
+    // 确保计费基准路线也在结果中
+    if (billingRoute && !allRoutes.includes(billingRoute)) {
+        // 确保计费基准路线有计算好的总用时和费用
+        billingRoute.totalDuration = calculateRouteDuration(billingRoute);
+        billingRoute.fare = calculateFare(billingRoute.totalDistance);
+        allRoutes.push(billingRoute);
+    }
+    
     // 为所有路线计算票价
     allRoutes.forEach(route => {
         // 如果有计费基准路线，则计算加快费
@@ -1009,14 +1017,6 @@ function findShortestRoutes(startCode, endCode) {
             route.fare = calculateFare(route.totalDistance);
         }
     });
-    
-    // 确保计费基准路线也在结果中
-    if (billingRoute && !allRoutes.includes(billingRoute)) {
-        // 确保计费基准路线有计算好的总用时和费用
-        billingRoute.totalDuration = calculateRouteDuration(billingRoute);
-        billingRoute.fare = calculateFare(billingRoute.totalDistance);
-        allRoutes.push(billingRoute);
-    }
     
     // 去重处理
     const uniqueRoutes = [];
@@ -1597,9 +1597,9 @@ function renderSearchResults(routes, container) {
         fareDetails.className = 'fare-details';
 
         const secondClassFare = route.fare;
-        const firstClassFare = route.fare + calculateFare(route.totalDistance) * 0.5;
+        const firstClassFare = route.fare * 1.5;
         const premiumClassAddition = (route.fare - calculateFare(route.totalDistance)) * 2;
-        const premiumClassFare = Math.max(firstClassFare + premiumClassAddition, 29);
+        const premiumClassFare = Math.max(secondClassFare + premiumClassAddition, 29);
         const fareDetailsHTML = `
         <div class="fare-detail-item second>
             <span class="fare-detail-title">${
@@ -1615,7 +1615,7 @@ function renderSearchResults(routes, container) {
             }</span>
             <span class="fare-detail-value">¥${firstClassFare.toFixed(2)}</span>
         </div>
-        <div class="fare-detail-item premium"${route.fare !== calculateFare(route.totalDistance) ? '' : ' style="display: none;"'}>
+        <div class="fare-detail-item premium"${route.segments.filter(segment => segment.line.startsWith('GX')).length > 0 ? '' : ' style="display: none;"'}>
             <span class="fare-detail-title">${
                 strings.ticket_calculator.premium_class[lang] + ' (' 
                 + strings.ticket_calculator.if_available[lang] + ') ' || '商务座（如有）'
