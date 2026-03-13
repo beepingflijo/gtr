@@ -63,6 +63,7 @@
         "system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системний"},
         "font":{"zh_hans":"字体", "en": "Font", "zh_hant":"字體", "uk": "Шрифт"},
         "sans_serif":{"zh_hans":"无衬线字体", "en": "Sans-serif", "zh_hant":"無襯線字體", "uk": "Без засічок"},
+        "resume_on_loading":{"zh_hans":"从离开的位置继续", "en": "Continue from last query", "zh_hant":"從離開的位置繼續", "uk": "Продовжити з останнього запиту"},
         "use_system_dialog":{"zh_hans":"使用系统对话框", "en": "Use system dialog", "zh_hant":"使用系統對話框", "uk":"Використати системний діалог"},
         "collapse_sidebar":{"zh_hans":"宽屏模式下收起侧边栏", "en": "Collapse side bar in wide screen", "zh_hant":"寬屏模式下折疊側欄", "uk": "Згорнути бічну панель на широкому екрані"},
         "swap_footer_items":{"zh_hans":"交换底栏控件顺序", "en": "Swap footer items", "zh_hant":"交換底欄控件順序", "uk": "Поміняти місцями елементи нижнього колонтитула"},
@@ -117,16 +118,16 @@
             "uk": "Сьогоднішній запис, безпечно можна скинути"
         },
         "lastVisitedPage": {
-            "zh_hans": "最后访问的页面，用于自动跳转",
-            "en": "Last visited page, used for auto-redirect",
-            "zh_hant": "最後訪問的頁面，用於從index.html自動跳轉",
-            "uk": "Останній відвіданий сторінку, використовується для автоматичного перенаправлення"
+            "zh_hans": "旧版本所保存的设置项，可放心重置",
+            "en": "Preference saved in old versions, safe to reset",
+            "zh_hant": "舊版本所存儲的設置項，可放心重置",
+            "uk": "Сьогоднішній запис, безпечно можна скинути"
         },
         "lastVisitedParams": {
-            "zh_hans": "最后使用的URL参数，用于自动跳转",
-            "en": "Last used URL parameters, used to auto-redirect",
-            "zh_hant": "最後使用的URL參數，用於自動跳轉",
-            "uk": "Останні використані параметри URL, використовується для автоматичного перенаправлення"
+            "zh_hans": "旧版本所保存的设置项，可放心重置",
+            "en": "Preference saved in old versions, safe to reset",
+            "zh_hant": "舊版本所存儲的設置項，可放心重置",
+            "uk": "Сьогоднішній запис, безпечно можна скинути"
         },
         "reduceMotion": {
             "zh_hans": "旧版本所保存的设置项，可放心重置",
@@ -141,10 +142,10 @@
             "uk": "Кеш позицій поїзда, використовується для обчислення швидкості"
         },
         "lastVisitedLine": {
-            "zh_hans": "最后访问的线路，用于自动跳转",
-            "en": "Last visited line, used for auto-redirect",
-            "zh_hant": "最後訪問的線路，用於自動跳轉",
-            "uk": "Останній відвіданий маршрут, використовується для автоматичного перенаправлення"
+            "zh_hans": "旧版本所保存的设置项，可放心重置",
+            "en": "Preference saved in old versions, safe to reset",
+            "zh_hant": "舊版本所存儲的設置項，可放心重置",
+            "uk": "Сьогоднішній запис, безпечно можна скинути"
         },
         "font":{
             "zh_hans": "旧版本所保存的设置项，可放心重置",
@@ -163,6 +164,12 @@
             "en": "Saved language setting",
             "zh_hant": "存儲的语言設定",
             "uk": "Збережені налаштування мови"
+        },
+        "visitedPages":{
+            "zh_hans": "保存的访问记录",
+            "en": "Saved visited pages",
+            "zh_hant": "存儲的訪問記錄",
+            "uk": "Збережені переглянуті сторінки"
         }
     },
     "station_names":{
@@ -318,7 +325,8 @@
         "searching_for":{"zh_hans":"正在搜索", "en": "Searching for ", "zh_hant":"正在搜尋", "uk": "Пошук "},
         "search_placeholder":{"zh_hans":"车号/站名/线路…","en": "Train/Station/Line...","zh_hant":"車號/站名/路線…","uk": "Потяг/Станція/Лінія..."},
         "near":{"zh_hans":"近", "en": "near ", "zh_hant":"近", "uk": "близько "},
-        "is_approaching":{"zh_hans":"正在接近", "en": " is approaching ", "zh_hant":"正在接近", "uk": " наближається до "}
+        "is_approaching":{"zh_hans":"正在接近", "en": " is approaching ", "zh_hant":"正在接近", "uk": " наближається до "},
+        "loading_example_data":{"zh_hans":"加载示例数据…", "en": "Loading example data...", "zh_hant":"正在加載示例數據…", "uk": "Завантаження прикладних даних..."}
     },
     "pov_frame": {
         "page_title":{"zh_hans":"动态导览", "en": "Dynamic Guide (in Chinese)", "zh_hant":"動態導覽（簡體）", "uk": "Динамічний посібник (китайською)"}

@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initLanguageSelector();
             initThemeSelector();
             initFontSelector();
+            initResumeOnLoadingSwitch();
             initUseDialogSwitch();
             initCollapseSwitch();
             initSwapFooterSwitch();
@@ -99,6 +100,8 @@ function init() {
     themePref.textContent = strings.preferences.theme_mode[lang];
     const fontPref = document.getElementById('fontPref');
     fontPref.textContent = strings.preferences.font[lang];
+    const resumeOnLoadingPref = document.getElementById('resumeOnLoadingPref');
+    resumeOnLoadingPref.textContent = strings.preferences.resume_on_loading[lang];
     const useDialogPref = document.getElementById('useDialogPref');
     useDialogPref.textContent = strings.preferences.use_system_dialog[lang];
     const collapsePref = document.getElementById('collapseSideBarPref');
@@ -717,6 +720,24 @@ function applyFont(font) {
     }
     
     root.style.setProperty('--font-family', fontFamily);
+}
+
+function initResumeOnLoadingSwitch() { 
+    const resumeOnLoadingSwitch = document.querySelector('.resume-on-loading');
+    if (!resumeOnLoadingSwitch) return;
+
+    const prefs = getPreferences();
+    if (prefs.resumeOnLoading !== false) { 
+        resumeOnLoadingSwitch.classList.add('active');
+    } else { 
+        resumeOnLoadingSwitch.classList.remove('active');
+    }
+    resumeOnLoadingSwitch.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        const prefs = getPreferences();
+        prefs.resumeOnLoading = isActive;
+        savePreferences(prefs);
+    });
 }
 
 function initUseDialogSwitch() { 

@@ -8,8 +8,7 @@
 <body>
 <script>
     // 获取用户最后访问的页面
-    const lastVisitedPage = localStorage.getItem('lastVisitedPage');
-    const lastVisitedParams = localStorage.getItem('lastVisitedParams');
+    const visitedPagesStr = localStorage.getItem('visitedPages');
     
     // 默认跳转到 lines_info.html
     let redirectPage = 'lines_info.html';
@@ -17,9 +16,16 @@
     let finalParams = '';
     
     // 如果有记录最后访问的页面，则跳转到该页面
-    if (lastVisitedPage && ['lines_info.html', 'ticket_calculator.html', 'trains_info.html'].includes(lastVisitedPage)) {
-        redirectPage = lastVisitedPage;
-        redirectParams = lastVisitedParams || '';
+    if (visitedPagesStr) {
+        var visitedPages = JSON.parse(visitedPagesStr);
+        let latestTimestamp = 0;
+        visitedPages.forEach(page => {
+            if (page.timestamp > latestTimestamp) {
+                latestTimestamp = page.timestamp;
+                redirectPage = page.page;
+                redirectParams = page.params;
+            }
+        });
     }
     
     // 获取当前URL参数
@@ -36,8 +42,8 @@
         });
         
         // 如果localStorage中有参数，则覆盖URL中的参数（localStorage优先）
-        if (lastVisitedParams) {
-            const localStorageUrlParams = new URLSearchParams(lastVisitedParams);
+        if (redirectParams) {
+            const localStorageUrlParams = new URLSearchParams(redirectParams);
             localStorageUrlParams.forEach((value, key) => {
                 finalParamsObj.set(key, value);
             });
@@ -50,9 +56,12 @@
         
         // 转换回字符串
         finalParams = finalParamsObj.toString();
-    } else if (lastVisitedParams) {
+    } else if (redirectParams) {
         // 如果URL中没有参数但localStorage中有参数，则使用localStorage的参数
-        finalParams = lastVisitedParams;
+        finalParams = redirectParams;
+    } else {
+        // 如果URL和localStorage都没有参数，则使用默认参数
+        finalParams = '?lang=zh_hans';
     }
     
     // 构造跳转URL

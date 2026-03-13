@@ -1,17 +1,3 @@
-// 修改文件内容
-// 解析url参数确定页面语言
-var urlParams = new URLSearchParams(window.location.search);
-var lang = urlParams.get('lang');
-if (lang === null) {
-    lang = 'zh_hans';
-}
-console.log('lang:', lang);
-if (lang.startsWith('zh')) {
-    document.documentElement.lang = 'zh';
-} else {
-    document.documentElement.lang = lang;
-}
-
 let sidebarCollapseDone = false;
 
 // 页面加载完成后执行初始化函数
@@ -147,7 +133,7 @@ function init() {
             fareBtn.title = strings.ticket_calculator.page_title[lang];
         }
         fareBtn.addEventListener('click', () => {
-            window.open(`ticket_calculator.html${'?lang='+lang}`, '_self');
+            window.open(`ticket_calculator.html`, '_self');
         });
     });
     
@@ -160,7 +146,7 @@ function init() {
             trainsBtn.title = strings.trains_info.page_title[lang];
         }
         trainsBtn.addEventListener('click', () => {
-            window.open(`trains_info.html${'?lang='+lang}`, '_self');
+            window.open(`trains_info.html`, '_self');
         });
     });
     
@@ -173,16 +159,7 @@ function init() {
             linesBtn.title = strings.lines_info.page_title[lang];
         }
         linesBtn.addEventListener('click', () => {
-            // 获取用户最后访问的线路
-            const lastVisitedLine = localStorage.getItem('lastVisitedLine');
-            let targetLine = lines[0].id; // 默认线路
-            
-            // 如果有最后访问的线路且该线路存在，则使用该线路
-            if (lastVisitedLine && window.lines.some(line => line.id === lastVisitedLine)) {
-                targetLine = lastVisitedLine;
-            }
-            
-            window.open(`lines_info.html?line=${targetLine}&lang=${lang}`, '_self');
+            window.open('lines_info.html', '_self');
         });
     });
 
@@ -195,7 +172,7 @@ function init() {
             prefBtn.title = strings.preferences.page_title[lang];
         }
         prefBtn.addEventListener('click', () => { 
-            window.open(`preferences.html${'?lang='+lang}`, '_self');
+            window.open(`preferences.html`, '_self');
         });
     })
 
@@ -235,6 +212,7 @@ function getPreferences() {
 
 // 显示指定线路的车站信息函数
 function displayStations(line) {
+    recordLastVisitedPage(`?line=${line.id}`);
     const stationsDisplay = document.querySelector('.stations-display');
     // 清空当前显示的车站信息
     stationsDisplay.innerHTML = '';
@@ -918,7 +896,7 @@ function displayTrains() {
                                 item.addEventListener('click', function() {
                                     // 提取纯列车名称（去除方向符号）
                                     const cleanTrainName = fullTrainName.replace(/[↑↓? ]/g, '');
-                                    window.open(`trains_info.html?q=${cleanTrainName}&lang=${lang}`, '_self');
+                                    window.open(`trains_info.html?q=${cleanTrainName}`, '_self');
                                 });
                                 
                                 if (fullTrainName.includes(train.name)){
@@ -1453,20 +1431,21 @@ function loadUpdateTime() {
 }
 
 function getActiveLineId () {
-    // 从URL参数中获取线路id
+    // 从 URL 参数中获取线路 id
     let lineId = new URLSearchParams(window.location.search).get('line');
     if (!lineId) {
         // 检查是否有用户最后访问的线路
-        const lastVisitedLine = localStorage.getItem('lastVisitedLine');
-        if (lastVisitedLine && window.lines.some(line => line.id === lastVisitedLine)) {
-            lineId = lastVisitedLine;
-        } else {
-            // 获取默认第一条线路
+        const visitedPagesStr = localStorage.getItem('visitedPages');
+        if (visitedPagesStr && prefs.resumeOnLoading !== 'false') {
+            const params = new URLSearchParams(getLastVisitedParams());
+            lineId = params.get('line');
+        }
+        // 如果仍然没有获取到线路 id，使用默认第一条线路
+        if (!lineId) {
             lineId = lines[0].id;
         }
     }
     // 保存当前线路为最后访问的线路
-    localStorage.setItem('lastVisitedLine', lineId);
     // console.log('Active line id:', lineId);
     return lineId;
 }
@@ -1476,7 +1455,7 @@ function getLineName(lineId = getActiveLineId()) {
 }
 
 function getDirection(trainName, carPos, isStopped) {
-    // 尝试从localStorage获取之前存储的列车位置数据
+    // 尝试从 localStorage 获取之前存储的列车位置数据
     let allTrainsData = {};
     try {
         const storedData = localStorage.getItem('all_trains_positions');

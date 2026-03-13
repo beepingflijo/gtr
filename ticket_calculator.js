@@ -1,17 +1,3 @@
-// 修改文件内容
-// 解析url参数确定页面语言
-var urlParams = new URLSearchParams(window.location.search);
-var lang = urlParams.get('lang');
-if (lang === null) {
-    lang = 'zh_hans';
-}
-console.log('lang:', lang);
-if (lang.startsWith('zh')) {
-    document.documentElement.lang = 'zh';
-} else {
-    document.documentElement.lang = lang;
-}
-
 let sidebarCollapseDone = false;
 
 // 页面加载完成后执行初始化函数
@@ -66,9 +52,11 @@ function init() {
 
     // 检查URL参数中的start和end值
     const urlParams = new URLSearchParams(window.location.search);
-    const startParam = urlParams.get('start');
-    const endParam = urlParams.get('end');
-    const sortParam = urlParams.get('sort'); // 获取排序参数
+    const lastVisitedParams = new URLSearchParams(getLastVisitedParams());
+    const startParam = urlParams.get('start') || lastVisitedParams.get('start');
+    const endParam = urlParams.get('end') || lastVisitedParams.get('end');
+    const sortParam = urlParams.get('sort') || lastVisitedParams.get('sort'); // 获取排序参数
+    console.log(startParam,endParam,sortParam);
 
     // 如果URL中有start和end参数，则填充输入框并自动搜索
     if (startParam && endParam) {
@@ -165,7 +153,7 @@ function init() {
                 endInput.value = '';
             });
             // 清除URL中的start和end参数
-            updateURLParams('', '');
+            recordLastVisitedPage();
         });
     });
     
@@ -191,7 +179,7 @@ function init() {
             const startCode = parseStationInput(startInput.value);
             const endCode = parseStationInput(endInput.value);
             if (startCode && endCode) {
-                updateURLParams(startCode, endCode, sortBy);
+                recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=${sortBy}`);
             }
         });
     });
@@ -202,6 +190,7 @@ function init() {
     inputHint.classList.add('item');
     inputHint.textContent = strings.ticket_calculator.type_and_search_to_display_results[lang];
     searchResult.appendChild(inputHint);
+    recordLastVisitedPage();
     
     
     // 修改以下代码以处理多个按钮实例
@@ -214,7 +203,7 @@ function init() {
         fareBtn.title = strings.ticket_calculator.page_title[lang];
         }
         fareBtn.addEventListener('click', () => {
-            window.open(`ticket_calculator.html${'?lang='+lang}`, '_self');
+            window.open(`ticket_calculator.html`, '_self');
         });
     });
     
@@ -227,7 +216,7 @@ function init() {
         trainsBtn.title = strings.trains_info.page_title[lang];
         }
         trainsBtn.addEventListener('click', () => {
-            window.open(`trains_info.html${'?lang='+lang}`, '_self');
+            window.open(`trains_info.html`, '_self');
         });
     });
     
@@ -240,16 +229,7 @@ function init() {
         linesBtn.title = strings.lines_info.page_title[lang];
         }
         linesBtn.addEventListener('click', () => {
-            // 获取用户最后访问的线路
-            const lastVisitedLine = localStorage.getItem('lastVisitedLine');
-            let targetLine = lines[0].id; // 默认线路
-            
-            // 如果有最后访问的线路且该线路存在，则使用该线路
-            if (lastVisitedLine && window.lines.some(line => line.id === lastVisitedLine)) {
-                targetLine = lastVisitedLine;
-            }
-            
-            window.open(`lines_info.html?line=${targetLine}&lang=${lang}`, '_self');
+            window.open('lines_info.html', '_self');
         });
     });
 
@@ -262,7 +242,7 @@ function init() {
         prefBtn.title = strings.preferences.page_title[lang];
         }
         prefBtn.addEventListener('click', () => { 
-            window.open(`preferences.html${'?lang='+lang}`, '_self');
+            window.open(`preferences.html`, '_self');
         });
     })
 
@@ -329,7 +309,7 @@ function init() {
             const startCode = parseStationInput(startInputs[0].value);
             const endCode = parseStationInput(endInputs[0].value);
             if (startCode && endCode) {
-                updateURLParams(startCode, endCode, sortBy);
+                recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=${sortBy}`);
             }
         });
     });
@@ -349,7 +329,7 @@ function init() {
                 const startCode = parseStationInput(startInput.value);
                 const endCode = parseStationInput(endInput.value);
                 if (startCode && endCode) {
-                    updateURLParams(startCode, endCode, 'time');
+                    recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=time`);
                 }
             });
         });
@@ -361,7 +341,7 @@ function init() {
                 const startCode = parseStationInput(startInput.value);
                 const endCode = parseStationInput(endInput.value);
                 if (startCode && endCode) {
-                    updateURLParams(startCode, endCode, 'transfer');
+                    recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=transfer`);
                 }
             });
         });
@@ -373,7 +353,7 @@ function init() {
                 const startCode = parseStationInput(startInput.value);
                 const endCode = parseStationInput(endInput.value);
                 if (startCode && endCode) {
-                    updateURLParams(startCode, endCode, 'price');
+                    recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=price`);
                 }
             });
         });
@@ -407,54 +387,6 @@ function getStationCode(stationInputValue) {
     if (!stationInputValue) return '';
     const parts = stationInputValue.split(' ');
     return parts.length > 1 ? parts[parts.length - 1] : '';
-}
-
-// 更新URL参数的函数
-function updateURLParams(startCode, endCode, sort = null) {
-   const url = new URL(window.location);
-   const params = new URLSearchParams(url.search);
-    
-    // 将 lastVisitedParams 字符串转换为 URLSearchParams 对象
-    let lastVisitedParamsObj;
-    try {
-       const lastVisitedParamsStr = prefs.lastVisitedParams || '';
-        lastVisitedParamsObj = new URLSearchParams(lastVisitedParamsStr);
-    } catch (e) {
-       console.error('Error parsing lastVisitedParams:', e);
-        lastVisitedParamsObj = new URLSearchParams('');
-    }
-    
-    // 移除或添加 start 参数
-    if (startCode) {
-        params.set('start', startCode);
-    } else {
-        params.delete('start');
-    }
-    
-    // 移除或添加 end 参数
-    if (endCode) {
-        params.set('end', endCode);
-    } else {
-        params.delete('end');
-    }
-    
-    // 移除或添加 sort 参数
-    if (sort && sort !== 'time') {
-        // 只有当排序方式不是默认的 time 时才添加 sort 参数
-        params.set('sort', sort);
-    } else {
-        params.delete('sort');
-    }
-    
-    // 更新URL 但不重新加载页面
-    url.search = params.toString();
-    window.history.replaceState({}, '', url);
-
-    // 更新 lastVisitedParams 中的对应参数
-    if (params.toString()) {
-        prefs.lastVisitedParams = params.toString();
-       localStorage.setItem('preferences', JSON.stringify(prefs));
-    }
 }
 
 // 初始化datalist元素
@@ -586,6 +518,7 @@ function handleSearch(sortBy = 'time') {
     // 解析输入的站点名称和代码
     const startStationCode = parseStationInput(startStation);
     const endStationCode = parseStationInput(endStation);
+    recordLastVisitedPage(`?start=${startStationCode}&end=${endStationCode}&sort=${sortBy}`);
 
     if (!startStationCode) {
         showToast(strings.ticket_calculator.invalid_start_station[lang] || '起点站无效');

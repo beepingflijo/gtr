@@ -56,47 +56,67 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // 记录用户访问的页面和参数
-function recordLastVisitedPage() {
+function recordLastVisitedPage(paramsString) {
     // 获取当前页面文件名
     const currentPage = window.location.pathname.split('/').pop();
+    console.log('Recording last visited page:', currentPage, paramsString);
     
     // 定义允许记录的页面
     const allowedPages = ['lines_info.html', 'ticket_calculator.html', 'trains_info.html'];
     
     // 检查当前页面是否是允许记录的页面
     if (allowedPages.includes(currentPage)) {
-        // 获取当前URL参数
-        const urlParams = new URLSearchParams(window.location.search);
-        let paramsString = urlParams.toString();
+        const visitedPagesStr = localStorage.getItem('visitedPages');
+        let visitedPages;
         
-        // 如果localStorage中有参数，则优先使用localStorage中的参数
-        const storedParams = localStorage.getItem('lastVisitedParams');
-        if (storedParams) {
-            // 解析并合并参数，localStorage优先
-            const storedParamsObj = new URLSearchParams(storedParams);
-            
-            // 将URL参数添加到存储参数对象中（URL参数不会覆盖已存在的localStorage参数）
-            urlParams.forEach((value, key) => {
-                if (!storedParamsObj.has(key)) {
-                    storedParamsObj.set(key, value);
-                }
-            });
-            
-            paramsString = storedParamsObj.toString();
-        }
-        
-        // 存储到localStorage
-        localStorage.setItem('lastVisitedPage', currentPage);
-        if (paramsString) {
-            localStorage.setItem('lastVisitedParams', paramsString);
+        if (!visitedPagesStr) {
+            visitedPages = [{page: currentPage, params: paramsString, timestamp: Date.now()}];
         } else {
-            localStorage.removeItem('lastVisitedParams');
+            try {
+                visitedPages = JSON.parse(visitedPagesStr);
+                if (!Array.isArray(visitedPages)) {
+                    visitedPages = [];
+                }
+            } catch (e) {
+                console.warn('Failed to parse visitedPages:', e);
+                visitedPages = [];
+            }
+            visitedPages.push({page: currentPage, params: paramsString, timestamp: Date.now()});
         }
+        
+        localStorage.setItem('visitedPages', JSON.stringify(visitedPages));
     }
 }
 
-// 页面加载完成后记录访问信息
-document.addEventListener('DOMContentLoaded', recordLastVisitedPage);
+function getLastVisitedParams(page) { 
+    if (prefs.resumeOnLoading === false) return null;
+    console.log('Getting last visited params for page:', page);
+    const currentPage = window.location.pathname.split('/').pop();
+    page = page || currentPage;
+    let latestParams = null;
+    try {
+        const visitedPages = JSON.parse(localStorage.getItem('visitedPages'));
+        if (Array.isArray(visitedPages)) {
+            const itemsForPage = visitedPages.filter(item => item.page && item.page.includes(page));
+            if (itemsForPage.length > 0) {
+                let latestTimestamp = 0;
+                itemsForPage.forEach(page => {
+                    if (page.timestamp > latestTimestamp) {
+                        latestTimestamp = page.timestamp;
+                        latestParams = page.params;
+                    } else {
+                        // 移除旧的访问记录
+                        visitedPages.splice(visitedPages.indexOf(page), 1);
+                        localStorage.setItem('visitedPages', JSON.stringify(visitedPages));
+                    }
+                });
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to parse visitedPages:', e);
+    }
+    return latestParams;
+}
 
 // 延迟执行selection元素的处理，确保在所有脚本执行完毕后运行
 function hideNonActiveSelectionItems() {
@@ -222,27 +242,115 @@ function checkForceRefresh() {
     }
 }
 
-// 获取当前页面语言
-function getCurrentLanguage() {
-    // 从URL参数获取语言（优先使用）
+// 从 strings.json 获取支持的语言列表
+function getSupportedLanguages(page) {
+    return new Promise((resolve, reject) => {
+        const currentPage = window.location.pathname.split('/').pop().split('.')[0];
+        page = page || currentPage;
+        
+        fetch('./strings.json')
+            .then(response => response.json())
+            .then(data => {
+                const langs = Object.keys(data[page]?.page_title || data['general'] || {});
+                resolve(langs);
+            })
+            .catch(error => {
+                console.error('Error loading strings data:', error);
+                // 降级返回默认支持的语言
+                resolve(['zh_hans', 'zh_hant', 'en', 'uk']);
+            });
+    });
+}
+
+// 获取当前页面语言（异步版本）
+async function getCurrentLanguage() {
+    // 从 URL 参数获取语言（优先使用）
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('lang')) {
-        return urlParams.get('lang');
+        const urlLang = urlParams.get('lang');
+        
+        // 检查是否是已知的语言映射
+        switch (urlLang) {
+            case 'zh':
+            case 'zh_CN':
+            case 'zh_SG':
+            case 'zh_MY':
+                localStorage.setItem('lang', 'zh_hans');
+                showToast('重定向至简体中文');
+                return 'zh_hans';
+            case 'zh_HK':
+            case 'zh_MO':
+            case 'zh_TW':
+                localStorage.setItem('lang', 'zh_hant');
+                showToast('重定向至繁體中文');
+                return 'zh_hant';
+        }
+        
+        // 获取支持的语言列表并验证
+        try {
+            const supportedLangs = await getSupportedLanguages();
+            const ethnicLangsInChina = ['bo', 'ug', 'mn', 'ii', 'za'];
+            if (
+                !supportedLangs.includes(urlLang) && 
+                !ethnicLangsInChina.includes(urlLang) && 
+                urlLang.length <= 2
+            ) {
+                localStorage.setItem('lang', 'en');
+                showToast('Redirecting to English');
+                return 'en';
+            } else if (supportedLangs.includes(urlLang)) {
+                return urlLang;
+            } else {
+                localStorage.setItem('lang', 'zh_hans');
+                if (ethnicLangsInChina.includes(urlLang)) showToast('重定向至简体中文');
+                return 'zh_hans';
+            }
+        } catch (e) {
+            console.warn('Failed to get supported languages, using default:', e);
+            return 'zh_hans';
+        }
     }
     
-    // 如果URL参数中没有，则从localStorage中获取上次使用的语言
+    // 如果 URL 参数中没有，则从 localStorage 中获取上次使用的语言
     const storedLang = localStorage.getItem('lang');
     if (storedLang) {
         return storedLang;
     }
     
-    // 如果都没有，则默认使用zh_hans
+    // 如果都没有，则默认使用 zh_hans
     return 'zh_hans';
 }
 
-let lang = getCurrentLanguage();
-const html = document.querySelector('html');
-html.lang = lang.includes('zh') ? 'zh' : lang;
+let lang = null;
+
+// 从 strings.json 获取 strings 和初始化语言
+document.addEventListener('DOMContentLoaded', async () => { 
+    try {
+        // 先初始化语言设置
+        lang = await getCurrentLanguage();
+        console.log('Current language:', lang);
+        const html = document.querySelector('html');
+        html.lang = lang.includes('zh') ? 'zh' : lang;
+        
+        // 加载 strings 数据
+        const stringsResponse = await fetch('strings.json');
+        const stringsData = await stringsResponse.json();
+        strings = stringsData;
+        
+        // 初始化其他功能
+        initSearchBar();
+        applySavedTheme(); // 应用保存的主题设置
+        checkForceRefresh(); // 检查是否需要强制刷新
+        
+        // 暴露 lang 到全局供其他模块使用
+        window.lang = lang;
+    } catch (error) {
+        console.error('Error initializing language and strings:', error);
+        // 降级处理
+        lang = 'zh_hans';
+        window.lang = lang;
+    }
+});
 
 // 显示Toast提示
 function showToast(message, duration = 3000) {
@@ -907,7 +1015,7 @@ async function sendNetworkWarningNotification(trainName, warningReasons, trainPo
             });
             // 添加点击事件
             notification.addEventListener('click', () => {
-                window.open(`trains_info.html?q=${trainName}&lang=${lang}`, '_self');
+                window.open(`trains_info.html?q=${trainName}`, '_self');
             });
             console.log('Notification sent successfully');
             return; // 成功发送通知，直接返回
@@ -984,7 +1092,7 @@ async function sendTrainApproachingNotification(trainName, playerName, body) {
             });
             // 添加点击事件
             notification.addEventListener('click', () => {
-                window.open(`trains_info.html?q=${trainName}&lang=${lang}`, '_self');
+                window.open(`trains_info.html?q=${trainName}`, '_self');
             });
             console.log('Notification sent successfully');
             return; // 成功发送通知，直接返回

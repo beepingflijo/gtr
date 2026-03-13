@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', function () {
 let trainPositions = new Map();
 let displayedTrains = []; // 存储当前显示的列车数据
 let sidebarCollapseDone = false;
+let loadingToastShown = false;
+let loadingExampleToastShown = false;
+let visitedPageRecorded = false;
 
 // 初始化函数
 function init() {
@@ -68,7 +71,7 @@ function init() {
             fareBtn.title = strings.ticket_calculator.page_title[lang];
         }
         fareBtn.addEventListener('click', () => {
-            window.open(`ticket_calculator.html${'?lang='+lang}`, '_self');
+            window.open(`ticket_calculator.html`, '_self');
         });
     });
     
@@ -81,7 +84,7 @@ function init() {
             trainsBtn.title = strings.trains_info.page_title[lang];
         }
         trainsBtn.addEventListener('click', () => {
-            window.open(`trains_info.html${'?lang='+lang}`, '_self');
+            window.open(`trains_info.html`, '_self');
         });
     });
     
@@ -94,16 +97,7 @@ function init() {
             linesBtn.title = strings.lines_info.page_title[lang];
         }
         linesBtn.addEventListener('click', () => {
-            // 获取用户最后访问的线路
-            const lastVisitedLine = localStorage.getItem('lastVisitedLine');
-            let targetLine = lines[0].id; // 默认线路
-            
-            // 如果有最后访问的线路且该线路存在，则使用该线路
-            if (lastVisitedLine && window.lines.some(line => line.id === lastVisitedLine)) {
-                targetLine = lastVisitedLine;
-            }
-            
-            window.open(`lines_info.html?line=${targetLine}&lang=${lang}`, '_self');
+            window.open(`lines_info.html`, '_self');
         });
     });
 
@@ -116,7 +110,7 @@ function init() {
             prefBtn.title = strings.preferences.page_title[lang];
         }
         prefBtn.addEventListener('click', () => { 
-            window.open(`preferences.html${'?lang='+lang}`, '_self');
+            window.open(`preferences.html`, '_self');
         });
     })
 
@@ -251,6 +245,8 @@ function fetchTrainData() {
                             // 确保train是有效对象后再调用
                             if (train && typeof train === 'object') {
                                 PositionUtils.checkTrainApproachingPlayers(train, prefs.followPlayers);
+                                loadingExampleToastShown = false;
+                                loadingToastShown = false;
                             }
                         });
                     } else {
@@ -278,8 +274,68 @@ function fetchTrainData() {
         // 显示toast提示正在重新连接，但保留现有数据
         if (mainContainer) {
             // 检查是否已经存在toast提示，避免重复添加
-            showToast(strings.lines_info.loading[lang] || 'Loading...', 5000);
+            if (loadingToastShown === false) showToast(strings.lines_info.loading[lang] || 'Loading...', 5000);
+            loadingToastShown = true;
         }
+
+        // 从./data/trains.json中加载数据
+        fetch('./data/trains.json')
+        .then(response => response.json())
+        .then(data => {
+            console.log('从./data/trains.json加载数据',data);
+            if (loadingExampleToastShown === false) showToast(strings.trains_info.loading_example_data[lang], 5000);
+            loadingExampleToastShown = true;
+            loadingToastShown = true;
+            
+            // 显示列车信息
+            
+            // 过滤掉无效的列车数据
+            const originalLength = data.trains.length;
+            data.trains = data.trains.filter(train => {
+                return train && 
+                       typeof train === 'object' && 
+                       train.name && 
+                       train.cars && 
+                       Array.isArray(train.cars) && 
+                       train.cars.length > 0 &&
+                       train.cars[0].leading && 
+                       train.cars[0].leading.location;
+            });
+            //console.log(`过滤前${originalLength}条数据，过滤后${data.trains.length}条数据`);
+            
+            // 保存当前搜索词
+            const searchInput = document.querySelector('.search-input');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            
+            // 显示列车信息
+            displayTrains(data.trains, mainContainer);
+            
+            // 检查列车是否接近关注的玩家
+            try {
+                // 从localStorage获取关注的玩家列表
+                const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
+                if (prefs.followPlayers && 
+                    typeof PositionUtils !== 'undefined' && typeof PositionUtils.checkTrainApproachingPlayers === 'function') {
+                    console.log('通过SSE检查列车接近玩家');
+                    // 遍历所有列车，逐个检查是否接近玩家
+                    if (Array.isArray(data.trains)) {
+                        data.trains.forEach(train => {
+                            // 确保train是有效对象后再调用
+                            if (train && typeof train === 'object') {
+                                PositionUtils.checkTrainApproachingPlayers(train, prefs.followPlayers);
+                            }
+                        });
+                    } else {
+                        console.warn('data.trains 不是数组格式:', data.trains);
+                    }
+                }
+            } catch (error) {
+                console.error('检查列车接近玩家时出错:', error);
+            }
+            // 数据更新后，重新应用之前的搜索过滤
+            applySearchFilter(searchTerm);
+            loadUpdateTime();
+        })
         
         // 5秒后尝试重新连接
         setTimeout(() => {
@@ -775,7 +831,7 @@ function createTrainSection(train) {
     lineElement.textContent = getLineForTrain(train.name) || strings.trains_info.line_unregistered[lang];
     lineElement.textContent += ' ' + directionText;
     if (getLineForTrain(train.name)) {
-        lineElement.href = `lines_info.html${'?lang='+lang+'&line='+getLineForTrain(train.name, 'id')}`;
+        lineElement.href = `lines_info.html${'?line='+getLineForTrain(train.name, 'id')}`;
         const lineColor = getLineColor(getLineForTrain(train.name, 'id'));
         lineElement.style.color = lineColor;
         // 获取的线路颜色做透明化处理
@@ -966,7 +1022,7 @@ function loadUpdateTime() {
     }
 
     updateTime.innerHTML = `
-                        ${strings.lines_info.updated_at[lang] + new Date().toLocaleString()}<br />
+                        ${loadingExampleToastShown ? '' : (strings.lines_info.updated_at[lang] + new Date().toLocaleString() + '<br />')}
                         ${strings.lines_info.locations_for_reference_only[lang]}`;
 }
 
@@ -1063,6 +1119,7 @@ function handleSearch(event) {
         window.history.replaceState({}, '', url);
         
         // 应用搜索过滤
+        visitedPageRecorded = false;
         applySearchFilter(searchTerm);
         //removeToast(strings.trains_info.searching[lang]);
 
@@ -1079,6 +1136,8 @@ function handleSearch(event) {
 
 // 应用搜索过滤条件
 function applySearchFilter(searchTerm = '') {
+    if (visitedPageRecorded === false) recordLastVisitedPage(`?q=${searchTerm}`);
+    visitedPageRecorded = true;
     //console.log('应用搜索过滤条件:', searchTerm);
     const trainElements = document.querySelectorAll('.train-info.item');
     
