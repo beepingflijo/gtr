@@ -354,6 +354,7 @@ footer {
     transition: all 0.2s ease-in-out;
     overflow: visible;
     gap: 8px;
+    z-index: 999;
 }
 
 footer * { 
