@@ -356,6 +356,10 @@ footer {
     gap: 8px;
 }
 
+footer * { 
+    z-index: 999;
+}
+
 footer.swapped {
     align-items: flex-start;
 }

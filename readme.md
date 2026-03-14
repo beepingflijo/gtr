@@ -1,6 +1,6 @@
 # 通运铁路信息 GTR Info
 
-通运铁路信息(GTR Info)是一个虚构轨道交通信息系统网站，提供线路信息、列车实时位置（基于[Create Track Map](https://github.com/jenchanws/create-track-map) API）、票价计算等功能。
+通运铁路信息 (GTR Info) 是一个虚构轨道交通信息系统网站，提供线路信息、列车实时位置（基于 [Create Track Map](https://github.com/jenchanws/create-track-map) API）、票价计算等功能。
 
 ## 功能特点
 
@@ -22,17 +22,24 @@
 - 提供主题模式、字体、减弱特效等选项
 - 本地存储管理
 
+### 动态导览 (POV Frame)
+- 为列车司机视角提供沉浸式指示
+- 支持透明背景及纯色、视频、屏幕捕获等自定义背景
+
 ### 界面风格
 - 响应式设计，适配各种设备屏幕
 - 使用 CSS3 动画、过渡、阴影、滤镜等效果，营造出类似玻璃和卵石构成的界面
+- 自定义 404 错误页面
 
 ## 技术实现
 
 本项目采用纯前端技术实现：
 
-- HTML5/CSS3/JavaScript
+- HTML5/CSS3/JavaScript (原生，无框架)
 - 响应式设计，适配各种设备屏幕
 - 使用 localStorage 进行本地数据存储
+- 基于 Fetch API 进行数据交互
+- 模块化脚本组织
 
 ## 使用方法
 
@@ -55,12 +62,14 @@
 ```
 .
 ├── data/                 # 数据文件目录
-│   ├── blocks.json       # 从CTM获取的闭塞区间数据（暂未使用）
+│   ├── blocks.json       # 从 CTM 获取的一份闭塞区间数据（示例，暂未使用）
 │   ├── lines.json        # 线路数据（手动指定的停站、走向、用时等）
-│   ├── network.json      # 从CTM获取的网络数据，提供车站位置
+│   ├── network.json      # 线网数据，提供车站位置（格式兼容 CTM ）
+│   ├── trains.json       # 从 CTM 获取的一份列车位置数据
 │   └── trains_info.json  # 列车信息数据（手动指定的线路、型号、限速等）
-├── res/                  # 资源文件目录（图片等）
+├── res/                  # 资源文件目录（图片、图标等）
 ├── index.html            # 网站入口文件
+├── 404.html              # 自定义 404 错误页面
 ├── lines_info.html       # 线路信息页面
 ├── lines_info.js         # 线路信息逻辑
 ├── lines_info.css        # 线路信息样式
@@ -73,8 +82,12 @@
 ├── preferences.html      # 偏好设置页面
 ├── preferences.js        # 偏好设置逻辑
 ├── preferences.css       # 偏好设置样式
-├── style.css             # 全局样式
-├── script.js             # 全局脚本
+├── pov-frame.html        # 动态导览页面
+├── pov-frame.js          # 动态导览逻辑
+├── pov-frame.css         # 动态导览样式
+├── position_utils.js     # 位置计算工具函数库（待改进，目前作用不明）
+├── script.js             # 全局脚本（语言加载、公共函数）
+├── style.css             # 全局样式定义
 ├── strings.json          # 多语言字符串资源
 └── readme.md             # 说明文档
 ```
@@ -82,9 +95,9 @@
 ## 数据来源
 
 本项目的数据文件位于 [data](data/) 目录中：
-- [blocks.json](data/blocks.json) - 从CTM获取的闭塞区间数据（暂未使用）
 - [lines.json](data/lines.json) - 线路数据（手动指定的停站、走向、用时等）
-- [network.json](data/network.json) - 从CTM获取的网络数据，提供车站位置
+- [network.json](data/network.json) - 线网数据，提供车站位置（格式兼容 CTM ）
+- [trains.json](data/trains.json) - 列车位置数据示例，正常情况下将直接从 CTM 获取
 - [trains_info.json](data/trains_info.json) - 列车信息数据（手动指定的线路、型号、限速等）
 
 ## 浏览器兼容性
@@ -101,4 +114,4 @@
 
 ## 免责声明
 
-本站提及的各类地名、组织名、品牌名均为虚构，部分代码使用AI生成，图标来自 [Icons8](https://icons8.com/)。
+本站提及的各类地名、组织名、品牌名均为虚构，部分代码使用 AI 生成，图标来自 [Icons8](https://icons8.com/)。
