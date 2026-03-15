@@ -84,17 +84,37 @@ function recordLastVisitedPage(paramsString) {
             visitedPages.push({page: currentPage, params: paramsString, timestamp: Date.now()});
         }
 
-        // 取每个页面最新的访问记录合成新的数组
-        visitedPages = visitedPages.reduce((acc, item) => {
-            const existingItem = acc.find(i => i.page === item.page);
-            if (!existingItem) {
-                acc.push(item);
-            } else if (existingItem.timestamp < item.timestamp) {
-                existingItem.timestamp = item.timestamp;
-                existingItem.params = item.params;
+        const historyLimit = prefs.historyLimit || 5;
+        
+        // 先去除重复：如果有多个page和params都相同的条目只取时间戳最新的那个
+        const uniquePages = visitedPages.reduce((acc, item) => {
+            const key = `${item.page}_${item.params || ''}`;
+            if (!acc[key] || item.timestamp > acc[key].timestamp) {
+                acc[key] = item;
             }
             return acc;
-        }, []);
+        }, {});
+        
+        // 将唯一记录转换回数组形式
+        visitedPages = Object.values(uniquePages);
+        
+        // 按页面分组，保留每个页面最新的5条记录
+        const groupedPages = visitedPages.reduce((acc, item) => {
+            if (!acc[item.page]) {
+                acc[item.page] = [];
+            }
+            acc[item.page].push(item);
+            return acc;
+        }, {});
+        
+        // 对每个页面的记录按时间戳降序排序，并保留前5条
+        visitedPages = Object.values(groupedPages)
+            .map(pageGroup => 
+                pageGroup
+                    .sort((a, b) => b.timestamp - a.timestamp)  // 按时间戳降序排序
+                    .slice(0, historyLimit)  // 只保留最新的记录
+            )
+            .flat();  // 将二维数组展平成一维数组
         
         localStorage.setItem('visitedPages', JSON.stringify(visitedPages));
     }
@@ -349,6 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initSearchBar();
         applySavedTheme(); // 应用保存的主题设置
         checkForceRefresh(); // 检查是否需要强制刷新
+        initHistoryBtn();
         
         // 暴露 lang 到全局供其他模块使用
         window.lang = lang;
@@ -902,6 +923,55 @@ function initBlurLayers() {
         layer.appendChild(layer3);
     });
 }
+
+function calculateTextWidth(string) {
+    // 部分字符可记为半字宽
+    const halfWidthCharacters = '023456789abcdefghknopqrstuvxyzабвгґеєзийкнопрстхцчья';
+    const quarterWidthCharacters = '1ilI.,\'ії"\/\\|!` ';
+    let width = 0;
+    for (let char of string) {
+        if (halfWidthCharacters.includes(char)) {
+            width += 0.5;
+        } else if (quarterWidthCharacters.includes(char)) {
+            width += 0.25;
+        } else {
+            width += 1;
+        }
+    }
+    return width;
+}
+
+// 计算时间差并返回"多久以前"的格式
+function getTimeAgo(timestamp) {
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffMs = now - past;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    const diffMonths = Math.floor(diffDays / 30);
+    const diffYears = Math.floor(diffDays / 365);
+
+    if (diffSecs < 60) {
+        return strings.general.time_just_now[lang] || '刚刚';
+    } else if (diffMins < 60) {
+        return strings.general.time_minutes_ago[lang] ? 
+            strings.general.time_minutes_ago[lang].replace('{n}', diffMins) : `${diffMins}分钟前`;
+    } else if (diffHours < 24) {
+        return strings.general.time_hours_ago[lang] ? 
+            strings.general.time_hours_ago[lang].replace('{n}', diffHours) : `${diffHours}小时前`;
+    } else if (diffDays < 30) {
+        return strings.general.time_days_ago[lang] ? 
+            strings.general.time_days_ago[lang].replace('{n}', diffDays) : `${diffDays}天前`;
+    } else if (diffMonths < 12) {
+        return strings.general.time_months_ago[lang] ? 
+            strings.general.time_months_ago[lang].replace('{n}', diffMonths) : `${diffMonths}个月前`;
+    } else {
+        return strings.general.time_years_ago[lang] ? 
+            strings.general.time_years_ago[lang].replace('{n}', diffYears) : `${diffYears}年前`;
+    }
+}
         
 // 发送列车网络故障预警通知
 async function sendNetworkWarningNotification(trainName, warningReasons, trainPosition, trainSpeed) {
@@ -1130,10 +1200,92 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-function pushDialog(content, type = 'confirm', title = '') {
+function getLineName(lineId) { 
+    return lines.find(line => line.id === lineId)?.name?.[lang] || lineId;
+}
+
+function initHistoryBtn() { 
+    const historyBtns = document.querySelectorAll('.history-btn');
+    historyBtns.forEach(historyBtn => { 
+        historyBtn.addEventListener('click', () => { 
+            loadHistory();
+        });
+    });
+}
+
+function loadHistory() { 
+    const history = localStorage.getItem('visitedPages');
+    if (history) {
+        const historyList = document.createElement('div');
+        historyList.classList.add('history-list');
+        const visitedPages = JSON.parse(history);
+        // 按timestamp排序
+        visitedPages.sort((a, b) => b.timestamp - a.timestamp);
+        visitedPages.forEach(page => {
+            const historyItem = document.createElement('div');
+            historyItem.classList.add('history-item');
+            const historyIcon = document.createElement('img');
+            historyIcon.classList.add('icon');
+            historyIcon.classList.add('history-icon');
+            const historyTitle = document.createElement('div');
+            historyTitle.classList.add('history-title');
+            const pageName = page.page.split('.')[0];
+            const params = new URLSearchParams(page.params);
+            console.log(params);
+            switch (pageName) {
+                case 'lines_info':
+                    historyIcon.src = './res/tracking.png';
+                    const lineId = params.get('line');
+                    const lineName = getLineName(lineId);
+                    historyTitle.textContent = lineName;
+                    break;
+                case 'trains_info':
+                    historyIcon.src = './res/train.png';
+                    historyTitle.textContent = params.get('q')?params.get('q') : strings.trains_info.page_title[lang];
+                    break;
+                case 'ticket_calculator':
+                    historyIcon.src = './res/cash.png';
+                    const startCode = params.get('start');
+                    const endCode = params.get('end');
+                    const sortBy = params.get('sort') || 'time';
+                    let routeText = '';
+                    if (startCode && endCode) {
+                        routeText = 
+                            strings.station_names[startCode.toUpperCase()][lang] + ' → ' +
+                            strings.station_names[endCode.toUpperCase()][lang] + ' (' + 
+                            strings.ticket_calculator['sort_by_'+sortBy][lang] + ')';
+                    }
+                    console.log(startCode, endCode);
+                    historyTitle.textContent = 
+                        routeText ? routeText :
+                        strings.ticket_calculator.page_title[lang];
+                    break;
+            }
+            historyItem.addEventListener('click', () => {
+                // 获取当前参数，如果已经有参数则添加&from=history，否则添加?from=history
+                const separator = (page.params && page.params.includes('?')) ? '&' : '?';
+                const newParams = page.params?page.params:'' + separator + 'from=history';
+                window.open(page.page + newParams, '_self');
+            });
+            historyItem.appendChild(historyIcon);
+            historyItem.appendChild(historyTitle);
+
+            const historyTime = document.createElement('div');
+            historyTime.classList.add('history-time');
+            // 将绝对时间改为相对时间显示
+            historyTime.textContent = getTimeAgo(page.timestamp);
+            historyItem.appendChild(historyTime);
+            
+            historyList.appendChild(historyItem);
+        })
+        pushDialog(historyList, 'custom', strings.general.history[lang]);
+    }
+}
+
+function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
     // 返回Promise以支持异步等待
     return new Promise((resolve) => {
-        if (window.prefs.useSystemDialog === false) {
+        if (window.prefs.useSystemDialog === false || type === 'custom') {
             const appContainer = document.querySelector('main');
             const existingDialog = document.querySelectorAll('.modal-overlay');
             if (existingDialog && existingDialog.length > 0) {
@@ -1145,11 +1297,11 @@ function pushDialog(content, type = 'confirm', title = '') {
             // 使用自定义对话框
             const modalOverlay = document.createElement('div');
             modalOverlay.classList.add('modal-overlay');
-            modalOverlay.addEventListener('click', (e) => {
+            modalOverlay.addEventListener('mousedown', (e) => {
                 // 只有点击遮罩层才关闭，避免点击对话框内容时关闭
                 if (e.target === modalOverlay) {
                     closeDialog(modalOverlay);
-                    resolve(false); // 用户取消
+                    resolve(type === 'prompt' ? null : false); // 用户取消，prompt返回null
                 }
             });
             modalOverlay.style.opacity = 0;
@@ -1169,17 +1321,29 @@ function pushDialog(content, type = 'confirm', title = '') {
             const dialogContent = document.createElement('div');
             dialogContent.classList.add('dialog-content');
             dialogContent.textContent = content;
-            dialogContainer.appendChild(dialogContent);
+            if (type === 'custom') {
+                content.style.maxHeight = '44dvh';
+                content.style.overflowY = 'auto';
+                content.addEventListener('scroll', (e) => { 
+                    e.stopPropagation();
+                });
+            }
+            dialogContainer.appendChild(type==='custom'?content:dialogContent);
+
+            const dialogInput = document.createElement('input');
+            dialogInput.classList.add('dialog-input');
+            dialogInput.value = defaultValue;
+            if (type === 'prompt') dialogContainer.appendChild(dialogInput);
 
             const dialogButtons = document.createElement('div');
             dialogButtons.classList.add('dialog-buttons');
             
             // 取消按钮
             const cancelButton = document.createElement('button');
-            cancelButton.textContent = strings.general.cancel[lang];
+            cancelButton.textContent = type === 'custom'?strings.general.close[lang]:strings.general.cancel[lang];
             cancelButton.addEventListener('click', () => {
                 closeDialog(modalOverlay);
-                resolve(false); // 用户取消
+                resolve(type === 'prompt' ? null : false); // 用户取消，prompt返回null，其他类型返回false
             });
             if (type !== 'alert') dialogButtons.appendChild(cancelButton);
             
@@ -1190,9 +1354,14 @@ function pushDialog(content, type = 'confirm', title = '') {
             confirmButton.textContent = strings.general.confirm[lang];
             confirmButton.addEventListener('click', () => {
                 closeDialog(modalOverlay);
-                resolve(true); // 用户确认
+                // 如果是prompt类型，返回输入框的值；否则返回true
+                resolve(type === 'prompt' ? dialogInput.value : true);
             });
-            dialogButtons.appendChild(confirmButton);
+            if (type !== 'custom') dialogButtons.appendChild(confirmButton);
+
+            modalOverlay.addEventListener('scroll', (e) => { 
+                e.stopPropagation();
+            });
             
             dialogContainer.appendChild(dialogButtons);
             modalOverlay.appendChild(dialogContainer);
@@ -1200,7 +1369,7 @@ function pushDialog(content, type = 'confirm', title = '') {
             
             // 动画显示
             setTimeout(() => {
-                modalOverlay.style.opacity = 1;
+                modalOverlay.style.opacity = '';
                 modalOverlay.style.backdropFilter = '';
                 setTimeout(() => {
                     dialogContainer.style.opacity = 1;
@@ -1214,6 +1383,9 @@ function pushDialog(content, type = 'confirm', title = '') {
                 case 'alert':
                     window.alert((title ? (title + '\n') : '') + content);
                     result = true; // alert总是返回true
+                    break;
+                case 'prompt':
+                    result = window.prompt((title ? (title + '\n') : '') + content, defaultValue);
                     break;
                 default:
                     result = window.confirm((title ? (title + '\n') : '') + content);

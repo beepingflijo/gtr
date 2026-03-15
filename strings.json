@@ -7,7 +7,16 @@
         "unknown":{"zh_hans":"未知", "en": "Unknown", "zh_hant":"未知", "uk": "Невідомо"},
         "reset":{"zh_hans":"重置", "en": "Reset", "zh_hant":"重置", "uk": "Скинути"},
         "back":{"zh_hans":"返回", "en": "Back", "zh_hant":"返回", "uk": "Назад"},
-        "back_to":{"zh_hans":"返回", "en": "Back to ", "zh_hant":"返回", "uk": "Назад до "}
+        "back_to":{"zh_hans":"返回", "en": "Back to ", "zh_hant":"返回", "uk": "Назад до "},
+        "set":{"zh_hans":"设置", "en": "Set", "zh_hant":"設置", "uk": "Налаштувати"},
+        "close":{"zh_hans":"关闭", "en": "Close", "zh_hant":"關閉", "uk": "Закрити"},
+        "history":{"zh_hans":"浏览记录", "en": "History", "zh_hant":"瀏覽記錄", "uk": "Історія"},
+        "time_just_now":{"zh_hans":"刚刚", "en": "Just now", "zh_hant":"剛剛", "uk": "Щойно"},
+        "time_minutes_ago":{"zh_hans":"{n}分钟前", "en": "{n} min ago", "zh_hant":"{n}分鐘前", "uk": "{n} хв. тому"},
+        "time_hours_ago":{"zh_hans":"{n}小时前", "en": "{n} hour(s) ago", "zh_hant":"{n}小時前", "uk": "{n} год. тому"},
+        "time_days_ago":{"zh_hans":"{n}天前", "en": "{n} day(s) ago", "zh_hant":"{n}天前", "uk": "{n} дн. тому"},
+        "time_months_ago":{"zh_hans":"{n}个月前", "en": "{n} month(s) ago", "zh_hant":"{n}個月前", "uk": "{n} міс. тому"},
+        "time_years_ago":{"zh_hans":"{n}年前", "en": "{n} year(s) ago", "zh_hant":"{n}年前", "uk": "{n} р. тому"}
     },
     "404":{
         "page_not_found":{"zh_hans":"找不到页面", "en": "Page not found", "zh_hant":"找不到頁面", "uk": "Сторінка не знайдена"},
@@ -63,6 +72,20 @@
         "system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системний"},
         "font":{"zh_hans":"字体", "en": "Font", "zh_hant":"字體", "uk": "Шрифт"},
         "sans_serif":{"zh_hans":"无衬线字体", "en": "Sans-serif", "zh_hant":"無襯線字體", "uk": "Без засічок"},
+        "history_limit":{"zh_hans":"历史记录容量", "en": "History limit", "zh_hant":"歷史記錄容量", "uk": "Ліміт історії"},
+        "set_history_limit":{"zh_hans":"设置历史记录容量", "en": "Set history limit", "zh_hant":"設置歷史記錄容量", "uk": "Встановити обмеження історії"},
+        "new_limit_apply_warning":{
+            "zh_hans":"此设置将在添加新记录时生效", 
+            "en": "This limit will be applied when adding new records", 
+            "zh_hant":"此設置將在添加新記錄時生效", 
+            "uk": "Цей ліміт буде застосовуватися при додаванні нових записів"
+        },
+        "new_limit_reducing_warning":{
+            "zh_hans":"添加新记录时将移除所有历史记录直至达到当前设置，确定继续？", 
+            "en": "Your history will be removed until it reaches the new limit. Are you sure to continue?", 
+            "zh_hant":"添加新記錄時将移除所有歷史記錄直至達到當前設置，確定繼續？", 
+            "uk": "Ваша історія буде видалена до досягнення нового ліміту. Ви впевнені, що хочете продовжити?"
+        },
         "resume_on_loading":{"zh_hans":"从离开的位置继续", "en": "Continue from last query", "zh_hant":"從離開的位置繼續", "uk": "Продовжити з останнього запиту"},
         "use_system_dialog":{"zh_hans":"使用系统对话框", "en": "Use system dialog", "zh_hant":"使用系統對話框", "uk":"Використати системний діалог"},
         "collapse_sidebar":{"zh_hans":"宽屏模式下收起侧边栏", "en": "Collapse side bar in wide screen", "zh_hant":"寬屏模式下折疊側欄", "uk": "Згорнути бічну панель на широкому екрані"},
@@ -82,7 +105,7 @@
         "disclaimer_text":{
             "zh_hans":"本站提及的各类地名、组织名、品牌名均为虚构，部分代码使用AI生成，图标来自",
             "en": "Places, organizations and brands mentioned are fictional. This site is partially AI-generated. Icons from ",
-            "zh_hant":"本站提及的各类地名、组织名、品牌名為虛构，部分代碼使用AI生成，圖標來自",
+            "zh_hant":"本站提及的各类地名、组织名、品牌名為虛構，部分代碼使用AI生成，圖標來自",
             "uk": "Назви станцій, організацій та брендів, зазначені тут, є вигаданими. Ця сторінка частково згенерована ШІ. Іконки від "
         },
         "last_visited_page": {"zh_hans": "最后访问页面", "en": "Last visited page", "zh_hant": "最後訪問頁面", "uk": "Остання відвідана сторінка"},
@@ -287,6 +310,9 @@
             "uk": "Введіть і пошукайте, щоб відобразити результати тут."
         },
         "swap": {"zh_hans": "交换", "en": "Swap", "zh_hant": "交換", "uk": "Обмін"},
+        "sort_by_time": {"zh_hans": "时间短", "en": "Faster", "zh_hant": "時間短", "uk": "Швидше"},
+        "sort_by_price": {"zh_hans": "票价低", "en": "Cheaper", "zh_hant": "票價低", "uk": "Дешевше"},
+        "sort_by_transfers": {"zh_hans": "换乘少", "en": "Direct", "zh_hant": "換乘少", "uk": "Прямий"},
         "faster": {"zh_hans": "时间短", "en": "Faster", "zh_hant": "時間短", "uk": "Швидше"},
         "cheaper": {"zh_hans": "票价低", "en": "Cheaper", "zh_hant": "票價低", "uk": "Дешевше"},
         "direct": {"zh_hans": "换乘少", "en": "Direct", "zh_hant": "換乘少", "uk": "Прямий"},

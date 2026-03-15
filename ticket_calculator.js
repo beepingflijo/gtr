@@ -369,7 +369,7 @@ function setActiveSortButton(activeButton) {
         if (button.parentElement.classList.contains('segment')) {
             spanText.style.width = '0';
             button.style.width = '30px';
-        }
+        } else button.style.width = '';
     });
     // 查找activeButton中以'sort-by-'开头的类名
     let activeSortClass = '';
@@ -1862,6 +1862,8 @@ function handleWindowResize() {
         sideBar.style.position = 'relative';
         prefActions.style.display = 'none';
         main.style.paddingBottom = '36px';
+        const sideBarPanel = sideBar.querySelector('.search-controls');
+        sideBarPanel.style.width = '11em';
         if (!sidebarCollapseDone) { 
             if (prefs.collapseSidebar) { 
                 if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');

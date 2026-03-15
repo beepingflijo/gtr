@@ -12,7 +12,7 @@ button {
     width: fit-content;
 }
 
-.item > *:not(.item-title, .pref-item-header, .storage-list) {
+.item:not(.dialog-container) > *:not(.item-title, .pref-item-header, .storage-list) {
     margin-left: 8px;
 }
 

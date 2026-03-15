@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initLanguageSelector();
             initThemeSelector();
             initFontSelector();
+            initHistoryLimitInput();
             initResumeOnLoadingSwitch();
             initUseDialogSwitch();
             initCollapseSwitch();
@@ -100,6 +101,11 @@ function init() {
     themePref.textContent = strings.preferences.theme_mode[lang];
     const fontPref = document.getElementById('fontPref');
     fontPref.textContent = strings.preferences.font[lang];
+    const historyLimitPref = document.getElementById('historyLimitPref');
+    historyLimitPref.textContent = strings.preferences.history_limit[lang];
+    const setHistoryLimit = document.getElementById('setHistoryLimit');
+    setHistoryLimit.textContent = strings.general.set[lang];
+    setHistoryLimit.style.color = 'var(--color-primary)';
     const resumeOnLoadingPref = document.getElementById('resumeOnLoadingPref');
     resumeOnLoadingPref.textContent = strings.preferences.resume_on_loading[lang];
     const useDialogPref = document.getElementById('useDialogPref');
@@ -205,6 +211,16 @@ function init() {
         const main = document.querySelector('main');
         main.appendChild(preparedInfo);
     }
+
+    window.prefs = prefs;
+    window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', event => {
+        console.log('reduce motion change');
+        if (event.matches) {
+            html.classList.add('effect-reduced');
+            prefs.reduceMotion = true;
+            savePreferences(prefs);
+        }
+    })
 }
 
 function initFollowPlayersPref() { 
@@ -722,6 +738,37 @@ function applyFont(font) {
     root.style.setProperty('--font-family', fontFamily);
 }
 
+function initHistoryLimitInput() { 
+    const setHistoryLimit = document.getElementById('setHistoryLimit');
+    if (!setHistoryLimit) return;
+    setHistoryLimit.addEventListener('click', async function() { 
+        const prefs = getPreferences();
+        if (!prefs.historyLimit) {
+            prefs.historyLimit = 5;
+        }
+        const previousLimit = prefs.historyLimit || 5;
+        let newLimit = await pushDialog(strings.preferences.new_limit_apply_warning[lang], 'prompt', strings.preferences.set_history_limit[lang], previousLimit);
+        console.log(newLimit);
+        if (!newLimit) newLimit = previousLimit;
+        let finalLimit = newLimit;
+        
+        if (newLimit < 1) finalLimit = 1;
+        if (newLimit < previousLimit) {
+            const confirmed = await pushDialog(strings.preferences.new_limit_reducing_warning[lang],'confirm-danger');
+            if (confirmed) {
+                finalLimit = newLimit;
+            } else {
+                finalLimit = previousLimit;
+            }
+        } else { 
+            finalLimit = newLimit;
+        }
+        
+        prefs.historyLimit = finalLimit;
+        savePreferences(prefs);
+    });
+}
+
 function initResumeOnLoadingSwitch() { 
     const resumeOnLoadingSwitch = document.querySelector('.resume-on-loading');
     if (!resumeOnLoadingSwitch) return;
@@ -734,7 +781,6 @@ function initResumeOnLoadingSwitch() {
     }
     resumeOnLoadingSwitch.addEventListener('click', function() { 
         const isActive = this.classList.toggle('active');
-        const prefs = getPreferences();
         prefs.resumeOnLoading = isActive;
         savePreferences(prefs);
     });
