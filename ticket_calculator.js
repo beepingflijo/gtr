@@ -365,6 +365,11 @@ function setActiveSortButton(activeButton) {
     const sortButtons = document.querySelectorAll('.sort-selector .icon-btn');
     sortButtons.forEach(button => {
         button.classList.remove('active');
+        const spanText = button.querySelector('span');
+        if (button.parentElement.classList.contains('segment')) {
+            spanText.style.width = '0';
+            button.style.width = '30px';
+        }
     });
     // 查找activeButton中以'sort-by-'开头的类名
     let activeSortClass = '';
@@ -378,6 +383,9 @@ function setActiveSortButton(activeButton) {
         const activeSortButtons = document.querySelectorAll(`.sort-selector .${activeSortClass}`);
         activeSortButtons.forEach(button => {
             button.classList.add('active');
+            const spanText = button.querySelector('span');
+            spanText.style.width = Math.min(calculateTextWidth(spanText.textContent),3)+'em';
+            button.style.width = 'calc(100% - 60px)';
         });
     }
 }
@@ -1805,8 +1813,45 @@ function handleWindowResize() {
         footer.style.opacity = 1;
         tabs.style.marginLeft = '6px';
         footer.style.opacity = 1;
+        const searchTitle = footerPanel.querySelector('.search-title');
+        const searchTitleImg = searchTitle.querySelector('img');
+        const searchTitleText = searchTitle.querySelector('h4');
 
-        if (searchItem.length <= 0) footerPanel.classList.add('no-collapse');
+        if (searchItem.length <= 0) {
+            footerPanel.addEventListener('mouseover' , () => { 
+                footerPanel.classList.remove('collapsed');
+                footerPanel.classList.add('no-collapse');
+                searchTitleImg.src = './res/back.png';
+                searchTitleImg.style.transform = 'rotate(-90deg)';
+                searchTitleText.textContent = strings.ticket_calculator.collapse[lang];
+                searchTitleText.style.fontWeight = 'normal';
+                searchTitle.addEventListener('click' , () => { 
+                    footerPanel.classList.remove('no-collapse');
+                    footerPanel.classList.add('collapsed');
+                    searchTitleImg.src = './res/search.png';
+                    searchTitleImg.style.transform = 'rotate(0deg)';
+                    searchTitleText.textContent = strings.ticket_calculator.search[lang];
+                    searchTitleText.style.fontWeight = '';
+                    showToast(strings.ticket_calculator.click_outside_to_collapse[lang]);
+                });
+            });
+            document.addEventListener('click' , () => { 
+                footerPanel.classList.remove('no-collapse');
+                footerPanel.classList.add('collapsed');
+                searchTitleImg.src = './res/search.png';
+                searchTitleImg.style.transform = 'rotate(0deg)';
+                searchTitleText.textContent = strings.ticket_calculator.search[lang];
+                searchTitleText.style.fontWeight = '';
+            });
+            footerPanel.addEventListener('click' , (e) => { 
+                e.stopPropagation();
+                const isCollapsed = footerPanel.classList.contains('collapsed');
+                searchTitleText.textContent = isCollapsed ?
+                    strings.ticket_calculator.search[lang] : 
+                    strings.ticket_calculator.collapse[lang];
+                searchTitleText.style.fontWeight = isCollapsed ? '' : 'normal';
+            })
+        }
         else footerPanel.classList.remove('no-collapse');
     } else {
         // 移除collapsed类

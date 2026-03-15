@@ -83,6 +83,18 @@ function recordLastVisitedPage(paramsString) {
             }
             visitedPages.push({page: currentPage, params: paramsString, timestamp: Date.now()});
         }
+
+        // 取每个页面最新的访问记录合成新的数组
+        visitedPages = visitedPages.reduce((acc, item) => {
+            const existingItem = acc.find(i => i.page === item.page);
+            if (!existingItem) {
+                acc.push(item);
+            } else if (existingItem.timestamp < item.timestamp) {
+                existingItem.timestamp = item.timestamp;
+                existingItem.params = item.params;
+            }
+            return acc;
+        }, []);
         
         localStorage.setItem('visitedPages', JSON.stringify(visitedPages));
     }
@@ -104,10 +116,6 @@ function getLastVisitedParams(page) {
                     if (page.timestamp > latestTimestamp) {
                         latestTimestamp = page.timestamp;
                         latestParams = page.params;
-                    } else {
-                        // 移除旧的访问记录
-                        visitedPages.splice(visitedPages.indexOf(page), 1);
-                        localStorage.setItem('visitedPages', JSON.stringify(visitedPages));
                     }
                 });
             }

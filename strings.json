@@ -255,6 +255,8 @@
         "start_station": {"zh_hans": "出发站", "en": "Departure station", "zh_hant": "出發站", "uk": "Станція відправлення"},
         "end_station": {"zh_hans": "到达站", "en": "Arrival station", "zh_hant": "到達站", "uk": "Станція прибуття"},
         "search": {"zh_hans": "搜索", "en": "Search", "zh_hant": "搜尋", "uk": "Пошук"},
+        "collapse": {"zh_hans": "收起", "en": "Collapse", "zh_hant": "收起", "uk": "Згорнути"},
+        "click_outside_to_collapse": {"zh_hans": "点击窗口外区域可收起窗口", "en": "Click outside to collapse", "zh_hant": "點擊窗口外區域可收起窗口", "uk": "Клацніть поза межами, щоб згортати"},
         "clear_input": {"zh_hans": "清空", "en": "Clear", "zh_hant": "清空", "uk": "Очистити"},
         "please_input_start_and_end": {
             "zh_hans": "请输入起点站和终点站", 
