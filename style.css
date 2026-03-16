@@ -14,6 +14,8 @@
     --input-shadow-inset: inset 0 3px 3px rgba(0, 0, 0, 0.05);
     --item-shadow-inset: inset 0 -3px 3px rgba(0, 0, 0, 0.05);
     --item-shadow-inset-hover: inset 0 3px 3px rgba(255, 255, 255, 0.2);
+    --filter-item-shadow: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.2));
+    --filter-item-shadow-hover: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.2));
     --icon-btn-hover: radial-gradient(#ffffffd0 8px, transparent 80%);
     --active-icon-btn-hover: radial-gradient(#ffc88ed0 8px, transparent 80%);
     --icon-filter-active: invert(39%) sepia(83%) saturate(7493%) hue-rotate(395deg) brightness(130%) contrast(101%);
@@ -221,6 +223,11 @@
     a:hover,
     .train-item:hover { 
         text-decoration: underline;
+    }
+
+    .dialog-container .dialog-header, 
+    .dialog-container .dialog-buttons { 
+        background: var(--color-background-card-solid) !important;
     }
 
 }
@@ -521,7 +528,7 @@ header * {
 }
 
 .dialog-container, .dialog-container.item { 
-    background-color: var(--color-background-actions);
+    background-color: var(--color-background-card-solid);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -529,27 +536,73 @@ header * {
     width: fit-content;
     max-width: 90vw;
     max-height: 60dvh;
-    gap: 12px;
     transition: all 0.2s ease-in-out;
     margin: 0 18px;
+    padding: 8px 4px;
 }
 
-.dialog-container > * { 
+.dialog-container .dialog-header { 
+    position:fixed;
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(var(--color-background-card-solid) 60%,transparent);
+    padding: 18px 16px;
+    padding-bottom: 4px;
+    z-index: 2001;
+    text-shadow: 0 2px 12px var(--color-background-card-solid);
+}
+
+.dialog-container > *:not(input) { 
+    padding: 0 24px;
+}
+
+.dialog-container * { 
     max-width: 480px;
 }
 
+.dialog-container .dialog-content { 
+    padding-top: 48px;
+    padding-bottom: 60px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-text-secondary) transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    overflow: auto;
+}
+
 .dialog-container .dialog-buttons { 
+    position:fixed;
+    bottom: 8px;
+    left: 8px;
+    right: 16px;
+    padding: 16px 6px;
+    padding-top: 4px;
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
     justify-content: flex-end;
-    width: -webkit-fill-available;
+    background: linear-gradient(transparent,var(--color-background-card-solid) 55%);
 }
 
 .dialog-container button { 
     background-color: var(--color-secondary-hover);
     transition: all 0.2s ease-in-out;
+    filter: var(--filter-item-shadow);
+    -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
+}
+
+.effect-reduced .dialog-container .dialog-header, 
+.effect-reduced .dialog-container .dialog-buttons { 
+    background: var(--color-background-card-solid);
 }
 
 .title { 
@@ -683,7 +736,7 @@ header * {
     gap: 0;
     background: var(--color-background-actions);
     overflow: hidden;
-    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.2));
+    filter: var(--filter-item-shadow);
 }
 
 .side-bar.collapsed .side-bar-header { 
@@ -746,7 +799,7 @@ header * {
     margin: 0 6px;
     transition: all 0.35s ease;
     box-shadow: var(--item-shadow-inset);
-    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.2));
+    filter: var(--filter-item-shadow);
     color: var(--color-text);
     z-index: 999;
     backdrop-filter: blur(6px);
@@ -773,13 +826,13 @@ header * {
 }
 
 .actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), 
-.tooltip, .side-bar.collapsed:hover, .dialog-container { 
+.tooltip, .side-bar.collapsed:hover { 
     box-shadow: var(--item-shadow-inset-hover);
 }
 
 .actions:hover, .selection.collapsed:hover, .selection:not(.collapsed), 
 .tooltip, button:hover, .side-bar.collapsed:hover, .dialog-container { 
-    filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.2));
+    filter: var(--filter-item-shadow-hover);
     backdrop-filter: var(--background-filter-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
     border-radius: 24px;
@@ -1167,6 +1220,7 @@ footer .search-bar.collapsed {
 
 .history-item:hover { 
     background-color: var(--color-secondary-hover);
+    transform: scale(1.05);
 }
 
 .history-time { 

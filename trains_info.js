@@ -1432,6 +1432,7 @@ function handleWindowResize() {
     const languageSelector = document.querySelector('.language-selection');
     const tabs = document.querySelector('.tabs');
     const sideBar = document.querySelector('.side-bar');
+    const sideBarBtn = document.querySelector('.side-bar-btn');
     const activeItem = sideBar.querySelector('.side-bar-item.active');
     const activeTab = tabs.querySelector('.tab-item.active');
     const prefActions = document.querySelector('.pref-actions');
@@ -1503,9 +1504,17 @@ function handleWindowResize() {
         }
         if (!sidebarCollapseDone) { 
             if (prefs.collapseSidebar) { 
-                if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
+                if (!sideBar.classList.contains('collapsed')) {
+                    sideBar.classList.add('collapsed');
+                    sideBarBtn.title = strings.general.expand_side_bar[lang];
+                    const sideBarBtnImg = sideBarBtn.querySelector('img');
+                    sideBarBtnImg.src = './res/outdent.png';
+                }
             } else { 
-                if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');
+                if (sideBar.classList.contains('collapsed')) {
+                    sideBar.classList.remove('collapsed');
+                    sideBarBtn.title = strings.general.collapse_side_bar[lang];
+                }
             }
         }
         sidebarCollapseDone = true;
@@ -1514,7 +1523,9 @@ function handleWindowResize() {
             const mainWidth = main.getBoundingClientRect().width;
             main.style.paddingLeft = `calc(${lineSelectorWidth}px + 3vw)`;
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
-        }, 100);
+        }, 200);
     }
     // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作
 }
+
+window.handleWindowResize = handleWindowResize;

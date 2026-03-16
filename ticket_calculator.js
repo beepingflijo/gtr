@@ -384,7 +384,7 @@ function setActiveSortButton(activeButton) {
         activeSortButtons.forEach(button => {
             button.classList.add('active');
             const spanText = button.querySelector('span');
-            spanText.style.width = Math.min(calculateTextWidth(spanText.textContent),3)+'em';
+            spanText.style.width = Math.min(calculateTextWidth(spanText.textContent),4)+'em';
             button.style.width = 'calc(100% - 60px)';
         });
     }
@@ -1455,7 +1455,7 @@ function renderSearchResults(routes, container) {
     container.innerHTML = '';
     
     if (routes.length === 0) {
-        container.innerHTML = `<p class="item no-route">${strings.ticket_calculator.no_routes_found[lang] || '未找到路线'}</p>`;
+        container.innerHTML = `<div class="item no-route">${strings.ticket_calculator.no_routes_found[lang] || '未找到路线'}</div>`;
         return;
     }
     
@@ -1755,6 +1755,7 @@ function handleWindowResize() {
     const main = document.querySelector('main');
     const tabs = document.querySelector('.tabs');
     const sideBar = document.querySelector('.side-bar');
+    const sideBarBtn = document.querySelector('.side-bar-btn');
     const activeItem = sideBar.querySelector('.side-bar-item.active');
     const activeTab = tabs.querySelector('.tab-item.active');
     const prefActions = document.querySelector('.pref-actions');
@@ -1866,9 +1867,17 @@ function handleWindowResize() {
         sideBarPanel.style.width = '11em';
         if (!sidebarCollapseDone) { 
             if (prefs.collapseSidebar) { 
-                if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
+                if (!sideBar.classList.contains('collapsed')) {
+                    sideBar.classList.add('collapsed');
+                    sideBarBtn.title = strings.general.expand_side_bar[lang];
+                    const sideBarBtnImg = sideBarBtn.querySelector('img');
+                    sideBarBtnImg.src = './res/outdent.png';
+                }
             } else { 
-                if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');
+                if (sideBar.classList.contains('collapsed')) {
+                    sideBar.classList.remove('collapsed');
+                    sideBarBtn.title = strings.general.collapse_side_bar[lang];
+                }
             }
         }
         sidebarCollapseDone = true;

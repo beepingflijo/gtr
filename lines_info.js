@@ -1849,6 +1849,7 @@ function handleWindowResize() {
     const main = document.querySelector('main');
     const tabs = document.querySelector('.tabs');
     const sideBar = document.querySelector('.side-bar');
+    const sideBarBtn = document.querySelector('.side-bar-btn');
     const activeItem = sideBar.querySelector('.side-bar-item.active');
     const activeTab = tabs.querySelector('.tab-item.active');
     const prefActions = document.querySelector('.pref-actions');
@@ -1888,9 +1889,17 @@ function handleWindowResize() {
         main.style.paddingBottom = '36px';
         if (!sidebarCollapseDone) { 
             if (prefs.collapseSidebar) { 
-                if (!sideBar.classList.contains('collapsed')) sideBar.classList.add('collapsed');
+                if (!sideBar.classList.contains('collapsed')) {
+                    sideBar.classList.add('collapsed');
+                    sideBarBtn.title = strings.general.expand_side_bar[lang];
+                    const sideBarBtnImg = sideBarBtn.querySelector('img');
+                    sideBarBtnImg.src = './res/outdent.png';
+                }
             } else { 
-                if (sideBar.classList.contains('collapsed')) sideBar.classList.remove('collapsed');
+                if (sideBar.classList.contains('collapsed')) {
+                    sideBar.classList.remove('collapsed');
+                    sideBarBtn.title = strings.general.collapse_side_bar[lang];
+                }
             }
         } else console.log('sidebarCollapseDone');
         sidebarCollapseDone = true;

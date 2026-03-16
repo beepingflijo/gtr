@@ -413,8 +413,17 @@ function removeToast(message) {
 // 切换侧边栏显示状态
 function toggleSidebar() {
     const sidebar = document.querySelector('.side-bar');
+    const sidebarBtn = document.querySelector('.side-bar-btn');
+    const sidebarBtnIcon = document.querySelector('.side-bar-btn img');
     if (sidebar) {
         sidebar.classList.toggle('collapsed');
+        sidebarBtn.title = 
+            sidebar.classList.contains('collapsed') ?
+            strings.general.expand_side_bar[lang] :
+            strings.general.collapse_side_bar[lang];
+        sidebarBtnIcon.src = sidebar.classList.contains('collapsed') ?
+            './res/outdent.png' :
+            './res/indent.png';
         // 在已加载的脚本中查找handleWindowResize
         const handleWindowResize = window.handleWindowResize;
         if (handleWindowResize) {
@@ -961,15 +970,21 @@ function getTimeAgo(timestamp) {
     } else if (diffHours < 24) {
         return strings.general.time_hours_ago[lang] ? 
             strings.general.time_hours_ago[lang].replace('{n}', diffHours) : `${diffHours}小时前`;
-    } else if (diffDays < 30) {
+    } else if (diffDays < 7) {
         return strings.general.time_days_ago[lang] ? 
             strings.general.time_days_ago[lang].replace('{n}', diffDays) : `${diffDays}天前`;
-    } else if (diffMonths < 12) {
-        return strings.general.time_months_ago[lang] ? 
-            strings.general.time_months_ago[lang].replace('{n}', diffMonths) : `${diffMonths}个月前`;
     } else {
-        return strings.general.time_years_ago[lang] ? 
-            strings.general.time_years_ago[lang].replace('{n}', diffYears) : `${diffYears}年前`;
+        // 超过一周，显示具体日期
+        const year = past.getFullYear();
+        const month = String(past.getMonth() + 1).padStart(2, '0'); // 月份从0开始，需要+1
+        const day = String(past.getDate()).padStart(2, '0');
+        
+        // 如果是同一年，只显示月日；否则显示年月日
+        if (now.getFullYear() === year) {
+            return `${month}-${day}`;
+        } else {
+            return `${year}-${month}-${day}`;
+        }
     }
 }
         
@@ -1207,6 +1222,7 @@ function getLineName(lineId) {
 function initHistoryBtn() { 
     const historyBtns = document.querySelectorAll('.history-btn');
     historyBtns.forEach(historyBtn => { 
+        historyBtn.title = strings.general.history[lang];
         historyBtn.addEventListener('click', () => { 
             loadHistory();
         });
@@ -1231,7 +1247,6 @@ function loadHistory() {
             historyTitle.classList.add('history-title');
             const pageName = page.page.split('.')[0];
             const params = new URLSearchParams(page.params);
-            console.log(params);
             switch (pageName) {
                 case 'lines_info':
                     historyIcon.src = './res/tracking.png';
@@ -1284,9 +1299,9 @@ function loadHistory() {
 
 function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
     // 返回Promise以支持异步等待
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
         if (window.prefs.useSystemDialog === false || type === 'custom') {
-            const appContainer = document.querySelector('main');
+            const appContainer = document.querySelector('.app-container');
             const existingDialog = document.querySelectorAll('.modal-overlay');
             if (existingDialog && existingDialog.length > 0) {
                 existingDialog.forEach(dialog => {
@@ -1313,27 +1328,32 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
             dialogContainer.style.opacity = 0;
             dialogContainer.style.transform = 'scale(1.1)';
 
+            const dialogHeader = document.createElement('div');
+            dialogHeader.classList.add('dialog-header');
             const dialogTitle = document.createElement('h3');
             dialogTitle.classList.add('dialog-title');
             dialogTitle.textContent = title;
-            dialogContainer.appendChild(dialogTitle);
+            dialogHeader.appendChild(dialogTitle);
+            if(title!=='')dialogContainer.appendChild(dialogHeader);
 
             const dialogContent = document.createElement('div');
             dialogContent.classList.add('dialog-content');
-            dialogContent.textContent = content;
             if (type === 'custom') {
-                content.style.maxHeight = '44dvh';
-                content.style.overflowY = 'auto';
                 content.addEventListener('scroll', (e) => { 
                     e.stopPropagation();
                 });
+                content.classList.add('dialog-content');
+                if (title === '') content.style.paddingTop = '24px';
+            } else dialogContent.textContent = content;
+            if (title === '') {
+                dialogContent.style.paddingTop = '24px';
             }
             dialogContainer.appendChild(type==='custom'?content:dialogContent);
 
             const dialogInput = document.createElement('input');
             dialogInput.classList.add('dialog-input');
             dialogInput.value = defaultValue;
-            if (type === 'prompt') dialogContainer.appendChild(dialogInput);
+            if (type === 'prompt') dialogContent.appendChild(dialogInput);
 
             const dialogButtons = document.createElement('div');
             dialogButtons.classList.add('dialog-buttons');
@@ -1349,7 +1369,7 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
             
             // 确认按钮
             const confirmButton = document.createElement('button');
-            if (type === 'confirm-danger') confirmButton.style.color = 'crimson';
+            if (type.match('danger')) confirmButton.style.color = 'crimson';
             else confirmButton.classList.add('active');
             confirmButton.textContent = strings.general.confirm[lang];
             confirmButton.addEventListener('click', () => {
@@ -1379,6 +1399,10 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
         } else { 
             // 使用系统对话框
             let result;
+            let isResultUpdated = false;
+            const startTime = Date.now();
+            console.log(`使用系统对话框，等待结果...`, startTime);
+
             switch (type) {
                 case 'alert':
                     window.alert((title ? (title + '\n') : '') + content);
@@ -1389,6 +1413,31 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
                     break;
                 default:
                     result = window.confirm((title ? (title + '\n') : '') + content);
+            }
+            const endTime = Date.now();
+            console.log(`系统对话框已返回结果：${result}`, endTime);
+            // 标记result已被更新
+            isResultUpdated = true;
+
+            // 检测是否在100ms内更新了result
+            if (endTime - startTime < 100) {
+                // 结果没有在100ms内更新，说明系统对话框可能被阻止
+                try {
+                    // 更新localStorage设置
+                    let prefs = JSON.parse(localStorage.getItem('preferences')) || {};
+                    prefs.useSystemDialog = false;
+                    localStorage.setItem('preferences', JSON.stringify(prefs));
+                    
+                    // 更新window.prefs
+                    window.prefs = prefs;
+                    
+                    // 重新执行整个函数
+                    const newResult = await pushDialog(content, type, title, defaultValue);
+                    resolve(newResult);
+                } catch (error) {
+                    console.error('Error handling blocked system dialog:', error);
+                    resolve(null);
+                }
             }
             resolve(result);
         }
@@ -1404,47 +1453,4 @@ function closeDialog(modalOverlay, callback) {
             callback();
         }
     }, 300); 
-}
-
-// 使用示例：
-// 1. 异步/await 方式（推荐）
-// async function handleDelete() {
-//     const confirmed = await pushDialog('确定要删除吗？', 'confirm', '删除确认');
-//     if (confirmed) {
-//         // 执行删除操作
-//         console.log('用户确认删除');
-//     } else {
-//         console.log('用户取消删除');
-//     }
-// }
-
-// 2. Promise.then() 方式
-// pushDialog('确定要继续吗？', 'confirm', '操作确认')
-//     .then(confirmed => {
-//         if (confirmed) {
-//             // 用户确认后的操作
-//             console.log('用户确认');
-//         } else {
-//             console.log('用户取消');
-//         }
-//     });
-
-// 3. Alert模式（只有确定按钮）
-// await pushDialog('操作成功！', 'alert', '提示');
-
-function calculateTextWidth(string) {
-    // 部分字符可记为半字宽
-    const halfWidthCharacters = '023456789abcdefghknopqrstuvxyzабвгґеєзийкнопрстхцчья';
-    const quarterWidthCharacters = '1ilI.,\'ії"\/\\|!` ';
-    let width = 0;
-    for (let char of string) {
-        if (halfWidthCharacters.includes(char)) {
-            width += 0.5;
-        } else if (quarterWidthCharacters.includes(char)) {
-            width += 0.25;
-        } else {
-            width += 1;
-        }
-    }
-    return width;
 }
