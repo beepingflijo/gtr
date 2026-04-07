@@ -228,6 +228,13 @@
     .dialog-container .dialog-header, 
     .dialog-container .dialog-buttons { 
         background: var(--color-background-card-solid) !important;
+        position: sticky !important;
+        padding: 18px 16px;
+        width: -webkit-fill-available;
+    }
+
+    .dialog-content { 
+        padding: 0 16px;
     }
 
 }
@@ -267,7 +274,7 @@
     background-color: #444444f0;
 }
 
-.effect-reduced footer > *:not(.search-controls), 
+.effect-reduced footer > *:not(.search-controls):not(.footer-placeholder), 
 .effect-reduced .selection:not(.collapsed), 
 .effect-reduced .tooltip, .effect-reduced .side-bar:not(.collapsed),
 .effect-reduced footer .selection.collapsed .selection-item.active,
@@ -497,6 +504,8 @@ footer.swapped {
         height: fit-content !important;
         opacity: 1 !important;
         padding: 4px 16px !important;
+        filter: none !important;
+        transform: none !important;
     }
     footer .tabs.collapsed .tab-item.active { 
         background-color: var(--color-secondary-hover) !important;
@@ -632,6 +641,13 @@ header * {
 .effect-reduced .dialog-container .dialog-header, 
 .effect-reduced .dialog-container .dialog-buttons { 
     background: var(--color-background-card-solid);
+    position: sticky !important;
+    padding: 18px 16px;
+    width: -webkit-fill-available;
+}
+
+.effect-reduced .dialog-content { 
+    padding: 0 16px;
 }
 
 .title { 
@@ -1015,6 +1031,8 @@ footer .tabs.collapsed {
     opacity: 0;
     line-height: 0;
     white-space: nowrap;
+    filter: blur(12px);
+    transform: scale(1.2);
 }
 
 /* 开关样式 */
