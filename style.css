@@ -473,7 +473,7 @@ footer.swapped {
     flex-direction: row-reverse;
 }
 
-@media (width > 480px) {
+@media (width > 540px) {
     footer { 
         flex-direction: row;
         justify-content: space-between;
@@ -1238,7 +1238,7 @@ footer .search-bar:not(.collapsed) input {
     height: 36px;
 }
 
-footer .selection.line-selector.collapsed .selection-item {
+footer .selection.line-selector.collapsed .selection-item.active {
     max-width: calc(100dvw - 72px - 12rem);
 }
 

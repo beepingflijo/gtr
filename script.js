@@ -484,6 +484,9 @@ function applyFont(font) {
         case 'sans-serif':
             fontFamily = 'sans-serif';
             break;
+        case 'serif':
+            fontFamily = 'serif';
+            break;
         case 'system':
             fontFamily = 'none';
             break;
@@ -540,7 +543,7 @@ function initLanguageSelector() {
         item.textContent = isMobile ? strings.general.lang_short[langObj.textKey] : strings.general.lang[langObj.textKey];
         item.dataset.lang = langObj.code;
         item.style.justifyContent = isMobile ? 'center' : 'flex-start';
-        item.style.width = isMobile ? '-webkit-fill-available' : 'auto';
+        item.style.width = isMobile ? '-webkit-fill-available' : '';
         
         // 添加点击事件
         item.addEventListener('click', function(e) {
@@ -1460,9 +1463,9 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
             // 标记result已被更新
             isResultUpdated = true;
 
-            // 检测是否在100ms内更新了result
-            if (endTime - startTime < 100) {
-                // 结果没有在100ms内更新，说明系统对话框可能被阻止
+            // 检测是否在20ms内更新了result
+            if (endTime - startTime < 20) {
+                // 结果没有在20ms内更新，说明系统对话框可能被阻止
                 try {
                     // 更新localStorage设置
                     let prefs = JSON.parse(localStorage.getItem('preferences')) || {};

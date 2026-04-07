@@ -74,6 +74,7 @@
         "system":{"zh_hans":"跟随系统", "en": "System", "zh_hant":"跟随系統", "uk": "Системний"},
         "font":{"zh_hans":"字体", "en": "Font", "zh_hant":"字體", "uk": "Шрифт"},
         "sans_serif":{"zh_hans":"无衬线字体", "en": "Sans-serif", "zh_hant":"無襯線字體", "uk": "Без засічок"},
+        "serif":{"zh_hans":"衬线字体", "en": "Serif", "zh_hant":"襯線字體", "uk": "З засічками"},
         "history_limit":{"zh_hans":"历史记录容量", "en": "History limit", "zh_hant":"歷史記錄容量", "uk": "Ліміт історії"},
         "set_history_limit":{"zh_hans":"设置历史记录容量", "en": "Set history limit", "zh_hant":"設置歷史記錄容量", "uk": "Встановити обмеження історії"},
         "new_limit_apply_warning":{

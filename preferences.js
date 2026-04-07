@@ -630,6 +630,7 @@ function initFontSelector() {
         { id: 'inter', label: 'HydCraft (Bricolage Grotesque)' },
         { id: 'harmonyos', label: strings.mainpage.gt[lang]+' (HarmonyOS Sans)' },
         { id: 'sans-serif', label: strings.preferences.sans_serif },
+        { id: 'serif', label: strings.preferences.serif },
         { id: 'system', label: strings.preferences.system }
     ];
 
@@ -653,6 +654,9 @@ function initFontSelector() {
                 break;
             case 'sans-serif':
                 fontFamily = 'sans-serif';
+                break;
+            case 'serif':
+                fontFamily = 'serif';
                 break;
             case 'system':
                 fontFamily = 'none';
@@ -725,6 +729,9 @@ function applyFont(font) {
             break;
         case 'sans-serif':
             fontFamily = 'sans-serif';
+            break;
+        case 'serif':
+            fontFamily = 'serif';
             break;
         case 'system':
             fontFamily = 'unset';
