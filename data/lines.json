@@ -5,6 +5,26 @@
             "name": {"zh_hans": "纵贯线","en": "Main Line", "zh_hant": "縱貫線", "uk":"Основна лінія"},
             "color": "#ec2d7a",
             "route": [
+                {"type": "station", "code": "WEN"},
+                {"type": "track","duration":240,"nodes": [
+                        {"x": 650, "z": -3500},
+                        {"x": 0, "z": -3500},
+                        {"x": -460, "z": -3000},
+                        {"x": -460, "z": -20}
+                ]},
+                {"type": "station", "code": "LMW"},
+                {"type": "track","duration":120,"nodes": [
+                        {"x": -460, "z": 80},
+                        {"x": -460, "z": 730},
+                        {"x": -395, "z": 915},
+                        {"x": 630, "z": 1940}
+                ]},
+                {"type": "station", "code": "XNB"},
+                {"type": "track","duration":57,"nodes": [
+                        {"x": 720, "z": 2030},
+                        {"x": 1026, "z": 2350},
+                        {"x": 1040, "z": 2820}
+                ]},
                 {"type": "station", "code": "XYD"},
                 {"type": "track","duration":57,"nodes": [
                         {"x": 1040, "z": 2920},
@@ -196,7 +216,24 @@
                         {"x": -30, "z": 4940},
                         {"x": -30, "z": 6900}
                 ]},
-                {"type": "station", "code": "JXN"}
+                {"type": "station", "code": "JXN"},
+                {"type": "track","duration":90,"nodes": [
+                        {"x": -30, "z": 7100},
+                        {"x": -30, "z": 7500},
+                        {"x": 50, "z": 7650},
+                        {"x": 210, "z": 7650},
+                        {"x": 720, "z": 8170},
+                        {"x": 720, "z": 9130}
+                ]},
+                {"type": "station", "code": "JBX"},
+                {"type": "track","duration":120,"nodes": [
+                        {"x": 720, "z": 9330},
+                        {"x": 710, "z": 10400},
+                        {"x": 750, "z": 10470},
+                        {"x": 1080, "z": 10810},
+                        {"x": 1080, "z": 11180}
+                ]},
+                {"type": "station", "code": "JBN"}
             ]
         }, 
         {

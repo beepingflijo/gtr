@@ -1767,7 +1767,6 @@ function handleWindowResize() {
     }
 
     const searchTitle = document.querySelectorAll('.search-title h4');
-    searchTitle.forEach(title => title.textContent = strings.ticket_calculator.search[lang]);
     
     // 检查是否是由于虚拟键盘弹出导致的窗口大小变化
     // 通过检测窗口宽度没有变化而高度发生变化来判断
@@ -1831,8 +1830,11 @@ function handleWindowResize() {
                     footerPanel.classList.add('collapsed');
                     searchTitleImg.src = './res/search.png';
                     searchTitleImg.style.transform = 'rotate(0deg)';
-                    searchTitleText.textContent = strings.ticket_calculator.search[lang];
+                    searchTitleText.textContent = '';
                     searchTitleText.style.fontWeight = '';
+                    setTimeout(() => {
+                        tabs.classList.remove('collapsed');
+                    }, 150);
                     showToast(strings.ticket_calculator.click_outside_to_collapse[lang]);
                 });
             });
@@ -1841,20 +1843,24 @@ function handleWindowResize() {
                 footerPanel.classList.add('collapsed');
                 searchTitleImg.src = './res/search.png';
                 searchTitleImg.style.transform = 'rotate(0deg)';
-                searchTitleText.textContent = strings.ticket_calculator.search[lang];
+                searchTitleText.textContent = '';
                 searchTitleText.style.fontWeight = '';
+                setTimeout(() => {
+                    tabs.classList.remove('collapsed');
+                }, 150);
             });
             footerPanel.addEventListener('click' , (e) => { 
                 e.stopPropagation();
                 const isCollapsed = footerPanel.classList.contains('collapsed');
                 searchTitleText.textContent = isCollapsed ?
-                    strings.ticket_calculator.search[lang] : 
+                    '' : 
                     strings.ticket_calculator.collapse[lang];
                 searchTitleText.style.fontWeight = isCollapsed ? '' : 'normal';
             })
         }
         else footerPanel.classList.remove('no-collapse');
     } else {
+        searchTitle.forEach(title => title.textContent = strings.ticket_calculator.search[lang]);
         // 移除collapsed类
         footer.style.opacity = 0;
         sideBar.style.opacity = 1;

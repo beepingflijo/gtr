@@ -57,11 +57,13 @@ footer.swapped .search-controls{
 .search-panel.collapsed {
     width: fit-content;
     min-height: 42px;
-    padding: 0 12px;
+    padding: 6px 12px;
+    padding-left: 16px;
     background: var(--color-background-actions);
     align-items: center;
     justify-content: center;
     gap: 0;
+    border-radius: 36px;
 }
 
 .search-panel.collapsed .input-section,
@@ -76,6 +78,15 @@ footer.swapped .search-controls{
     overflow: hidden;
 }
 
+.search-panel.collapsed .selection,
+.search-panel.collapsed .selection * { 
+    height: 0;
+    width: 0;
+    min-width: 0;
+    min-height: 0;
+    opacity: 0;
+}
+
 .search-panel:not(.collapsed) .input-section,
 .search-panel:not(.collapsed) .search-actions {
     height: auto;
@@ -84,6 +95,21 @@ footer.swapped .search-controls{
     padding: initial;
     overflow: visible;
     width: fit-content;
+}
+
+footer .search-panel .selection:not(.collapsed) { 
+    margin: 0;
+    filter: none;
+    box-shadow: none;
+    padding: 0;
+    background: transparent;
+    background-color: transparent;
+}
+
+footer .search-panel .selection .selection-item.active { 
+    filter: none;
+    box-shadow: none;
+    background-color: var(--color-secondary-hover);
 }
 
 .input-section {

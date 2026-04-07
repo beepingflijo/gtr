@@ -370,6 +370,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         applySavedTheme(); // 应用保存的主题设置
         checkForceRefresh(); // 检查是否需要强制刷新
         initHistoryBtn();
+        setInterval(handleFooterItemCollapse, 150);
+        const tabs = document.querySelectorAll('footer .tabs');
         
         // 暴露 lang 到全局供其他模块使用
         window.lang = lang;
@@ -751,6 +753,47 @@ function initSearchBar() {
                     bar.classList.remove('collapsed');
                 });
             }
+        }
+    });
+}
+
+function handleFooterItemCollapse() {
+    const notCollapsedItems = document.querySelectorAll('footer > *:not(.tabs):not(.collapsed)');
+    const tabs = document.querySelectorAll('footer .tabs');
+    const footer = document.querySelector('footer');
+    
+    if (notCollapsedItems.length > 0) {
+        tabs.forEach(tab => {
+            tab.classList.add('collapsed');
+        });
+    } else {
+        tabs.forEach(tab => {
+            tab.classList.remove('collapsed');
+        });
+    }
+    tabs.forEach(tab => {
+        tab.addEventListener('mouseover', () => {
+            footer.click();
+            tab.classList.remove('collapsed');
+            notCollapsedItems.forEach(item => {
+                item.classList.add('collapsed');
+            });
+        });
+        tab.addEventListener('click', () => {
+            tab.classList.remove('collapsed');
+            notCollapsedItems.forEach(item => {
+                item.classList.add('collapsed');
+            });
+        });
+        const activeTabItem = tab.querySelector('.active');
+        if (activeTabItem) {
+            activeTabItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                tab.classList.add('collapsed');
+                notCollapsedItems.forEach(item => {
+                    item.classList.remove('collapsed');
+                });
+            });
         }
     });
 }
@@ -1325,8 +1368,7 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
             const dialogContainer = document.createElement('div');
             dialogContainer.classList.add('dialog-container');
             dialogContainer.classList.add('item');
-            dialogContainer.style.opacity = 0;
-            dialogContainer.style.transform = 'scale(1.1)';
+            dialogContainer.classList.add('collapsed');
 
             const dialogHeader = document.createElement('div');
             dialogHeader.classList.add('dialog-header');
@@ -1392,8 +1434,7 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
                 modalOverlay.style.opacity = '';
                 modalOverlay.style.backdropFilter = '';
                 setTimeout(() => {
-                    dialogContainer.style.opacity = 1;
-                    dialogContainer.style.transform = 'scale(1)';
+                    dialogContainer.classList.remove('collapsed');
                 }, 10);
             }, 10);
         } else { 
@@ -1447,6 +1488,8 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
 function closeDialog(modalOverlay, callback) {
     modalOverlay.style.opacity = 0;
     modalOverlay.style.backdropFilter = 'blur(1px)';
+    const dialogContainer = modalOverlay.querySelector('.dialog-container');
+    dialogContainer.classList.add('collapsed');
     setTimeout(() => {
         modalOverlay.remove();
         if (callback && typeof callback === 'function') {
