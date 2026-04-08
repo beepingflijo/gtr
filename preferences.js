@@ -965,10 +965,22 @@ function handleWindowResize() {
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
     if (window.innerWidth < 720) {
         searchBar.style.display = 'none';
-        footer.style.opacity = 1;
+        footer.style.display = 'flex';
+        setTimeout(() => {
+            footer.style.opacity = 1;
+            footer.style.filter = '';
+            footer.style.transform = '';
+            footer.style.height = '';
+        }, 100);
     } else {
         footer.style.opacity = 0;
+        footer.style.height = 0;
+        footer.style.filter = 'blur(24px)';
+        footer.style.transform = 'scale(1.2)';
         searchBar.style.display = 'flex';
+        setTimeout(() => {
+            footer.style.display = 'none';
+        }, 10);
     }
     // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作
 }

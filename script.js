@@ -782,7 +782,11 @@ function handleFooterItemCollapse() {
                 item.classList.add('collapsed');
             });
         });
-        tab.addEventListener('click', () => {
+        tab.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (tab.classList.contains('collapsed')) {
+                e.preventDefault();
+            }
             tab.classList.remove('collapsed');
             notCollapsedItems.forEach(item => {
                 item.classList.add('collapsed');
@@ -792,7 +796,7 @@ function handleFooterItemCollapse() {
         if (activeTabItem) {
             activeTabItem.addEventListener('click', (e) => {
                 e.stopPropagation();
-                tab.classList.add('collapsed');
+                e.preventDefault();
                 notCollapsedItems.forEach(item => {
                     item.classList.remove('collapsed');
                 });

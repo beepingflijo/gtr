@@ -1767,6 +1767,7 @@ function handleWindowResize() {
     }
 
     const searchTitle = document.querySelectorAll('.search-title h4');
+    searchTitle.forEach(title => title.textContent = strings.ticket_calculator.search[lang]);
     
     // 检查是否是由于虚拟键盘弹出导致的窗口大小变化
     // 通过检测窗口宽度没有变化而高度发生变化来判断
@@ -1803,16 +1804,24 @@ function handleWindowResize() {
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
     if (window.innerWidth < 720) {
         sideBar.style.opacity = 0;
-        sideBar.style.position = 'fixed';
-        sideBar.style.right = '100%';
-        sideBar.style.display = 'none';
+        sideBar.style.width = 0;
+        sideBar.style.opacity = 0;
+        sideBar.style.filter = 'blur(24px)';
+        footer.style.display = 'flex';
+        setTimeout(() => {
+            sideBar.style.display = 'none';
+            setTimeout(() => {
+                footer.style.opacity = 1;
+                footer.style.filter = '';
+                footer.style.transform = '';
+                footer.style.height = '';
+                tabs.style.marginLeft = '6px';
+            }, 100);
+        }, 50);
         prefActions.style.display = 'flex';
         main.style.paddingLeft = '24px';
         main.style.paddingBottom = `144px`;
-
-        footer.style.opacity = 1;
-        tabs.style.marginLeft = '6px';
-        footer.style.opacity = 1;
+        
         const searchTitle = footerPanel.querySelector('.search-title');
         const searchTitleImg = searchTitle.querySelector('img');
         const searchTitleText = searchTitle.querySelector('h4');
@@ -1830,7 +1839,7 @@ function handleWindowResize() {
                     footerPanel.classList.add('collapsed');
                     searchTitleImg.src = './res/search.png';
                     searchTitleImg.style.transform = 'rotate(0deg)';
-                    searchTitleText.textContent = '';
+                    searchTitleText.textContent = strings.ticket_calculator.search[lang];
                     searchTitleText.style.fontWeight = '';
                     setTimeout(() => {
                         tabs.classList.remove('collapsed');
@@ -1843,7 +1852,7 @@ function handleWindowResize() {
                 footerPanel.classList.add('collapsed');
                 searchTitleImg.src = './res/search.png';
                 searchTitleImg.style.transform = 'rotate(0deg)';
-                searchTitleText.textContent = '';
+                searchTitleText.textContent = strings.ticket_calculator.search[lang];
                 searchTitleText.style.fontWeight = '';
                 setTimeout(() => {
                     tabs.classList.remove('collapsed');
@@ -1860,12 +1869,19 @@ function handleWindowResize() {
         }
         else footerPanel.classList.remove('no-collapse');
     } else {
-        searchTitle.forEach(title => title.textContent = strings.ticket_calculator.search[lang]);
         // 移除collapsed类
         footer.style.opacity = 0;
-        sideBar.style.opacity = 1;
+        footer.style.height = 0;
+        footer.style.filter = 'blur(24px)';
+        footer.style.transform = 'scale(1.2)';
         sideBar.style.display = 'flex';
-        sideBar.style.right = '0';
+        setTimeout(() => {
+            sideBar.style.opacity = 1;
+            sideBar.style.width = '';
+            sideBar.style.opacity = 1;
+            sideBar.style.filter = '';
+            sideBar.style.right = '0';
+        }, 50);
         sideBar.style.position = 'relative';
         prefActions.style.display = 'none';
         main.style.paddingBottom = '36px';
@@ -1892,7 +1908,7 @@ function handleWindowResize() {
             const mainWidth = main.getBoundingClientRect().width;
             main.style.paddingLeft = `calc(${lineSelectorWidth}px + 4vw)`;
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
-        }, 100);
+        }, 150);
     }
 }
 

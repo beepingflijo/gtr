@@ -55,7 +55,8 @@ footer.swapped .search-controls{
 }
 
 .search-panel.collapsed {
-    width: fit-content;
+    width: 26px;
+    min-width: 26px;
     min-height: 42px;
     padding: 6px 12px;
     padding-left: 16px;
@@ -64,6 +65,12 @@ footer.swapped .search-controls{
     justify-content: center;
     gap: 0;
     border-radius: 36px;
+}
+
+.search-panel.collapsed .search-title h4 { 
+    width: 0;
+    opacity: 0;
+    filter: blur(24px);
 }
 
 .search-panel.collapsed .input-section,
@@ -104,6 +111,7 @@ footer .search-panel .selection:not(.collapsed) {
     padding: 0;
     background: transparent;
     background-color: transparent;
+    backdrop-filter: none;
 }
 
 footer .search-panel .selection .selection-item.active { 

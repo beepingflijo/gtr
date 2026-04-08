@@ -1865,15 +1865,23 @@ function handleWindowResize() {
     
     if (window.innerWidth < 720) {
         sideBar.style.opacity = 0;
-        sideBar.style.position = 'fixed';
-        sideBar.style.right = '100%';
-        sideBar.style.display = 'none';
+        sideBar.style.width = 0;
+        sideBar.style.opacity = 0;
+        sideBar.style.filter = 'blur(24px)';
+        footer.style.display = 'flex';
+        setTimeout(() => {
+            sideBar.style.display = 'none';
+            setTimeout(() => {
+                footer.style.opacity = 1;
+                footer.style.filter = '';
+                footer.style.transform = '';
+                footer.style.height = '';
+                tabs.style.marginLeft = '6px';
+            }, 100);
+        }, 50);
         prefActions.style.display = 'flex';
         stationsDisplay.style.marginLeft = '0';
         main.style.paddingBottom = `144px`;
-
-        footer.style.opacity = 1;
-        tabs.style.marginLeft = '6px';
     } else {
         //lineSelector.style.zIndex = 1100;
         //lineSelector.style.position = 'fixed';
@@ -1881,9 +1889,18 @@ function handleWindowResize() {
         //lineSelector.style.left = `calc(${window.innerWidth > 920 ? '50vw + ' + mainWidth / 2  + 'px' : '88vw'} - ${mainWidth}px)`;
         // 移除collapsed类
         footer.style.opacity = 0;
-        sideBar.style.opacity = 1;
+        footer.style.height = 0;
+        footer.style.filter = 'blur(24px)';
+        footer.style.transform = 'scale(1.2)';
         sideBar.style.display = 'flex';
-        sideBar.style.right = '0';
+        setTimeout(() => {
+            footer.style.display = 'none';
+            sideBar.style.opacity = 1;
+            sideBar.style.width = '';
+            sideBar.style.opacity = 1;
+            sideBar.style.filter = '';
+            sideBar.style.right = '0';
+        }, 10);
         sideBar.style.position = 'relative';
         prefActions.style.display = 'none';
         main.style.paddingBottom = '36px';
@@ -1908,7 +1925,7 @@ function handleWindowResize() {
             const mainWidth = main.getBoundingClientRect().width;
             stationsDisplay.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
-        }, 100);
+        }, 150);
     }
 }
 

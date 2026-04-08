@@ -1477,24 +1477,38 @@ function handleWindowResize() {
     // 只有在不是虚拟键盘导致的resize且输入框未聚焦时才执行布局调整
     if (window.innerWidth < 720) {
         sideBar.style.opacity = 0;
-        sideBar.style.position = 'fixed';
-        sideBar.style.right = '100%';
-        sideBar.style.display = 'none';
+        sideBar.style.width = 0;
+        sideBar.style.opacity = 0;
+        sideBar.style.filter = 'blur(24px)';
+        footer.style.display = 'flex';
+        setTimeout(() => {
+            sideBar.style.display = 'none';
+            setTimeout(() => {
+                footer.style.opacity = 1;
+                footer.style.filter = '';
+                footer.style.transform = '';
+                footer.style.height = '';
+                tabs.style.marginLeft = '6px';
+            }, 100);
+        }, 50);
         prefActions.style.display = 'flex';
         main.style.paddingLeft = '24px';
         main.style.paddingBottom = `144px`;
         searchBar.style.display = 'none';
-
-        footer.style.opacity = 1;
-        tabs.style.marginLeft = '6px';
-        footer.style.opacity = 1;
     } else {
         // 移除collapsed类
         footer.style.opacity = 0;
-        sideBar.style.opacity = 1;
+        footer.style.height = 0;
+        footer.style.filter = 'blur(24px)';
+        footer.style.transform = 'scale(1.2)';
         sideBar.style.display = 'flex';
-        sideBar.style.right = '0';
-        sideBar.style.position = 'relative';
+        setTimeout(() => {
+            sideBar.style.opacity = 1;
+            sideBar.style.width = '';
+            sideBar.style.opacity = 1;
+            sideBar.style.filter = '';
+            sideBar.style.right = '0';
+        }, 10);
         prefActions.style.display = 'none';
         main.style.paddingBottom = '36px';
         searchBar.style.display = 'flex';
@@ -1523,7 +1537,7 @@ function handleWindowResize() {
             const mainWidth = main.getBoundingClientRect().width;
             main.style.paddingLeft = `calc(${lineSelectorWidth}px + 3vw)`;
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
-        }, 200);
+        }, 150);
     }
     // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作
 }
