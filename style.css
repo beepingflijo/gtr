@@ -1,3 +1,5 @@
+@import url('https://cdn-font.hyperos.mi.com/font/css?family=MiSans:0:Chinese_Simplify,Chinese_Traditional_TW,Latin&display=swap');
+
 :root, .light { 
     --color-primary: #e77000;
     --color-primary-transparent: #e7700080;
@@ -28,7 +30,7 @@
     --mask-image-overflow-y: linear-gradient(transparent 1%, white 5%, white 95%, transparent 99%);
     --mask-image-overflow-y-top: linear-gradient(white 95%, transparent 99%);
     --mask-image-overflow-y-bottom: linear-gradient(transparent 1%, white 5%);
-    --font-family: "Bricolage Grotesque", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    --font-family: "Rubik", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
 }
 
 * { 
@@ -44,6 +46,69 @@
 @font-face {
     font-family: "Bricolage Grotesque";
     src: url(https://assets.wiki.hydcraft.cn/font/Bricolage_Grotesque.woff2) format('woff2')
+}
+
+@font-face {
+	font-family: 'Rubik';
+	font-style: normal;
+	font-weight: 300;
+	font-display: swap;
+	src: url('https://fonts.gstatic.cn/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-WYi1UA.ttf')
+		format('truetype');
+}
+
+@font-face {
+	font-family: 'Rubik';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('https://fonts.gstatic.cn/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4i1UA.ttf')
+		format('truetype');
+}
+
+@font-face {
+	font-family: 'Rubik';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('https://fonts.gstatic.cn/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-NYi1UA.ttf')
+		format('truetype');
+}
+
+@font-face {
+	font-family: 'Rubik';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('https://fonts.gstatic.cn/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-2Y-1UA.ttf')
+		format('truetype');
+}
+
+@font-face {
+	font-family: 'Rubik';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('https://fonts.gstatic.cn/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-4I-1UA.ttf')
+		format('truetype');
+}
+
+@font-face {
+	font-family: 'Rubik';
+	font-style: normal;
+	font-weight: 800;
+	font-display: swap;
+	src: url('https://fonts.gstatic.cn/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-h4-1UA.ttf')
+		format('truetype');
+}
+
+@font-face {
+	font-family: 'Rubik';
+	font-style: normal;
+	font-weight: 900;
+	font-display: swap;
+	src: url('https://fonts.gstatic.cn/s/rubik/v31/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-ro-1UA.ttf')
+		format('truetype');
 }
 
 @font-face {

@@ -492,20 +492,13 @@ function filterStations(query, type) {
 }
 
 // 获取所有车站（用于搜索）
-function getAllStations() {
-    // 获取当前语言设置
-    var urlParams = new URLSearchParams(window.location.search);
-    var currentLang = urlParams.get('lang');
-    if (currentLang === null) {
-        currentLang = 'zh_hans';
-    }
-    
+function getAllStations() {    
     const stations = new Set();
     Object.values(lines).forEach(line => {
         line.route.forEach(step => {
             if (step.type === 'station') {
                 //将车站名称和三字码绑定在一起添加到集合中
-                stations.add(`${getStationName(step.code, currentLang)} ${step.code}`);
+                stations.add(`${getStationName(step.code, lang)} ${step.code}`);
             }
         });
     });
