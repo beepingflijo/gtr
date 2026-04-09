@@ -95,6 +95,8 @@ function init() {
 
     const generalPref = document.getElementById('generalPref');
     generalPref.textContent = strings.preferences.general[lang];
+    const appearancePref = document.getElementById('appearancePref');
+    appearancePref.textContent = strings.preferences.appearance[lang];
     const languagePref = document.getElementById('languagePref');
     languagePref.textContent = strings.preferences.language[lang];
     const themePref = document.getElementById('themePref');
@@ -152,7 +154,7 @@ function init() {
         // 为每种语言创建一个span元素
         const languageElements = [];
         languages.forEach((languageCode, index) => {
-            const langSpan = document.createElement('span');
+            const langSpan = document.createElement('span:not(.material-symbols-outlined)');
             langSpan.className = 'language-hint-item';
             langSpan.textContent = strings.preferences.language[languageCode];
             langSpan.style.display = 'inline-block';
@@ -203,7 +205,7 @@ function init() {
     const disclaimerText = document.getElementById('disclaimerText');
     disclaimerText.textContent = strings.preferences.disclaimer_text[lang];
     if (lang === 'zh_hans') {
-        const preparedInfo = document.createElement('span');
+        const preparedInfo = document.createElement('span:not(.material-symbols-outlined)');
         preparedInfo.classList.add('prepared-info');
         preparedInfo.innerHTML = `
                     <a href="https://beian.miit.gov.cn" style="margin-right:8px;">辽ICP备2021004959号-1</a>
@@ -398,11 +400,11 @@ function initStorageList() {
         item.className = 'storage-item';
         
         // 创建键名元素
-        const keyElement = document.createElement('span');
+        const keyElement = document.createElement('span:not(.material-symbols-outlined)');
         keyElement.className = 'storage-key';
         keyElement.textContent = key;
 
-        const valueElement = document.createElement('span');
+        const valueElement = document.createElement('span:not(.material-symbols-outlined)');
         valueElement.className = 'storage-value';
         valueElement.textContent = getStorageDescription(key, value);
 
@@ -413,7 +415,7 @@ function initStorageList() {
         itemHeader.appendChild(valueElement);
         
         // 创建描述元素
-        const descElement = document.createElement('span');
+        const descElement = document.createElement('span:not(.material-symbols-outlined)');
         descElement.className = 'storage-desc';
         if (strings.storage_descriptions[key]) { 
             descElement.textContent = strings.storage_descriptions[key][lang];

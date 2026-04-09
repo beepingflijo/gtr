@@ -196,7 +196,7 @@ function init() {
     // 修改以下代码以处理多个按钮实例
     const fareBtns = document.querySelectorAll('.fare-btn');
     fareBtns.forEach(fareBtn => {
-        const fareBtnText = fareBtn.querySelector('span');
+        const fareBtnText = fareBtn.querySelector('span:not(.material-symbols-outlined)');
         if (fareBtnText) {
             fareBtnText.textContent = strings.ticket_calculator[fareBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -209,7 +209,7 @@ function init() {
     
     const trainsBtns = document.querySelectorAll('.trains-btn');
     trainsBtns.forEach(trainsBtn => {
-        const trainsBtnText = trainsBtn.querySelector('span');
+        const trainsBtnText = trainsBtn.querySelector('span:not(.material-symbols-outlined)');
         if (trainsBtnText) {
             trainsBtnText.textContent = strings.trains_info[trainsBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -222,7 +222,7 @@ function init() {
     
     const linesBtns = document.querySelectorAll('.lines-btn');
     linesBtns.forEach(linesBtn => {
-        const linesBtnText = linesBtn.querySelector('span');
+        const linesBtnText = linesBtn.querySelector('span:not(.material-symbols-outlined)');
         if (linesBtnText) {
             linesBtnText.textContent = strings.lines_info[linesBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -235,7 +235,7 @@ function init() {
 
     const prefBtns = document.querySelectorAll('.preferences-btn');
     prefBtns.forEach(prefBtn => {
-        const prefBtnText = prefBtn.querySelector('span');
+        const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
         if (prefBtnText) {
             prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -249,23 +249,23 @@ function init() {
     const swapBtns = document.querySelectorAll('.swap-btn');
     swapBtns.forEach(swapBtn => {
         swapBtn.title = strings.ticket_calculator.swap[lang];
-        const swapText = swapBtn.querySelector('span');
+        const swapText = swapBtn.querySelector('span:not(.material-symbols-outlined)');
         swapText.textContent = strings.ticket_calculator.swap[lang];
     });
 
-    const sortByTimeTexts = document.querySelectorAll('.sort-by-time span');
+    const sortByTimeTexts = document.querySelectorAll('.sort-by-time span:not(.material-symbols-outlined)');
     sortByTimeTexts.forEach(sortByTimeText => {
         sortByTimeText.textContent = strings.ticket_calculator.faster[lang];
         sortByTimeText.parentElement.title = strings.ticket_calculator.faster[lang];
     });
     
-    const sortByTransfersTexts = document.querySelectorAll('.sort-by-transfers span');
+    const sortByTransfersTexts = document.querySelectorAll('.sort-by-transfers span:not(.material-symbols-outlined)');
     sortByTransfersTexts.forEach(sortByTransfersText => {
         sortByTransfersText.textContent = strings.ticket_calculator.direct[lang];
         sortByTransfersText.parentElement.title = strings.ticket_calculator.direct[lang];
     });
     
-    const sortByPriceTexts = document.querySelectorAll('.sort-by-price span');
+    const sortByPriceTexts = document.querySelectorAll('.sort-by-price span:not(.material-symbols-outlined)');
     sortByPriceTexts.forEach(sortByPriceText => {
         sortByPriceText.textContent = strings.ticket_calculator.cheaper[lang];
         sortByPriceText.parentElement.title = strings.ticket_calculator.cheaper[lang];
@@ -282,7 +282,7 @@ function init() {
             
             // 旋转图标180度
             rotation += 180;
-            const swapIcons = swapBtn.querySelectorAll('img');
+            const swapIcons = swapBtn.querySelectorAll('.material-symbols-outlined');
             swapIcons.forEach(swapIcon => {
                 swapIcon.style.transform = `rotate(${rotation}deg)`;
                 swapIcon.style.transition = 'transform 0.3s ease-in-out';
@@ -365,7 +365,7 @@ function setActiveSortButton(activeButton) {
     const sortButtons = document.querySelectorAll('.sort-selector .icon-btn');
     sortButtons.forEach(button => {
         button.classList.remove('active');
-        const spanText = button.querySelector('span');
+        const spanText = button.querySelector('span:not(.material-symbols-outlined)');
         if (button.parentElement.classList.contains('segment')) {
             spanText.style.width = '0';
             button.style.width = '30px';
@@ -383,8 +383,8 @@ function setActiveSortButton(activeButton) {
         const activeSortButtons = document.querySelectorAll(`.sort-selector .${activeSortClass}`);
         activeSortButtons.forEach(button => {
             button.classList.add('active');
-            const spanText = button.querySelector('span');
-            spanText.style.width = Math.min(calculateTextWidth(spanText.textContent),4)+'em';
+            const spanText = button.querySelector('span:not(.material-symbols-outlined)');
+            spanText.style.width = Math.min(calculateTextWidth(spanText.textContent),5)+'em';
             button.style.width = 'calc(100% - 60px)';
         });
     }
@@ -1816,22 +1816,20 @@ function handleWindowResize() {
         main.style.paddingBottom = `144px`;
         
         const searchTitle = footerPanel.querySelector('.search-title');
-        const searchTitleImg = searchTitle.querySelector('img');
+        const searchTitleImg = searchTitle.querySelector('.material-symbols-outlined');
         const searchTitleText = searchTitle.querySelector('h4');
 
         if (searchItem.length <= 0) {
             footerPanel.addEventListener('mouseover' , () => { 
                 footerPanel.classList.remove('collapsed');
                 footerPanel.classList.add('no-collapse');
-                searchTitleImg.src = './res/back.png';
-                searchTitleImg.style.transform = 'rotate(-90deg)';
+                searchTitleImg.textContent = 'keyboard_arrow_down';
                 searchTitleText.textContent = strings.ticket_calculator.collapse[lang];
                 searchTitleText.style.fontWeight = 'normal';
                 searchTitle.addEventListener('click' , () => { 
                     footerPanel.classList.remove('no-collapse');
                     footerPanel.classList.add('collapsed');
-                    searchTitleImg.src = './res/search.png';
-                    searchTitleImg.style.transform = 'rotate(0deg)';
+                    searchTitleImg.textContent = 'search';
                     searchTitleText.textContent = strings.ticket_calculator.search[lang];
                     searchTitleText.style.fontWeight = '';
                     setTimeout(() => {
@@ -1843,8 +1841,7 @@ function handleWindowResize() {
             document.addEventListener('click' , () => { 
                 footerPanel.classList.remove('no-collapse');
                 footerPanel.classList.add('collapsed');
-                searchTitleImg.src = './res/search.png';
-                searchTitleImg.style.transform = 'rotate(0deg)';
+                searchTitleImg.textContent = 'search';
                 searchTitleText.textContent = strings.ticket_calculator.search[lang];
                 searchTitleText.style.fontWeight = '';
                 setTimeout(() => {
@@ -1885,8 +1882,6 @@ function handleWindowResize() {
                 if (!sideBar.classList.contains('collapsed')) {
                     sideBar.classList.add('collapsed');
                     sideBarBtn.title = strings.general.expand_side_bar[lang];
-                    const sideBarBtnImg = sideBarBtn.querySelector('img');
-                    sideBarBtnImg.src = './res/outdent.png';
                 }
             } else { 
                 if (sideBar.classList.contains('collapsed')) {

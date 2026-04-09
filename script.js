@@ -42,19 +42,6 @@ function requestNotificationPermission() {
     });
 }
 
-// 从strings.json获取strings
-document.addEventListener('DOMContentLoaded', () => { 
-    fetch('strings.json')
-        .then(stringsResponse => stringsResponse.json())
-        .then(stringsData => {
-            strings = stringsData;
-            initSearchBar();
-            applySavedTheme(); // 应用保存的主题设置
-            checkForceRefresh(); // 检查是否需要强制刷新
-        })
-    .catch(error => console.error('Error loading Language data:', error));
-});
-
 // 记录用户访问的页面和参数
 function recordLastVisitedPage(paramsString) {
     // 获取当前页面文件名
@@ -366,6 +353,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         strings = stringsData;
         
         // 初始化其他功能
+        initSearchPanel();
+        initSidebar();
+        initPrefActions();
+        initTabs();
         initSearchBar();
         applySavedTheme(); // 应用保存的主题设置
         checkForceRefresh(); // 检查是否需要强制刷新
@@ -375,6 +366,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // 暴露 lang 到全局供其他模块使用
         window.lang = lang;
+        // 使用setTimeout确保在其他DOM操作完成后执行
+        //setTimeout(hideNonActiveSelectionItems, 0);
+        initBlurLayers();
+
+        const themeColor = document.createElement('meta');
+        themeColor.name = 'theme-color';
+        // 转为十六进制颜色
+        const hexColor = getComputedStyle(document.body).getPropertyValue('--color-primary').trim();
+        themeColor.content = hexColor;
+        document.head.appendChild(themeColor);
+        
+        // 为侧边栏按钮添加点击事件监听器
+        const sidebarButtons = document.querySelectorAll('.side-bar-btn');
+        sidebarButtons.forEach(button => {
+            button.addEventListener('click', toggleSidebar);
+        });
     } catch (error) {
         console.error('Error initializing language and strings:', error);
         // 降级处理
@@ -423,9 +430,6 @@ function toggleSidebar() {
             sidebar.classList.contains('collapsed') ?
             strings.general.expand_side_bar[lang] :
             strings.general.collapse_side_bar[lang];
-        sidebarBtnIcon.src = sidebar.classList.contains('collapsed') ?
-            './res/outdent.png' :
-            './res/indent.png';
         // 在已加载的脚本中查找handleWindowResize
         const handleWindowResize = window.handleWindowResize;
         if (handleWindowResize) {
@@ -1245,28 +1249,213 @@ async function sendTrainApproachingNotification(trainName, playerName, body) {
     }
 }
 
-// 在DOM内容加载完成后调用hideNonActiveSelectionItems函数
-document.addEventListener('DOMContentLoaded', () => {
-    // 使用setTimeout确保在其他DOM操作完成后执行
-    //setTimeout(hideNonActiveSelectionItems, 0);
-    initBlurLayers();
-
-    const themeColor = document.createElement('meta');
-    themeColor.name = 'theme-color';
-    // 转为十六进制颜色
-    const hexColor = getComputedStyle(document.body).getPropertyValue('--color-primary').trim();
-    themeColor.content = hexColor;
-    document.head.appendChild(themeColor);
-    
-    // 为侧边栏按钮添加点击事件监听器
-    const sidebarButtons = document.querySelectorAll('.side-bar-btn');
-    sidebarButtons.forEach(button => {
-        button.addEventListener('click', toggleSidebar);
-    });
-});
-
 function getLineName(lineId) { 
     return lines.find(line => line.id === lineId)?.name?.[lang] || lineId;
+}
+
+function initSidebar() {
+    const sidebar = document.querySelectorAll('.side-bar');
+    const currentPage = window.location.pathname.split('/').pop().split('.')[0];
+    sidebar.forEach(sidebar => { 
+        console.log('Initializing sidebar for element:', sidebar);
+        sidebar.innerHTML = `
+            <div class="side-bar-header">
+                <div class="icon-btn side-bar-btn">
+                    <span class="material-symbols-outlined">
+                    menu_open
+                    </span>
+                </div>
+            </div>
+            <div class="side-bar-list side-bar-navigation">
+                <div class="side-bar-item ${currentPage === 'lines_info' ? 'active' : ''}">
+                    <div class="icon-btn lines-btn ${currentPage === 'lines_info' ? 'active' : ''}">
+                        <span class="material-symbols-outlined">
+                        route
+                        </span>
+                        <span>${window.strings?.lines_info?.page_title[lang] || '线路信息'}</span>
+                    </div>
+                    <div class="selection line-selector no-collapse" style="display:${currentPage === 'lines_info' ? 'flex' : 'none'}"></div>
+                </div>
+                <div class="side-bar-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
+                    <div class="icon-btn fare-btn ${currentPage === 'ticket_calculator' ? 'active' : ''}">
+                        <span class="material-symbols-outlined">
+                        universal_currency_alt
+                        </span>
+                        <span>${window.strings?.ticket_calculator?.page_title[lang] || '票价计算'}</span>
+                    </div>
+                    <div class="search-controls" style="display:${currentPage === 'ticket_calculator' ? 'flex' : 'none'}">
+                        <div class="item search-panel selection no-collapse">
+                            <div class="icon-btn item-title search-title">
+                                <span class="material-symbols-outlined">
+                                search
+                                </span>
+                                <h4>${window.strings?.ticket_calculator.search[lang] || 'Search'}</h4>
+                            </div>
+                            <section class="input-section">
+                                <input type="text" placeholder="${window.strings?.ticket_calculator.start_station[lang] || 'Origin'}" id="startInput" list="start-stations"></input>
+                                <div class="icon-btn swap-btn">
+                                    <span class="material-symbols-outlined">
+                                    swap_vert
+                                    </span>
+                                    <span>${window.strings?.ticket_calculator.swap[lang] || 'Swap'}</span>
+                                </div>
+                                <input type="text" placeholder="${window.strings?.ticket_calculator.end_station[lang] || 'Destination'}" id="endInput" list="end-stations"></input>
+                            </section>
+                            <section class="search-actions">
+                                <button id="searchBtn" class="active">${window.strings?.ticket_calculator.search[lang] || 'Search'}</button>
+                                <button id="clearBtn">${window.strings?.ticket_calculator.clear_input[lang] || 'Clear'}</button>
+                            </section>
+                        </div>
+                        <div class="item sort-selector selection no-collapse"> 
+                            <div class="icon-btn selection-item sort-by-time active">
+                                <span class="material-symbols-outlined">
+                                timer
+                                </span>
+                                <span>${window.strings?.ticket_calculator.sort_by_time[lang] || 'Faster'}</span>
+                            </div>
+                            <div class="icon-btn selection-item sort-by-transfers">
+                                <span class="material-symbols-outlined">
+                                sync
+                                </span>
+                                <span>${window.strings?.ticket_calculator.sort_by_transfer[lang] || 'Direct'}</span>
+                            </div>
+                            <div class="icon-btn selection-item sort-by-price">
+                                <span class="material-symbols-outlined">
+                                savings
+                                </span>
+                                <span>${window.strings?.ticket_calculator.sort_by_price[lang] || 'Cheaper'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="side-bar-item ${currentPage === 'trains_info' ? 'active' : ''}">
+                    <div class="icon-btn trains-btn ${currentPage === 'trains_info' ? 'active' : ''}">
+                        <span class="material-symbols-outlined">
+                        directions_subway
+                        </span>
+                        <span>${window.strings?.trains_info?.page_title[lang] || '列车信息'}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="side-bar-list">
+                <div class="side-bar-item"> 
+                    <div class="icon-btn preferences-btn">
+                        <span class="material-symbols-outlined filled">
+                        account_circle 
+                        </span>
+                        <span>${window.strings?.preferences?.page_title[lang] || '偏好设置'}</span>
+                    </div>
+                </div>
+                <div class="side-bar-item"> 
+                    <div class="icon-btn history-btn">
+                        <span class="material-symbols-outlined">
+                        history
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    window.handleWindowResize();
+}
+
+function initSearchPanel() {
+    const searchPanels = document.querySelectorAll('.search-panel');
+    searchPanels.forEach(panel => { 
+        panel.innerHTML = `
+            <div class="icon-btn item-title search-title">
+                <span class="material-symbols-outlined">
+                search
+                </span>
+                <h4>${window.strings?.ticket_calculator.search[lang] || 'Search'}</h4>
+            </div>
+            <section class="input-section">
+                <input type="text" placeholder="${window.strings?.ticket_calculator.start_station[lang] || 'Origin'}" id="startInput" list="start-stations"></input>
+                <div class="icon-btn swap-btn">
+                    <span class="material-symbols-outlined">
+                    swap_vert
+                    </span>
+                    <span>${window.strings?.ticket_calculator.swap[lang] || 'Swap'}</span>
+                </div>
+                <input type="text" placeholder="${window.strings?.ticket_calculator.end_station[lang] || 'Destination'}" id="endInput" list="end-stations"></input>
+            </section>
+            <section class="search-actions">
+                <button id="searchBtn" class="active">${window.strings?.ticket_calculator.search[lang] || 'Search'}</button>
+                <button id="clearBtn">${window.strings?.ticket_calculator.clear_input[lang] || 'Clear'}</button>
+            </section>
+            <div class="item sort-selector selection segment no-collapse"> 
+                <div class="icon-btn selection-item sort-by-time active">
+                    <span class="material-symbols-outlined">
+                    timer
+                    </span>
+                    <span>${window.strings?.ticket_calculator.sort_by_time[lang] || 'Faster'}</span>
+                </div>
+                <div class="icon-btn selection-item sort-by-transfers">
+                    <span class="material-symbols-outlined">
+                    sync
+                    </span>
+                    <span>${window.strings?.ticket_calculator.sort_by_transfer[lang] || 'Direct'}</span>
+                </div>
+                <div class="icon-btn selection-item sort-by-price">
+                    <span class="material-symbols-outlined">
+                    savings
+                    </span>
+                    <span>${window.strings?.ticket_calculator.sort_by_price[lang] || 'Cheaper'}</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function initPrefActions() { 
+    const prefActions = document.querySelectorAll('.pref-actions');
+    prefActions.forEach(prefAction => {
+        prefAction.innerHTML = `
+            <div class="icon-btn history-btn">
+                <span class="material-symbols-outlined">
+                history
+                </span>
+            </div>
+            <div class="icon-btn preferences-btn">
+                <span class="material-symbols-outlined filled">
+                account_circle
+                </span>
+            </div>
+        `;
+    });
+}
+
+function initTabs() {
+    const tabsContainers = document.querySelectorAll('.tabs');
+    const currentPage = window.location.pathname.split('/').pop().split('.')[0];
+    tabsContainers.forEach(container => {
+        container.innerHTML = `
+            <div class="tab-item ${currentPage === 'lines_info' ? 'active' : ''}">
+                <div class="icon-btn lines-btn ${currentPage === 'lines_info' ? 'active' : ''}">
+                    <span class="material-symbols-outlined">
+                    route
+                    </span>
+                    <span class="tab-text">线路信息</span>
+                </div>
+            </div>
+            <div class="tab-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
+                <div class="icon-btn fare-btn ${currentPage === 'ticket_calculator' ? 'active' : ''}">
+                    <span class="material-symbols-outlined">
+                    universal_currency_alt
+                    </span>
+                    <span class="tab-text">票价计算</span>
+                </div>
+            </div>
+            <div class="tab-item ${currentPage === 'trains_info' ? 'active' : ''}">
+                <div class="icon-btn trains-btn ${currentPage === 'trains_info' ? 'active' : ''}">
+                    <span class="material-symbols-outlined">
+                    directions_subway
+                    </span>
+                    <span class="tab-text">列车信息</span>
+                </div>
+            </div>
+        `;
+    });
 }
 
 function initHistoryBtn() { 
@@ -1290,26 +1479,27 @@ function loadHistory() {
         visitedPages.forEach(page => {
             const historyItem = document.createElement('div');
             historyItem.classList.add('history-item');
-            const historyIcon = document.createElement('img');
+            const historyIcon = document.createElement('span');
             historyIcon.classList.add('icon');
             historyIcon.classList.add('history-icon');
+            historyIcon.classList.add('material-symbols-outlined');
             const historyTitle = document.createElement('div');
             historyTitle.classList.add('history-title');
             const pageName = page.page.split('.')[0];
             const params = new URLSearchParams(page.params);
             switch (pageName) {
                 case 'lines_info':
-                    historyIcon.src = './res/tracking.png';
+                    historyIcon.textContent = 'route';
                     const lineId = params.get('line');
                     const lineName = getLineName(lineId);
                     historyTitle.textContent = lineName;
                     break;
                 case 'trains_info':
-                    historyIcon.src = './res/train.png';
+                    historyIcon.textContent = 'directions_subway';
                     historyTitle.textContent = params.get('q')?params.get('q') : strings.trains_info.page_title[lang];
                     break;
                 case 'ticket_calculator':
-                    historyIcon.src = './res/cash.png';
+                    historyIcon.textContent = 'universal_currency_alt';
                     const startCode = params.get('start');
                     const endCode = params.get('end');
                     const sortBy = params.get('sort') || 'time';

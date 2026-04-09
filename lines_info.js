@@ -86,12 +86,17 @@ function init() {
     window.lines.forEach(line => {
         lineSelectors.forEach(lineSelector => {
             if (!line.id.match('-R')) {
+                const lineId = line.id;
                 const item = document.createElement('div');
-                item.className = `selection-item ${line.id}`;
+                item.className = `selection-item ${lineId}`;
                 item.innerHTML = `
-                <div class="line-name-container">
-                    ${line.name[lang]}
-                    <span class="line-name-original">${!lang.startsWith('zh') ? line.name['zh_hans'] : ''}</span>
+                <div class="item-content">
+                    <div class="line-code">${line.id.replace(/[^A-Z]/g, '').trim()}<small>${line.id.replace(/[^0-9]/g, '')}</small>
+                    </div>
+                    <div class="line-name-container">
+                        <span class="line-name">${line.name[lang]}</span>
+                        <span class="line-name-original">${!lang.startsWith('zh') ? line.name['zh_hans'] : ''}</span>
+                    </div>
                 </div>
                 `;
                 item.addEventListener('click', () => {
@@ -100,6 +105,7 @@ function init() {
                     // 点击后添加对应的url参数
                     window.location.href = `?line=${line.id}&lang=${lang}`;
                 })
+                item.setAttribute('style', `--current-color: ${line.color}`);
                 lineSelector.appendChild(item);
                 if (line.id === getActiveLineId()) {
                     item.classList.add('active');
@@ -126,7 +132,7 @@ function init() {
     // 修改以下代码以处理多个按钮实例
     const fareBtns = document.querySelectorAll('.fare-btn');
     fareBtns.forEach(fareBtn => {
-        const fareBtnText = fareBtn.querySelector('span');
+        const fareBtnText = fareBtn.querySelector('span:not(.material-symbols-outlined)');
         if (fareBtnText) {
             fareBtnText.textContent = strings.ticket_calculator[fareBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -139,7 +145,7 @@ function init() {
     
     const trainsBtns = document.querySelectorAll('.trains-btn');
     trainsBtns.forEach(trainsBtn => {
-        const trainsBtnText = trainsBtn.querySelector('span');
+        const trainsBtnText = trainsBtn.querySelector('span:not(.material-symbols-outlined)');
         if (trainsBtnText) {
             trainsBtnText.textContent = strings.trains_info[trainsBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -152,7 +158,7 @@ function init() {
     
     const linesBtns = document.querySelectorAll('.lines-btn');
     linesBtns.forEach(linesBtn => {
-        const linesBtnText = linesBtn.querySelector('span');
+        const linesBtnText = linesBtn.querySelector('span:not(.material-symbols-outlined)');
         if (linesBtnText) {
             linesBtnText.textContent = strings.lines_info[linesBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -165,7 +171,7 @@ function init() {
 
     const prefBtns = document.querySelectorAll('.preferences-btn');
     prefBtns.forEach(prefBtn => {
-        const prefBtnText = prefBtn.querySelector('span');
+        const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
         if (prefBtnText) {
             prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -567,7 +573,9 @@ function displayTrains() {
                                         // 如果方向未知，则保持原始platform值
                                         
                                         stationTrainItem.innerHTML = `
-                                            <img src="./res/train.png" class="icon train-icon" style="z-index:1"></img>
+                                            <span class="material-symbols-outlined">
+                                            directions_subway
+                                            </span>
                                             <span class="train-name">${train.name}</span>
                                             <span class="platform">${platformWithDirection} </span>
                                         `;
@@ -822,7 +830,9 @@ function displayTrains() {
                                                 //console.log(`列车 ${train.name} 创建元素，方向符号: ${directionSymbol}, 方向: ${carDirection}`);
                                                 
                                                 trainItem.innerHTML = `
-                                                    <img src="./res/train.png" class="icon train-icon">
+                                                    <span class="material-symbols-outlined">
+                                                    directions_subway
+                                                    </span>
                                                     <span class="train-name">${directionSymbol} ${train.name}</span>
                                                 `;
                                                 // 将列车项加入容器
@@ -1910,7 +1920,9 @@ function handleWindowResize() {
                     sideBar.classList.add('collapsed');
                     sideBarBtn.title = strings.general.expand_side_bar[lang];
                     const sideBarBtnImg = sideBarBtn.querySelector('img');
-                    sideBarBtnImg.src = './res/outdent.png';
+                    if (sideBarBtnImg) {
+                        sideBarBtnImg.src = './res/outdent.png';
+                    }
                 }
             } else { 
                 if (sideBar.classList.contains('collapsed')) {
@@ -2136,7 +2148,7 @@ function checkAndAddWarningSign(train, trainItem, isAtStation) {
         const existingWarning = trainItem.querySelector('.warning');
         if (shouldShowWarning && !existingWarning) {
             // 添加警告标志
-            const warningSpan = document.createElement('span');
+            const warningSpan = document.createElement('span:not(.material-symbols-outlined)');
             warningSpan.className = 'warning';
             warningSpan.style.color = 'crimson';
             warningSpan.style.fontWeight = 'bold';

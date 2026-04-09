@@ -64,7 +64,7 @@ function init() {
     // 修改以下代码以处理多个按钮实例
     const fareBtns = document.querySelectorAll('.fare-btn');
     fareBtns.forEach(fareBtn => {
-        const fareBtnText = fareBtn.querySelector('span');
+        const fareBtnText = fareBtn.querySelector('span:not(.material-symbols-outlined)');
         if (fareBtnText) {
             fareBtnText.textContent = strings.ticket_calculator[fareBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -77,7 +77,7 @@ function init() {
     
     const trainsBtns = document.querySelectorAll('.trains-btn');
     trainsBtns.forEach(trainsBtn => {
-        const trainsBtnText = trainsBtn.querySelector('span');
+        const trainsBtnText = trainsBtn.querySelector('span:not(.material-symbols-outlined)');
         if (trainsBtnText) {
             trainsBtnText.textContent = strings.trains_info[trainsBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -90,7 +90,7 @@ function init() {
     
     const linesBtns = document.querySelectorAll('.lines-btn');
     linesBtns.forEach(linesBtn => {
-        const linesBtnText = linesBtn.querySelector('span');
+        const linesBtnText = linesBtn.querySelector('span:not(.material-symbols-outlined)');
         if (linesBtnText) {
             linesBtnText.textContent = strings.lines_info[linesBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -103,7 +103,7 @@ function init() {
 
     const prefBtns = document.querySelectorAll('.preferences-btn');
     prefBtns.forEach(prefBtn => {
-        const prefBtnText = prefBtn.querySelector('span');
+        const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
         if (prefBtnText) {
             prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
         } else {
@@ -1521,8 +1521,6 @@ function handleWindowResize() {
                 if (!sideBar.classList.contains('collapsed')) {
                     sideBar.classList.add('collapsed');
                     sideBarBtn.title = strings.general.expand_side_bar[lang];
-                    const sideBarBtnImg = sideBarBtn.querySelector('img');
-                    sideBarBtnImg.src = './res/outdent.png';
                 }
             } else { 
                 if (sideBar.classList.contains('collapsed')) {

@@ -225,7 +225,7 @@ main {
     color: var(--color-primary);
 }
 
-.effect-reduced .station-item:hover { 
+.effect-reduced .station-item:hover :not(.material-symbols-outlined) { 
     text-decoration: underline;
 }
 

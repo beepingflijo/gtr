@@ -549,14 +549,18 @@ const PositionUtils = (function() {
                     playerItem.className = 'player-count-container';
                     playerItem.innerHTML = `
                         <span class="player-count">×${nearbyPlayerCount}</span>
-                        <img class="icon player-icon" src="./res/group.png" alt="玩家图标"></img>
+                        <span class="material-symbols-outlined">
+                        group
+                        </span>
                     `;
                     playerItem.addEventListener('mouseover', () => {
                         const tooltip = document.createElement('div');
                         tooltip.className = 'tooltip player-tooltip';
                         tooltip.innerHTML = `
                             <div class="tooltip-title">
-                                <img class="icon" src="./res/group.png" alt="玩家图标"></img>
+                                <span class="material-symbols-outlined">
+                                group
+                                </span>
                                 <h4 class="tooltip-title-text">${strings.lines_info?.nearby_players?.[lang] || '附近玩家'}</h4>
                             </div>
                             <div class="tooltip-content">
@@ -905,7 +909,7 @@ const PositionUtils = (function() {
             const existingWarning = trainItem.querySelector('.warning');
             if (hasWarning && !existingWarning) {
                 // 添加警告标志
-                const warningSpan = document.createElement('span');
+                const warningSpan = document.createElement('span:not(.material-symbols-outlined)');
                 warningSpan.className = 'warning';
                 warningSpan.style.color = 'crimson';
                 warningSpan.style.fontWeight = 'bold';

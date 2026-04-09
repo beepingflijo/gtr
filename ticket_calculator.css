@@ -28,7 +28,6 @@ footer.swapped .search-controls{
 
 .side-bar .selection.no-collapse .selection-item.active { 
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-    padding: 4px 16px;
 }
 
 .side-bar .selection.no-collapse .selection-item.active:hover { 
@@ -118,6 +117,10 @@ footer .search-panel .selection .selection-item.active {
     filter: none;
     box-shadow: none;
     background-color: var(--color-secondary-hover);
+}
+
+footer .search-panel .selection .selection-item.active:hover { 
+    background-color: var(--color-background-actions);
 }
 
 .input-section {
