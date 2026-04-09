@@ -1435,7 +1435,7 @@ function initTabs() {
                     <span class="material-symbols-outlined">
                     route
                     </span>
-                    <span class="tab-text">线路信息</span>
+                    <span class="tab-text">${window.strings?.lines_info.page_title_short[lang] || 'Lines'}</span>
                 </div>
             </div>
             <div class="tab-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
@@ -1443,7 +1443,7 @@ function initTabs() {
                     <span class="material-symbols-outlined">
                     universal_currency_alt
                     </span>
-                    <span class="tab-text">票价计算</span>
+                    <span class="tab-text">${window.strings?.ticket_calculator.page_title_short[lang] || 'Fare'}</span>
                 </div>
             </div>
             <div class="tab-item ${currentPage === 'trains_info' ? 'active' : ''}">
@@ -1451,7 +1451,7 @@ function initTabs() {
                     <span class="material-symbols-outlined">
                     directions_subway
                     </span>
-                    <span class="tab-text">列车信息</span>
+                    <span class="tab-text">${window.strings?.trains_info.page_title_short[lang] || 'Trains'}</span>
                 </div>
             </div>
         `;
