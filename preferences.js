@@ -154,7 +154,7 @@ function init() {
         // 为每种语言创建一个span元素
         const languageElements = [];
         languages.forEach((languageCode, index) => {
-            const langSpan = document.createElement('span:not(.material-symbols-outlined)');
+            const langSpan = document.createElement('span');
             langSpan.className = 'language-hint-item';
             langSpan.textContent = strings.preferences.language[languageCode];
             langSpan.style.display = 'inline-block';
