@@ -1105,6 +1105,10 @@ footer .tabs.collapsed {
     width: 0;
 }
 
+.tabs.collapsed .tab-item.active .material-symbols-outlined { 
+    transform: scale(1.1) translateY(5%);
+}
+
 .selection.collapsed .selection-item:not(.active), 
 .tabs.collapsed .tab-item:not(.active) { 
     min-height: 0;
