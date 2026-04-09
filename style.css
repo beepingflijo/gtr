@@ -164,10 +164,6 @@
     --color-text-on-primary: #fff;
 }
 
-.dark .icon { 
-    filter: invert(1);
-}
-
 @media (prefers-color-scheme: dark) { 
     :root { 
         --color-primary-transparent: #a64e0680;
@@ -190,10 +186,6 @@
         --color-text: #eee;
         --color-text-secondary: #888;
         --color-text-on-primary: #fff;
-    }
-
-    .icon {
-        filter: invert(1);
     }
 
     .effect-reduced {
@@ -1180,6 +1172,7 @@ footer .tabs.collapsed {
     background: transparent;
     cursor: pointer;
     gap: 4px;
+    color: var(--color-text);
 }
 
 .icon-btn:hover {
@@ -1393,4 +1386,59 @@ footer .search-bar.collapsed {
 .history-time { 
     color: var(--color-text-secondary);
     font-size: 0.8em;
+}
+
+.shortcut-list { 
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: -webkit-fill-available;
+}
+
+.shortcut-item { 
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    max-width: -webkit-fill-available;
+}
+
+.shortcut-description { 
+    width: -webkit-fill-available;
+    margin-inline-end: 1em;
+}
+
+.shortcut-key {
+    color: var(--color-text-secondary);
+    font-size: 0.7em;
+    text-align: center;
+    border-radius: 4px;
+    padding: 2px 4px;
+    border: 1px solid var(--color-text-secondary);
+    margin-inline-start: 2px;
+}
+
+.modal-overlay:has(.shortcut-key) { 
+    filter: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: transparent;
+}
+
+.dialog-container:has(.shortcut-key) { 
+    background: var(--color-background-card-transparent);
+}
+
+.dialog-container:has(.shortcut-key) .dialog-header{
+    background: transparent;
+}
+
+.dialog-container:has(.shortcut-key) .dialog-buttons {
+    display: none;
+}
+
+.dialog-container:has(.shortcut-key) .dialog-content { 
+    padding-bottom: 24px;
+    align-items: stretch;
+    gap: 12px 24px;
 }

@@ -18,7 +18,8 @@
         "time_hours_ago":{"zh_hans":"{n}小时前", "en": "{n} hour(s) ago", "zh_hant":"{n}小時前", "uk": "{n} год. тому"},
         "time_days_ago":{"zh_hans":"{n}天前", "en": "{n} day(s) ago", "zh_hant":"{n}天前", "uk": "{n} дн. тому"},
         "time_months_ago":{"zh_hans":"{n}个月前", "en": "{n} month(s) ago", "zh_hant":"{n}個月前", "uk": "{n} міс. тому"},
-        "time_years_ago":{"zh_hans":"{n}年前", "en": "{n} year(s) ago", "zh_hant":"{n}年前", "uk": "{n} р. тому"}
+        "time_years_ago":{"zh_hans":"{n}年前", "en": "{n} year(s) ago", "zh_hant":"{n}年前", "uk": "{n} р. тому"},
+        "shortcut_keys":{"zh_hans":"快捷键", "en": "Shortcut keys", "zh_hant":"快捷鍵", "uk": "Гарячі клавіші"}
     },
     "404":{
         "page_not_found":{"zh_hans":"找不到页面", "en": "Page not found", "zh_hant":"找不到頁面", "uk": "Сторінка не знайдена"},
@@ -123,7 +124,8 @@
         "characters": {"zh_hans": "个字符", "en": "characters", "zh_hant": "個字符", "uk": "символи"},
         "confirm_remove_item": {"zh_hans": "确定要移除", "en": "Are you sure you want to remove", "zh_hant": "確定要移除", "uk": "Ви впевнені, що хочете видалити"},
         "confirm_remove_item_end": {"zh_hans": "吗？", "en": "?", "zh_hant": "嗎？", "uk": "?"},
-        "item_removed": {"zh_hans": "已移除", "en": "Item removed", "zh_hant": "已移除", "uk": "Елемент видалено"}
+        "item_removed": {"zh_hans": "已移除", "en": "Item removed", "zh_hant": "已移除", "uk": "Елемент видалено"},
+        "save_and_exit": {"zh_hans": "保存并退出", "en": "Save and exit", "zh_hant": "保存並退出", "uk": "Зберегти та вийти"}
     },
     "storage_descriptions": {
         "preferences":{
@@ -289,6 +291,12 @@
         "collapse": {"zh_hans": "收起", "en": "Collapse", "zh_hant": "收起", "uk": "Згорнути"},
         "click_outside_to_collapse": {"zh_hans": "点击窗口外区域可收起窗口", "en": "Click outside to collapse", "zh_hant": "點擊窗口外區域可收起窗口", "uk": "Клацніть поза межами, щоб згортати"},
         "clear_input": {"zh_hans": "清空", "en": "Clear", "zh_hant": "清空", "uk": "Очистити"},
+        "input": {
+            "zh_hans": "输入站点", 
+            "en": "Input stations", 
+            "zh_hant": "輸入站點", 
+            "uk": "Вхідні станції"
+        },
         "please_input_start_and_end": {
             "zh_hans": "请输入起点站和终点站", 
             "en": "Please input departure and arrival stations", 
@@ -318,6 +326,7 @@
             "uk": "Введіть і пошукайте, щоб відобразити результати тут."
         },
         "swap": {"zh_hans": "交换", "en": "Swap", "zh_hant": "交換", "uk": "Обмін"},
+        "show_": {"zh_hans": "显示", "en": "Show ", "zh_hant": "顯示", "uk": "Покажи "},
         "sort_by_time": {"zh_hans": "时间短", "en": "Faster", "zh_hant": "時間短", "uk": "Швидше"},
         "sort_by_price": {"zh_hans": "票价低", "en": "Cheaper", "zh_hant": "票價低", "uk": "Дешевше"},
         "sort_by_transfer": {"zh_hans": "换乘少", "en": "Direct", "zh_hant": "換乘少", "uk": "Прямий"},

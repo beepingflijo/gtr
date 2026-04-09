@@ -909,7 +909,7 @@ const PositionUtils = (function() {
             const existingWarning = trainItem.querySelector('.warning');
             if (hasWarning && !existingWarning) {
                 // 添加警告标志
-                const warningSpan = document.createElement('span:not(.material-symbols-outlined)');
+                const warningSpan = document.createElement('span');
                 warningSpan.className = 'warning';
                 warningSpan.style.color = 'crimson';
                 warningSpan.style.fontWeight = 'bold';

@@ -205,7 +205,7 @@ function init() {
     const disclaimerText = document.getElementById('disclaimerText');
     disclaimerText.textContent = strings.preferences.disclaimer_text[lang];
     if (lang === 'zh_hans') {
-        const preparedInfo = document.createElement('span:not(.material-symbols-outlined)');
+        const preparedInfo = document.createElement('span');
         preparedInfo.classList.add('prepared-info');
         preparedInfo.innerHTML = `
                     <a href="https://beian.miit.gov.cn" style="margin-right:8px;">辽ICP备2021004959号-1</a>
@@ -400,11 +400,11 @@ function initStorageList() {
         item.className = 'storage-item';
         
         // 创建键名元素
-        const keyElement = document.createElement('span:not(.material-symbols-outlined)');
+        const keyElement = document.createElement('span');
         keyElement.className = 'storage-key';
         keyElement.textContent = key;
 
-        const valueElement = document.createElement('span:not(.material-symbols-outlined)');
+        const valueElement = document.createElement('span');
         valueElement.className = 'storage-value';
         valueElement.textContent = getStorageDescription(key, value);
 
@@ -415,7 +415,7 @@ function initStorageList() {
         itemHeader.appendChild(valueElement);
         
         // 创建描述元素
-        const descElement = document.createElement('span:not(.material-symbols-outlined)');
+        const descElement = document.createElement('span');
         descElement.className = 'storage-desc';
         if (strings.storage_descriptions[key]) { 
             descElement.textContent = strings.storage_descriptions[key][lang];

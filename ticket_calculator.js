@@ -513,6 +513,7 @@ function handleSearch(sortBy = 'time') {
 
     if (!startStation || !endStation) {
         showToast(strings.ticket_calculator.please_input_start_and_end[lang] || '请输入起点站和终点站');
+        handleWindowResize();
         return;
     }
 
@@ -1785,8 +1786,8 @@ function handleWindowResize() {
     })();
     
     // 检查输入框是否处于焦点状态
-    const startInput = document.getElementById('startInput');
-    const endInput = document.getElementById('endInput');
+    const startInput = document.querySelector('footer #startInput');
+    const endInput = document.querySelector('footer #endInput');
     const isInputFocused = (startInput && startInput === document.activeElement) || (endInput && endInput === document.activeElement);
 
     if (isVirtualKeyboardOpen || isInputFocused) return;
@@ -1897,6 +1898,18 @@ function handleWindowResize() {
             main.style.paddingLeft = `calc(${lineSelectorWidth}px + 4vw)`;
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
         }, 150);
+    }
+    const startInputs = document.querySelectorAll('#startInput');
+    if (!startInputs[0].value) {
+        setTimeout(() => {
+            const footer = document.querySelector('footer');
+            const isFooterHidden = footer.style.opacity <= 0;
+            console.log('isFooterHidden:', isFooterHidden, footer);
+            if (isFooterHidden) {
+                const sideBarInput = document.querySelector('.side-bar #startInput');
+                sideBarInput.focus();
+            }
+        }, 200);
     }
 }
 

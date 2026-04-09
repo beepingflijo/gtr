@@ -362,6 +362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         checkForceRefresh(); // 检查是否需要强制刷新
         initHistoryBtn();
         setInterval(handleFooterItemCollapse, 150);
+        listenKeyboardShortcuts();
         const tabs = document.querySelectorAll('footer .tabs');
         
         // 暴露 lang 到全局供其他模块使用
@@ -806,6 +807,241 @@ function handleFooterItemCollapse() {
                 });
             });
         }
+    });
+}
+
+function listenKeyboardShortcuts() {
+    let shortcutStartTime;
+    let shortcutEndTime;
+    document.addEventListener('keydown', function(event) { 
+        shortcutStartTime = Date.now();
+        const shareBtn = document.querySelector('.share-btn');
+        const searchBar = document.querySelectorAll('.search-bar');
+        const startInput = document.querySelector('.side-bar #startInput');
+        const endInput = document.querySelector('.side-bar #endInput');
+        const sidebar = document.querySelector('.side-bar');
+        const searchBtn = document.querySelector('#searchBtn');
+        const swapBtn = document.querySelector('.swap-btn');
+        const clearBtn = document.querySelector('#clearBtn');
+        const sidebarSearchPanel = document.querySelector('.side-bar .search-controls');
+        const sortByTime = document.querySelector('.side-bar .sort-by-time');
+        const sortByTransfers = document.querySelector('.side-bar .sort-by-transfers');
+        const sortByPrice = document.querySelector('.side-bar .sort-by-price');
+        const resetBtn = document.querySelector('#resetPref');
+        const modalOverlay = document.querySelectorAll('.modal-overlay');
+        const backBtn = document.querySelector('.back-btn');
+        // Alt 触发快捷键操作
+        if (event.altKey) { 
+            switch (event.key) {
+                case '1':
+                    if (!sidebar) break;
+                    window.location.href = 'lines_info.html'; 
+                    break;
+                case '2':
+                    if (!sidebar) break;
+                    window.location.href = 'ticket_calculator.html'; 
+                    break;
+                case '3':
+                    if (!sidebar) break;
+                    window.location.href = 'trains_info.html'; 
+                    break;
+                case 'R':
+                    if (!sidebar) break;
+                    window.location.href = 'preferences.html'; 
+                    break;
+                case 'H':
+                    if (!sidebar) break;
+                    const existingHistoryList = document.querySelectorAll('.modal-overlay .history-list');
+                    modalOverlay.forEach(overlay => {
+                        closeDialog(overlay);
+                    });
+                    if (existingHistoryList.length > 0) break;
+                    loadHistory();
+                    break;
+                case '|':
+                    if (!sidebar) break;
+                    if (sidebar.style.opacity > 0) toggleSidebar();
+                    break;
+                case 'S':
+                    if (!sidebar) break;
+                    if (shareBtn) {
+                        shareBtn.click();
+                    }
+                    break;
+                case 'Q':
+                    if (searchBar.length > 0) {
+                        searchBar.forEach(bar => {
+                            const input = bar.querySelector('input');
+                            if (bar.classList.contains('collapsed')) {
+                                bar.classList.remove('collapsed');
+                                if (input) input.focus();
+                            } else{
+                                bar.classList.add('collapsed');
+                                input.blur();
+                            }
+                            handleFooterItemCollapse();
+                        });
+                    } else if (startInput && endInput && sidebar.style.opacity > 0) { 
+                        if (!endInput.value.trim()) {
+                            endInput.focus();
+                        }
+                        if (!startInput.value.trim()) {
+                            startInput.focus();
+                        }
+                    }
+                    break;
+                case 'Delete':
+                    clearBtn?.click();
+                    resetBtn?.click();
+                    break;
+                case 'F':
+                    sortByTime?.click();
+                    break;
+                case 'D':
+                    sortByTransfers?.click();
+                    break;
+                case 'C':
+                    sortByPrice?.click();
+                    break;
+                case 'Enter': 
+                    backBtn?.click();
+                    break;
+            }
+        } else if (event.shiftKey) { 
+            switch (event.key) { 
+                case 'Enter': 
+                    swapBtn?.click();
+                    break;
+            }
+        } else { 
+            switch (event.key) { 
+                case 'Escape': 
+                    modalOverlay.forEach(overlay => {
+                        closeDialog(overlay);
+                    });
+                    break;
+                case 'Enter': 
+                    searchBtn?.click();
+                    break;
+            }
+        }
+        if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) { 
+            // 根据系统判断显示alt还是option
+            const altKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌥' : 'Alt';
+            const enterKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? 'return' : 'Enter';
+            const shortcutList = document.createElement('div');
+            shortcutList.className = 'shortcut-list';
+            const sideBarBtn = document.querySelector('.side-bar-btn');
+            const sideBarBtnTitle = sideBarBtn?.title || sideBarBtn?.getAttribute('title') || '';
+            shortcutList.innerHTML = `
+                ${sidebar ? `<div class="shortcut-item">
+                    <span class="shortcut-description">${strings.lines_info.page_title[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">1</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.page_title[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">2</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.trains_info.page_title[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">3</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.preferences.page_title[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">R</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.general.history[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">H</span>
+                </div>
+                <div class="shortcut-item" ${sideBarBtnTitle ? '' : 'style="display: none;"'}>
+                    <span class="shortcut-description">${sideBarBtnTitle}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">\\</span>
+                </div>
+                <div class="shortcut-item" ${shareBtn ? '' : 'style="display: none;"'}>
+                    <span class="shortcut-description">${shareBtn?.getAttribute('title')}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">S</span>
+                </div>` : ''}
+                <div class="shortcut-item" ${searchBar.length > 0 || (sidebarSearchPanel.style.display !== 'none' && sidebar.style.opacity > 0) ? '' : 'style="display: none;"'}>
+                    <span class="shortcut-description">${searchBar.length > 0 ? strings.ticket_calculator.search[lang] : strings.ticket_calculator.input[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">Q</span>
+                </div>
+                <div class="shortcut-item" ${backBtn ? '' : 'style="display: none;"'}>
+                    <span class="shortcut-description">${strings.preferences.save_and_exit[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">${enterKeyName}</span>
+                </div>
+                <div class="shortcut-item" ${resetBtn ? '' : 'style="display: none;"'}>
+                    <span class="shortcut-description">${strings.preferences.reset_all_data[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">Delete</span>
+                </div>
+                ${sidebarSearchPanel && sidebarSearchPanel.style.display !== 'none' ? `
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.search[lang]}</span>
+                    <span class="shortcut-key">${enterKeyName}</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.swap[lang]}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">${enterKeyName}</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.clear_input[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">Delete</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.faster[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">F</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.direct[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">D</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.cheaper[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">C</span>
+                </div>` : ''}
+            `;
+            setTimeout(() => {
+                if (Date.now() - shortcutStartTime > 1000 && (shortcutEndTime < Date.now() - 1000 || !shortcutEndTime)) {
+                    pushDialog(shortcutList, 'custom');
+                    const appendedList = document.querySelector('.modal-overlay .shortcut-list');
+                    const listWidth = appendedList.getBoundingClientRect().width;
+                    const listHeight = appendedList.getBoundingClientRect().height;
+                    appendedList.style.maxHeight = listWidth * 0.95 + 'px';
+                }
+            }, 1000);
+        }
+    });
+    document.addEventListener('keyup', function(event) { 
+        shortcutEndTime = Date.now();
+        const modalOverlay = document.querySelectorAll('.modal-overlay');
+        modalOverlay.forEach(overlay => {
+            if (overlay.querySelector('.shortcut-list')) {
+                closeDialog(overlay);
+            }
+        });
     });
 }
 

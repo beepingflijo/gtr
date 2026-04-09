@@ -713,7 +713,7 @@ function initStationList() {
         }
         const item = document.createElement('div');
         item.className = 'pref-item station-item';
-        const actionSpan = document.createElement('span:not(.material-symbols-outlined)');
+        const actionSpan = document.createElement('span');
         actionSpan.textContent = '到达 ' + getLanguageListForStation(station.code)[0].name;
         item.appendChild(actionSpan);
         item.addEventListener('click', () => { 
