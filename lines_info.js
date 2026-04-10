@@ -33,8 +33,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                         });
                                     }
                                     init();
-                                    initLanguageSelector();
-                                    handleWindowResize();
                                 })
                                 .catch(error => console.error('Error loading trains info data:', error));
                         })
@@ -46,12 +44,15 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // 初始化函数
-function init() {
-
-    
-    // 监听窗口大小变化
-    handleWindowResize();
-    window.addEventListener('resize', handleWindowResize);
+function init() {    
+    if (compactParam !== 'true') {
+        // 监听窗口大小变化
+        handleWindowResize();
+        window.addEventListener('resize', handleWindowResize);
+    } else { 
+        document.body.classList.add('effect-reduced');
+        document.body.classList.add('compact');
+    }
 
     const headerTitle = document.querySelector('header h1');
     const pageTitle = document.querySelector('title');
@@ -1852,6 +1853,7 @@ function shareRouteMap() {
 }
 
 function handleWindowResize() {
+    if (compactParam === 'true') return;
     const lineSelectors = document.querySelectorAll('.line-selector');
     const footer = document.querySelector('footer');
     const header = document.querySelector('header');

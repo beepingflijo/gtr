@@ -17,8 +17,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         .then(stringsData => {
                             window.strings = stringsData;
                             init();
-                            initLanguageSelector();
-                            handleWindowResize();
                         })
                     .catch(error => console.error('Error loading Language data:', error));
                 })
@@ -1499,7 +1497,7 @@ function renderSearchResults(routes, container) {
                     <div class="segment">
                         <div class="line-info" style="
                             border-color: ${line.color};
-                            border-left-style:${(line.id.match('-R')||line.id.startsWith('GX'))?
+                            border-left-style:${(line.id.match('-R'))?
                                 'double':''}
                         ">
                             <span class="line-name">${line.name[lang]}</span>

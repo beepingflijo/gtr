@@ -31,8 +31,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                         });
                                     }
                                     init();
-                                    initLanguageSelector();
-                                    handleWindowResize();
                                 })
                                 .catch(error => console.error('Error loading trains info data:', error));
                         })
@@ -124,7 +122,11 @@ function init() {
         searchInput.addEventListener('input', handleSearch);
     });
 
-    window.addEventListener('resize', handleWindowResize);
+    if (compactParam !== 'true') window.addEventListener('resize', handleWindowResize);
+    else { 
+        document.body.classList.add('effect-reduced');
+        document.body.classList.add('compact');
+    }
     
     // 显示更新时间信息
     loadUpdateTime();
@@ -1425,6 +1427,7 @@ function applySearchFilter(searchTerm = '') {
 }
 
 function handleWindowResize() {
+    if (compactParam === 'true') return;
     const searchBar = document.querySelector('header .search-bar');
     const footer = document.querySelector('footer');
     const header = document.querySelector('header');

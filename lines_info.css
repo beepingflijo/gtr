@@ -44,10 +44,6 @@
     transition: all 0.3s ease;
 }
 
-.selection.line-selector .line-code small {
-    font-size: 0.6rem;
-}
-
 .selection.line-selector:not(.collapsed) .line-code {
     font-size: 0.7em;
 }

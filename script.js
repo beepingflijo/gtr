@@ -9,6 +9,8 @@ try {
     console.error('Error parsing preferences:', e);
 }
 window.prefs = prefs;
+const compactParam = new URLSearchParams(window.location.search).get('compact');
+window.compactParam = compactParam;
 
 // 请求通知权限
 function requestNotificationPermission() {
@@ -44,6 +46,7 @@ function requestNotificationPermission() {
 
 // 记录用户访问的页面和参数
 function recordLastVisitedPage(paramsString) {
+    if (compactParam === 'true') return;
     // 获取当前页面文件名
     const currentPage = window.location.pathname.split('/').pop();
     console.log('Recording last visited page:', currentPage, paramsString);
@@ -819,6 +822,15 @@ function listenKeyboardShortcuts() {
     document.addEventListener('keydown', function(event) { 
         const currentPage = window.location.pathname.split('/').pop();
         shortcutStartTime = Date.now();
+        if (compactParam === 'true') {
+            if (event.altKey && event.key === 'M') {
+                // 去掉compact参数
+                const newUrl = window.location.pathname.replace(`compact=true`, '');
+                window.history.replaceState({}, '', newUrl);
+                window.location.reload();
+            }
+            return;
+        }
         const shareBtn = document.querySelector('.share-btn');
         const searchBar = document.querySelectorAll('.search-bar');
         const startInput = document.querySelector('.side-bar #startInput');
@@ -923,6 +935,14 @@ function listenKeyboardShortcuts() {
                     break;
                 case '\\': 
                     setUpwardsSwitch?.click();
+                    break;
+                case 'M': 
+                    if (!['lines_info.html', 'trains_info.html'].includes(currentPage)) break;
+                    // 添加compact=true参数
+                    window.location.href = 
+                        window.location.pathname + 
+                        (window.location.pathname.includes('?') ? '&' : '?') + 
+                        'compact=true';
                     break;
             }
         } else if (event.shiftKey) { 
@@ -1062,6 +1082,12 @@ function listenKeyboardShortcuts() {
                     <span class="shortcut-key">⇧</span>
                     <span class="shortcut-key">C</span>
                 </div>` : ''}
+                <div class="shortcut-item" ${!['lines_info.html', 'trains_info.html'].includes(currentPage) ? 'style="display: none;"' : ''}>
+                    <span class="shortcut-description">${strings.general.toggle_compact_mode[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">M</span>
+                </div>
             `;
             setTimeout(() => {
                 if (Date.now() - shortcutStartTime > 1000 && (shortcutEndTime < Date.now() - 1000 || !shortcutEndTime)) {
@@ -1770,6 +1796,7 @@ function initHistoryBtn() {
 }
 
 function loadHistory() { 
+    if (compactParam === 'true') return;
     const history = localStorage.getItem('visitedPages');
     if (history) {
         const historyList = document.createElement('div');
@@ -1930,6 +1957,7 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
             // 动画显示
             setTimeout(() => {
                 modalOverlay.style.opacity = '';
+                modalOverlay.style.webkitBackdropFilter = '';
                 modalOverlay.style.backdropFilter = '';
                 setTimeout(() => {
                     dialogContainer.classList.remove('collapsed');
@@ -1985,6 +2013,7 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
 
 function closeDialog(modalOverlay, callback) {
     modalOverlay.style.opacity = 0;
+    // 同时设置标准属性和 -webkit- 前缀以确保兼容性
     modalOverlay.style.backdropFilter = 'blur(1px)';
     const dialogContainer = modalOverlay.querySelector('.dialog-container');
     dialogContainer.classList.add('collapsed');

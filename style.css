@@ -445,12 +445,15 @@ body.compact {
     background: transparent;
 }
 
-body.compact header, body.compact .line-selection {
+body.compact header, body.compact .side-bar, 
+body.compact footer, body.compact .toast,
+body.compact .search-header, body.compact .tooltip {
     display: none;
 }
 
 body.compact main {
-    margin-top: 0;
+    margin: 0;
+    padding: 24px 0;
 } 
 
 body.compact .station-list { 
@@ -609,7 +612,7 @@ header * {
     bottom: 180px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1100;
+    z-index: 2100;
     font-family: var(--font-family);
     text-align: center;
     width: fit-content;
@@ -631,6 +634,7 @@ header * {
     width: 100%;
     height: 100%;
     z-index: 2000;
+    -webkit-backdrop-filter: blur(24px);
     backdrop-filter: blur(24px);
     transition: all 0.2s ease-in-out;
     display: flex;
@@ -656,6 +660,12 @@ header * {
     opacity: 0;
     transform: scale(1.1);
     filter: blur(1px);
+}
+
+.dialog-container.item:not(.collapsed) { 
+    opacity: 1;
+    transform: none;
+    filter: none;
 }
 
 .dialog-container .dialog-header { 
@@ -760,8 +770,8 @@ header * {
     background: var(--color-background-card-transparent);
     height: calc(100dvh - 36px);
     width: 100vw;
-    backdrop-filter: var(--background-filter-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
     padding: 8px;
     margin-right: 8px;
     max-width: 240px;
@@ -839,8 +849,8 @@ header * {
 .side-bar .selection, .side-bar .selection.no-collapse { 
     background-color: transparent;
     background: transparent;
-    backdrop-filter: unset;
     -webkit-backdrop-filter: unset;
+    backdrop-filter: unset;
     box-shadow: unset;
     position: relative;
     width: -webkit-fill-available;

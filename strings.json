@@ -20,7 +20,8 @@
         "time_months_ago":{"zh_hans":"{n}个月前", "en": "{n} month(s) ago", "zh_hant":"{n}個月前", "uk": "{n} міс. тому"},
         "time_years_ago":{"zh_hans":"{n}年前", "en": "{n} year(s) ago", "zh_hant":"{n}年前", "uk": "{n} р. тому"},
         "shortcut_keys":{"zh_hans":"快捷键", "en": "Shortcut keys", "zh_hant":"快捷鍵", "uk": "Гарячі клавіші"},
-        "hold_key":{"zh_hans":"按住", "en": "Hold ", "zh_hant":"按住", "uk": "Натисніть "}
+        "hold_key":{"zh_hans":"按住", "en": "Hold ", "zh_hant":"按住", "uk": "Натисніть "},
+        "toggle_compact_mode":{"zh_hans":"切换紧凑模式", "en": "Toggle compact mode", "zh_hant":"切換緊湊模式", "uk": "Перемкнути компактний режим"}
     },
     "404":{
         "page_not_found":{"zh_hans":"找不到页面", "en": "Page not found", "zh_hant":"找不到頁面", "uk": "Сторінка не знайдена"},
