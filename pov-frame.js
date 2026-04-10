@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(data => {
             window.lines = data.lines;
+            resumeProgress();
             init();
             initBackgroundModeSelector();
             initLineSelector();
@@ -86,14 +87,14 @@ function toggleFullscreen() {
     appContainer.style.flexDirection = fullscreenBtn.classList.contains('active') ? 'column' : 'row';
     appContainer.style.alignItems = fullscreenBtn.classList.contains('active') ? 'center' : 'flex-start';
     const previewContainer = document.querySelector('.preview-container');
-    previewContainer.style.width = fullscreenBtn.classList.contains('active') ? '100svw' : '60svw';
-    previewContainer.style.minWidth = fullscreenBtn.classList.contains('active') ? '100svw' : '60svw';
-    previewContainer.style.position = fullscreenBtn.classList.contains('active') ? 'relative' : 'fixed';
-    previewContainer.style.minHeight = fullscreenBtn.classList.contains('active') ? '56.25svw' : '33.75svw';
-    previewContainer.style.margin = fullscreenBtn.classList.contains('active') ? '0' : '64px 24px';
-    previewContainer.style.borderRadius = fullscreenBtn.classList.contains('active') ? '0' : '16px';
+    previewContainer.style.width = fullscreenBtn.classList.contains('active') ? '' : '60svw';
+    previewContainer.style.minWidth = fullscreenBtn.classList.contains('active') ? '' : '60svw';
+    previewContainer.style.position = fullscreenBtn.classList.contains('active') ? '' : 'fixed';
+    previewContainer.style.minHeight = fullscreenBtn.classList.contains('active') ? '56.25vw' : '33.75svw';
+    previewContainer.style.margin = fullscreenBtn.classList.contains('active') ? '' : '64px 24px';
+    previewContainer.style.borderRadius = fullscreenBtn.classList.contains('active') ? '' : '16px';
     previewContainer.style.backgroundColor = fullscreenBtn.classList.contains('active') ? '' : previewBackgroundColor;
-    previewContainer.style.boxShadow = fullscreenBtn.classList.contains('active') ? 'none' : 'var(--item-shadow-inset)';
+    previewContainer.style.boxShadow = fullscreenBtn.classList.contains('active') ? '' : 'var(--item-shadow-inset)';
     title.style.opacity = fullscreenBtn.classList.contains('active') ? 0 : 1;
     disclaimer.style.position = fullscreenBtn.classList.contains('active') ? 'relative' : 'fixed';
     disclaimer.style.left = fullscreenBtn.classList.contains('active') ? '0' : '24px';
@@ -258,7 +259,7 @@ function initLineSelector() {
     const selector = document.querySelector('.line-selector');
 
     const lines = window.lines || [];
-    if (!selector || !lines.length) return;
+    if (!selector || lines.length <= 0) return;
 
     selector.querySelectorAll('.selection-item').forEach(child => child.classList.remove('active'));
 
@@ -295,7 +296,7 @@ function initLineSelector() {
         });
         
         selector.appendChild(item);
-        if (index === 0) item.click(); // 默认选择第一条线路
+        if (activeLineId && line.id === activeLineId) item.click();
     });
 
     const editItem = selector.querySelectorAll('.selection-item')[0];
@@ -327,6 +328,10 @@ function initLineSelector() {
         refreshFrame();
         //handleWindowResize();
     });
+    const activeItem = selector.querySelector('.active');
+    if (!activeItem) {
+        editItem.classList.add('active');
+    }
 }
 
 function initLineNameInputs() {
@@ -337,15 +342,16 @@ function initLineNameInputs() {
     lineNameInputContainer.parentElement.style.minHeight = 0;
     lineNameInputContainer.parentElement.style.padding = activeLineId === 'manual' ? '4px 12px' : '0px 12px';
     lineNameInputContainer.parentElement.style.opacity = activeLineId === 'manual' ? 1 : 0;
+    if (activeLineId !== 'manual') return;
     const nameInput1 = document.querySelector('#lineNameInput1');
     const nameInput2 = document.querySelector('#lineNameInput2');
     const colorInput = document.querySelector('#lineColorInput');
-    nameInput1.value = activeLine.name.zh_hans;
+    nameInput1.value = activeLine.name?.zh_hans;
     nameInput1.addEventListener('input', function() { 
         activeLine.name.zh_hans = this.value;
         refreshFrame();
     });
-    nameInput2.value = activeLine.name.en;
+    nameInput2.value = activeLine.name?.en;
     nameInput2.addEventListener('input', function() { 
         activeLine.name.en = this.value;
         refreshFrame();
@@ -620,6 +626,50 @@ function refreshFrame() {
             }
         }
     });
+
+    recordProgress();
+}
+
+function recordProgress() { 
+    const prefs = getPreferences();
+    // 只有当用户明确禁用时才不记录进度（undefined或true都视为启用）
+    if (prefs.resumeOnLoading === false) return;
+    console.log('recordProgress');
+    
+    // 创建新的进度记录数组，仅包含当前记录
+    const progressData = [{
+        id: activeLineId,
+        line: activeLine,
+        isUpwards: isUpwards,
+        index: activeStepIndex,
+        steps: actionList,
+        manualLine: window.lines.find(line => line.id === 'manual'),
+    }];
+    
+    // 保存到localStorage（覆盖原有数据）
+    localStorage.setItem('pov_progress', JSON.stringify(progressData));
+}
+
+function resumeProgress() { 
+    const prefs = getPreferences();
+    // 只有当用户明确禁用时才不记录进度（undefined或true都视为启用）
+    const progressData = JSON.parse(localStorage.getItem('pov_progress'));
+    if (prefs.resumeOnLoading !== false && progressData && progressData.length > 0) {
+        const progress = progressData[0];
+        activeLineId = progress.id;
+        activeLine = progress.line;
+        isUpwards = progress.isUpwards;
+        activeStepIndex = progress.index;
+        actionList = progress.steps;
+        if (progress.manualLine) { 
+            window.lines.push(progress.manualLine);
+        }
+    } else { 
+        console.log(window.lines, window.lines[0]);
+        activeLineId = window.lines[0].id;
+        activeLine = window.lines[0];
+    }
+    console.log('resumeProgress', activeLineId, activeStepIndex, isUpwards, actionList);
 }
 
 function calculateTextWidth(string) {
@@ -640,7 +690,6 @@ function calculateTextWidth(string) {
 }
 
 function getLanguageListForStation(stationCode) {
-    const stationNames = window.strings.station_names[stationCode];
     const languages = [];
     if (activeLineId === 'manual') { 
         const stationNamesForManual = activeLine.route.find(station => station.code === stationCode).name;
@@ -650,6 +699,7 @@ function getLanguageListForStation(stationCode) {
             else languages.push({ code: 'end', name: '' });
         }
     } else { 
+        const stationNames = window?.strings.station_names[stationCode] || activeLine.route.find(station => station.code === stationCode).name;
         // 如果stationCode以A开头则添加乌克兰语
         const addUk = stationCode.startsWith('A');
         if (stationNames.original) languages.push({ code: 'original', name: stationNames.original });
@@ -686,7 +736,7 @@ function initUpwardsSwitch() {
 function initStationList() {
     const list = document.querySelector('.station-list');
     if (!list) return;
-    //console.log('initStationList');
+    console.log('initStationList', activeLineId, actionList);
     list.innerHTML = ''; // 清空现有列表
     actionList = [];
     actionListAssembled = false;
@@ -861,7 +911,7 @@ function refreshStationList() {
     } else {
         deleteButtons.forEach(button => button.style.display = 'inline');
     }
-    initLineNameInputs();
+    if (activeLineId === 'manual') initLineNameInputs();
 }
 
 // 获取偏好设置
@@ -963,3 +1013,5 @@ function handleWindowResize() {
         toggleFullscreen();
     }
 }
+
+window.handleWindowResize = handleWindowResize;

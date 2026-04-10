@@ -19,7 +19,8 @@
         "time_days_ago":{"zh_hans":"{n}天前", "en": "{n} day(s) ago", "zh_hant":"{n}天前", "uk": "{n} дн. тому"},
         "time_months_ago":{"zh_hans":"{n}个月前", "en": "{n} month(s) ago", "zh_hant":"{n}個月前", "uk": "{n} міс. тому"},
         "time_years_ago":{"zh_hans":"{n}年前", "en": "{n} year(s) ago", "zh_hant":"{n}年前", "uk": "{n} р. тому"},
-        "shortcut_keys":{"zh_hans":"快捷键", "en": "Shortcut keys", "zh_hant":"快捷鍵", "uk": "Гарячі клавіші"}
+        "shortcut_keys":{"zh_hans":"快捷键", "en": "Shortcut keys", "zh_hant":"快捷鍵", "uk": "Гарячі клавіші"},
+        "hold_key":{"zh_hans":"按住", "en": "Hold ", "zh_hant":"按住", "uk": "Натисніть "}
     },
     "404":{
         "page_not_found":{"zh_hans":"找不到页面", "en": "Page not found", "zh_hant":"找不到頁面", "uk": "Сторінка не знайдена"},
@@ -125,7 +126,13 @@
         "confirm_remove_item": {"zh_hans": "确定要移除", "en": "Are you sure you want to remove", "zh_hant": "確定要移除", "uk": "Ви впевнені, що хочете видалити"},
         "confirm_remove_item_end": {"zh_hans": "吗？", "en": "?", "zh_hant": "嗎？", "uk": "?"},
         "item_removed": {"zh_hans": "已移除", "en": "Item removed", "zh_hant": "已移除", "uk": "Елемент видалено"},
-        "save_and_exit": {"zh_hans": "保存并退出", "en": "Save and exit", "zh_hant": "保存並退出", "uk": "Зберегти та вийти"}
+        "save_and_exit": {"zh_hans": "保存并退出", "en": "Save and exit", "zh_hant": "保存並退出", "uk": "Зберегти та вийти"},
+        "reset_preferences": {"zh_hans": "重置设置项", "en": "Reset preferences", "zh_hant": "重置設置項", "uk": "Скинути налаштування"},
+        "reset_warning": {
+            "zh_hans": "确定要重置设置项吗？", 
+            "en": "Are you sure you want to reset preferences?", 
+            "zh_hant": "確定要重置設置項嗎？", 
+            "uk": "Ви впевнені, що хочете скинути налаштування?"}
     },
     "storage_descriptions": {
         "preferences":{
@@ -220,7 +227,7 @@
         "NMM":{"zh_hans": "前桥西", "en": "Maebashi West", "zh_hant": "前橋西", "uk":"Маебаші Захід"},
         "OWL":{"zh_hans": "欧文北","en": "Owl State North", "zh_hant": "歐文北","uk":"Штат Оул Північ"},
         "QBL":{"zh_hans": "北麓", "en": "Beilu", "zh_hant": "北麓", "uk":"Бейлу"},
-        "QGL":{"zh_hans": "沁京观澜", "en": "Qingjing Guanlan", "zh_hant": "沁京觀澜", "uk":"Цїньцзїн Ґуаньлань"},
+        "QGL":{"zh_hans": "沁京观澜", "en": "Qinjing Guanlan", "zh_hant": "沁京觀澜", "uk":"Цїньцзїн Ґуаньлань"},
         "SMC":{"zh_hans": "静见中央车站","en": "Shizumi Central", "zh_hant": "靜見中央車站","uk":"Центральний Шідзумі"},
         "SNC":{"zh_hans": "宁海川","en": "Ninghaichuan", "zh_hant": "寜海川","uk":"Нінхайчуань"},
         "WEN":{"zh_hans": "欧文","en": "Owen State", "zh_hant": "歐文","uk":"Штат Оуен"},

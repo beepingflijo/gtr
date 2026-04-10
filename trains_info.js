@@ -1521,11 +1521,19 @@ function handleWindowResize() {
                 if (!sideBar.classList.contains('collapsed')) {
                     sideBar.classList.add('collapsed');
                     sideBarBtn.title = strings.general.expand_side_bar[lang];
+                    const sideBarBtnImg = sideBarBtn.querySelector('span');
+                    if (sideBarBtnImg) {
+                        sideBarBtnImg.textContent = 'menu';
+                    }
                 }
             } else { 
                 if (sideBar.classList.contains('collapsed')) {
                     sideBar.classList.remove('collapsed');
                     sideBarBtn.title = strings.general.collapse_side_bar[lang];
+                    const sideBarBtnImg = sideBarBtn.querySelector('span');
+                    if (sideBarBtnImg) {
+                        sideBarBtnImg.textContent = 'menu_open';
+                    }
                 }
             }
         }

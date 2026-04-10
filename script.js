@@ -424,13 +424,16 @@ function removeToast(message) {
 function toggleSidebar() {
     const sidebar = document.querySelector('.side-bar');
     const sidebarBtn = document.querySelector('.side-bar-btn');
-    const sidebarBtnIcon = document.querySelector('.side-bar-btn img');
+    const sidebarBtnIcon = document.querySelector('.side-bar-btn span');
     if (sidebar) {
         sidebar.classList.toggle('collapsed');
         sidebarBtn.title = 
             sidebar.classList.contains('collapsed') ?
             strings.general.expand_side_bar[lang] :
             strings.general.collapse_side_bar[lang];
+        sidebarBtnIcon.textContent = 
+            sidebar.classList.contains('collapsed') ?
+            'menu' : 'menu_open';
         // 在已加载的脚本中查找handleWindowResize
         const handleWindowResize = window.handleWindowResize;
         if (handleWindowResize) {
@@ -814,6 +817,7 @@ function listenKeyboardShortcuts() {
     let shortcutStartTime;
     let shortcutEndTime;
     document.addEventListener('keydown', function(event) { 
+        const currentPage = window.location.pathname.split('/').pop();
         shortcutStartTime = Date.now();
         const shareBtn = document.querySelector('.share-btn');
         const searchBar = document.querySelectorAll('.search-bar');
@@ -822,14 +826,18 @@ function listenKeyboardShortcuts() {
         const sidebar = document.querySelector('.side-bar');
         const searchBtn = document.querySelector('#searchBtn');
         const swapBtn = document.querySelector('.swap-btn');
-        const clearBtn = document.querySelector('#clearBtn');
+        const clearBtn = document.querySelectorAll('.active #clearBtn');
+        console.log(clearBtn.length);
+        const clearSearchBtn = document.querySelector('.clear-search-btn');
         const sidebarSearchPanel = document.querySelector('.side-bar .search-controls');
         const sortByTime = document.querySelector('.side-bar .sort-by-time');
         const sortByTransfers = document.querySelector('.side-bar .sort-by-transfers');
         const sortByPrice = document.querySelector('.side-bar .sort-by-price');
-        const resetBtn = document.querySelector('#resetPref');
         const modalOverlay = document.querySelectorAll('.modal-overlay');
         const backBtn = document.querySelector('.back-btn');
+        const nextBtn = document.querySelector('.next-btn');
+        const prevBtn = document.querySelector('.prev-btn');
+        const setUpwardsSwitch = document.querySelector('.switch.set-upwards');
         // Alt 触发快捷键操作
         if (event.altKey) { 
             switch (event.key) {
@@ -870,17 +878,21 @@ function listenKeyboardShortcuts() {
                     break;
                 case 'Q':
                     if (searchBar.length > 0) {
-                        searchBar.forEach(bar => {
-                            const input = bar.querySelector('input');
-                            if (bar.classList.contains('collapsed')) {
-                                bar.classList.remove('collapsed');
-                                if (input) input.focus();
-                            } else{
-                                bar.classList.add('collapsed');
-                                input.blur();
-                            }
-                            handleFooterItemCollapse();
-                        });
+                        const footer = document.querySelector('footer');
+                        const activeBar =
+                            footer.style.opacity > 0 ?
+                            document.querySelector('footer .search-bar') :
+                            document.querySelector('header .search-bar');
+                        const input = activeBar.querySelector('input');
+                        
+                        if (activeBar.classList.contains('collapsed')) {
+                            activeBar.classList.remove('collapsed');
+                            input?.focus();
+                        } else{
+                            activeBar.classList.add('collapsed');
+                            input?.blur();
+                        }
+                        handleFooterItemCollapse();
                     } else if (startInput && endInput && sidebar.style.opacity > 0) { 
                         if (!endInput.value.trim()) {
                             endInput.focus();
@@ -890,9 +902,12 @@ function listenKeyboardShortcuts() {
                         }
                     }
                     break;
+                case 'Backspace':
+                    if (clearBtn.length > 0) clearBtn.forEach(btn => btn.click());
+                    clearSearchBtn?.click();
+                    break;
                 case 'Delete':
-                    clearBtn?.click();
-                    resetBtn?.click();
+                    if (currentPage === 'preferences.html') {window.resetPreferences()};
                     break;
                 case 'F':
                     sortByTime?.click();
@@ -906,11 +921,15 @@ function listenKeyboardShortcuts() {
                 case 'Enter': 
                     backBtn?.click();
                     break;
+                case '\\': 
+                    setUpwardsSwitch?.click();
+                    break;
             }
         } else if (event.shiftKey) { 
             switch (event.key) { 
                 case 'Enter': 
                     swapBtn?.click();
+                    prevBtn?.click();
                     break;
             }
         } else { 
@@ -922,13 +941,18 @@ function listenKeyboardShortcuts() {
                     break;
                 case 'Enter': 
                     searchBtn?.click();
+                    nextBtn?.click();
                     break;
             }
         }
         if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) { 
             // 根据系统判断显示alt还是option
             const altKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌥' : 'Alt';
+            const ctrlKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '^' : 'Ctrl';
+            const metaKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌘' : '⊞';
             const enterKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? 'return' : 'Enter';
+            const deleteKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌦' : 'Del';
+            const backspaceKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌫' : 'Backspace';
             const shortcutList = document.createElement('div');
             shortcutList.className = 'shortcut-list';
             const sideBarBtn = document.querySelector('.side-bar-btn');
@@ -973,7 +997,7 @@ function listenKeyboardShortcuts() {
                     <span class="shortcut-key">⇧</span>
                     <span class="shortcut-key">S</span>
                 </div>` : ''}
-                <div class="shortcut-item" ${searchBar.length > 0 || (sidebarSearchPanel.style.display !== 'none' && sidebar.style.opacity > 0) ? '' : 'style="display: none;"'}>
+                <div class="shortcut-item" ${searchBar.length > 0 || (sidebarSearchPanel && sidebarSearchPanel.style.display !== 'none' && sidebar.style.opacity > 0) ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${searchBar.length > 0 ? strings.ticket_calculator.search[lang] : strings.ticket_calculator.input[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key">⇧</span>
@@ -984,10 +1008,10 @@ function listenKeyboardShortcuts() {
                     <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key">${enterKeyName}</span>
                 </div>
-                <div class="shortcut-item" ${resetBtn ? '' : 'style="display: none;"'}>
-                    <span class="shortcut-description">${strings.preferences.reset_all_data[lang]}</span>
+                <div class="shortcut-item" ${currentPage === 'preferences.html' ? '' : 'style="display: none;"'}>
+                    <span class="shortcut-description">${strings.preferences.reset_preferences[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">Delete</span>
+                    <span class="shortcut-key">${deleteKeyName}</span>
                 </div>
                 ${sidebarSearchPanel && sidebarSearchPanel.style.display !== 'none' ? `
                 <div class="shortcut-item">
@@ -998,12 +1022,28 @@ function listenKeyboardShortcuts() {
                     <span class="shortcut-description">${strings.ticket_calculator.swap[lang]}</span>
                     <span class="shortcut-key">⇧</span>
                     <span class="shortcut-key">${enterKeyName}</span>
-                </div>
-                <div class="shortcut-item">
+                </div>` : ''}
+                <div class="shortcut-item" ${clearBtn.length>0 || searchBar.length>0 ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${strings.ticket_calculator.clear_input[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">Delete</span>
+                    <span class="shortcut-key">${backspaceKeyName}</span>
                 </div>
+                ${currentPage === 'pov-frame.html' ? `
+                <div class="shortcut-item">
+                    <span class="shortcut-description">上一张</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">${enterKeyName}</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">下一张</span>
+                    <span class="shortcut-key">${enterKeyName}</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">切换上下行</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">\\</span>
+                </div>` : ''}
+                ${sidebarSearchPanel && sidebarSearchPanel.style.display !== 'none' ? `
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.faster[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
@@ -1027,9 +1067,34 @@ function listenKeyboardShortcuts() {
                 if (Date.now() - shortcutStartTime > 1000 && (shortcutEndTime < Date.now() - 1000 || !shortcutEndTime)) {
                     pushDialog(shortcutList, 'custom');
                     const appendedList = document.querySelector('.modal-overlay .shortcut-list');
+                    const listParent = appendedList.parentElement;
                     const listWidth = appendedList.getBoundingClientRect().width;
-                    const listHeight = appendedList.getBoundingClientRect().height;
-                    appendedList.style.maxHeight = listWidth * 0.95 + 'px';
+                    const windowWidth = window.innerWidth;
+                    if (listWidth / windowWidth < 0.5) {
+                        appendedList.style.maxHeight = listWidth * 1.5 + 'px';
+                    } else {
+                        appendedList.style.maxHeight = '90vh';
+                    }
+                    appendedList.style.width = '-webkit-fill-available';
+                    const listShortcut = document.createElement('div');
+                    listShortcut.classList.add('dialog-content');
+                    listShortcut.innerHTML = `
+                    <div class="shortcut-item" style="justify-content: end;">
+                        <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.general.shortcut_keys[lang]}</span>
+                        <span>${strings.general.hold_key[lang]}</span>
+                        <span class="shortcut-key">${ctrlKeyName}</span>
+                        <span>/</span>
+                        <span class="shortcut-key">${altKeyName}</span>
+                        <span>/</span>
+                        <span class="shortcut-key">⇧</span>
+                        <span>/</span>
+                        <span class="shortcut-key">${metaKeyName}</span>
+                    </div>`;
+                    listParent.appendChild(listShortcut);
+                    listShortcut.style.width = '-webkit-fill-available';
+                    listShortcut.style.maxWidth = '-webkit-fill-available';
+                    listShortcut.style.paddingTop = '12px';
+                    listShortcut.style.borderTop = '1px solid var(--color-text-secondary)';
                 }
             }, 1000);
         }
@@ -1818,9 +1883,9 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
                     e.stopPropagation();
                 });
                 content.classList.add('dialog-content');
-                if (title === '') content.style.paddingTop = '24px';
+                if (title === '' && !content.classList?.contains('shortcut-list')) content.style.paddingTop = '24px';
             } else dialogContent.textContent = content;
-            if (title === '') {
+            if (title === '' && !content.classList?.contains('shortcut-list')) {
                 dialogContent.style.paddingTop = '24px';
             }
             dialogContainer.appendChild(type==='custom'?content:dialogContent);

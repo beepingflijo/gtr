@@ -890,6 +890,17 @@ function applyReduceMotion(reduceMotion) {
     }
 }
 
+function resetPreferences() { 
+    pushDialog(strings.preferences.reset_warning[lang], 'confirm-danger').then(confirmed => { 
+        if (confirmed) { 
+            localStorage.removeItem('preferences');
+            location.reload();
+        }
+    });
+}
+
+window.resetPreferences = resetPreferences;
+
 function handleWindowResize() {
     const searchBar = document.querySelector('header .search-bar');
     const footer = document.querySelector('footer');

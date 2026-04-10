@@ -43,7 +43,7 @@
 
 * { 
     scrollbar-width: thin;
-    scrollbar-color: var(--color-text-secondary) transparent;
+    scrollbar-color: var(--color-text-secondary) var(--color-background-card);
 }
 
 @font-face {
@@ -589,6 +589,10 @@ footer.swapped {
         width: fit-content !important;
         height: fit-content !important;
         opacity: 1 !important;
+    }
+
+    .tabs.collapsed .tab-item.active .material-symbols-outlined { 
+        transform: none !important;
     }
 }
 
@@ -1394,6 +1398,7 @@ footer .search-bar.collapsed {
     flex-wrap: wrap;
     gap: 6px;
     max-width: -webkit-fill-available;
+    width: max-content;
 }
 
 .shortcut-item { 
@@ -1433,12 +1438,23 @@ footer .search-bar.collapsed {
     background: transparent;
 }
 
+.dialog-container:has(.shortcut-key) {
+    padding: 24px;
+    width: fit-content;
+    gap: 12px;
+}
+
 .dialog-container:has(.shortcut-key) .dialog-buttons {
     display: none;
 }
 
 .dialog-container:has(.shortcut-key) .dialog-content { 
-    padding-bottom: 24px;
+    padding: 0;
     align-items: stretch;
     gap: 12px 24px;
+    overflow: visible;
+}
+
+.dialog-container:has(.shortcut-key) .dialog-content span:not(.shortcut-description) {
+    white-space: pre;
 }

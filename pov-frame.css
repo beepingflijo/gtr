@@ -22,7 +22,7 @@ main {
 }
 
 .preview-container { 
-    width: 100svw;
+    width: 100vw;
     aspect-ratio: 16/9;
     filter: drop-shadow(0 8px 24px rgba(0,0,0,0.3));
     overflow: hidden;
@@ -31,7 +31,7 @@ main {
 .preview-container > * {
     width: 1920px;
     height: 1080px;
-    transform: scale(calc(100svw / 1920px));
+    transform: scale(calc(100vw / 1920px));
     transform-origin: top left;
     overflow: hidden;
     position:absolute;
