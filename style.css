@@ -433,11 +433,22 @@ a:hover :not(.material-symbols-outlined) {
 }
 
 @media (width < 360px) {
-    .app-container { 
+    body { 
+        height: -webkit-fill-available;
         transform: scale(calc(100vw / 360px));
         transform-origin: top left;
-        width: 355px;
+        width: 360px;
+        overflow-x: hidden;
+        overflow-y: hidden;
+    }
+
+    .app-container { 
         height: calc((360px / 100vw) * 100vh);
+        overflow-y: scroll;
+    }
+    
+    header, footer { 
+        width: calc(100% - 36px * 100% / 360px) !important;
     }
 }
 
