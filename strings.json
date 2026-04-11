@@ -288,7 +288,9 @@
             "zh_hant":"疑似月臺衝突或信號前停車", 
             "uk": "Схоже на конфлікт станції або тимчасове зупинки"
         },
-        "nearby_players":{"zh_hans":"附近玩家", "en": "Nearby players", "zh_hant":"附近玩家", "uk": "Близькі гравці"}
+        "nearby_players":{"zh_hans":"附近玩家", "en": "Nearby players", "zh_hant":"附近玩家", "uk": "Близькі гравці"},
+        "show_other_line":{"zh_hans":"显示其他线路", "en": "Show other lines", "zh_hant":"顯示其他路線", "uk": "Показувати інші лінії"},
+        "last_of_code":{"zh_hans":"线路编号末位", "en": "Last digit of code", "zh_hant":"线路編號末位", "uk": "Останній цифра коду"}
     },
     "ticket_calculator": {
         "page_title": {"zh_hans": "票价计算", "en": "Fare Calculator", "zh_hant": "票價計算", "uk": "Калькулятор тарифів"},
