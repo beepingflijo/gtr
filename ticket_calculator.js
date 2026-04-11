@@ -1557,6 +1557,27 @@ function renderSearchResults(routes, container) {
                     segment.style.cursor = 'default';
                 }
             });
+            document.addEventListener('touchstart', () => {
+                const icons = segment.querySelectorAll('.line-info .material-symbols-outlined');
+                icons.forEach(icon => { 
+                    const stationList = segment.querySelector('.station-list');
+                    if (stationList.style.display !== 'none') {
+                        icon.style.opacity = '1';
+                        icon.style.filter = 'none';
+                    }
+                });
+                const lineNames = segment.querySelectorAll('.line-name');
+                lineNames.forEach(lineName => { 
+                    lineName.style.textDecoration = 'underline';
+                });
+            });
+            document.addEventListener('mouseenter', () => {
+                const icons = segment.querySelectorAll('.line-info .material-symbols-outlined');
+                icons.forEach(icon => { 
+                    icon.style.opacity = '';
+                    icon.style.filter = '';
+                });
+            });
         });
 
         const fareDetails = document.createElement('div');

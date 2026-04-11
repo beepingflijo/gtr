@@ -31,17 +31,31 @@
         { "name":"GY11", "line":"GC", "maxSpeed":160, "series":"DE92-i200" },
         { "name":"GY12", "line":"GC-R", "maxSpeed":180, "series":"DE92-i200" },
         { "name":"GX01", "line":"GX01", "maxSpeed":300, "series":"DE134-300" },
-        { "name":"JC17", "line":"GX01", "maxSpeed":300, "series":"DE134-280" },
+        { "name":"JC17", "line":"GX01", "maxSpeed":280, "series":"DE134-280" },
         { "name":"GX04", "line":"GX04", "maxSpeed":300, "series":"DE92-i300" }
     ],
     "series":[
-        { "name":"DE92-i200", "seats":[
-            {"number":1, "class":"first", "rows":6, "seatsInRow":["A","C"]},
-            {"number":2, "class":"second", "seatsCount":16},
-            {"number":3, "class":"second", "seatsCount":16},
-            {"number":4, "class":"second", "seatsCount":16}
-        ] },
-        { "name":"DE134-280", "seats":[
+        { 
+            "name":"DE92-i200", "maxSpeed":180, 
+            "gallery":[
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/2/26/DE92%E7%B3%BB%E5%88%97%E5%AE%A2%E8%BD%A6.png/600px-DE92%E7%B3%BB%E5%88%97%E5%AE%A2%E8%BD%A6.png"},
+                {"class":"first", "image":"gallery1.jpg"},
+                {"class":"second", "image":"gallery1.jpg"}
+            ], "seats":[
+                {"number":1, "class":"first", "rows":6, "seatsInRow":["A","C"]},
+                {"number":2, "class":"second", "seatsCount":16},
+                {"number":3, "class":"second", "seatsCount":16},
+                {"number":4, "class":"second", "seatsCount":12}
+            ] 
+        },
+        { 
+            "name":"DE134-280", "maxSpeed":280,
+            "gallery":[
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/c/cd/%E9%95%93%E5%9F%8E%E5%BF%AB%E8%BD%A6.png/600px-%E9%95%93%E5%9F%8E%E5%BF%AB%E8%BD%A6.png"},
+                {"class":"premium", "image":"gallery1.jpg"},
+                {"class":"first", "image":"gallery1.jpg"},
+                {"class":"second", "image":"gallery1.jpg"}
+            ], "seats":[
             {"number":1, "class":"premium", "rows":3, "seatsInRow":["F"]},
             {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"]},
             {"number":3, "class":"first", "rows":6, "seatsInRow":["A","C"]},
@@ -49,19 +63,33 @@
             {"number":5, "class":"second", "seatsCount":16},
             {"number":6, "class":"second", "seatsCount":16}
         ] },
-        { "name":"DE92-i300", "seats":[
+        { 
+            "name":"DE92-i300", "maxSpeed":300,
+            "gallery":[
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/2/26/DE92%E7%B3%BB%E5%88%97%E5%AE%A2%E8%BD%A6.png/600px-DE92%E7%B3%BB%E5%88%97%E5%AE%A2%E8%BD%A6.png"},
+                {"class":"premium", "image":"gallery1.jpg"},
+                {"class":"first", "image":"gallery1.jpg"},
+                {"class":"second", "image":"gallery1.jpg"}
+            ], "seats":[
             {"number":1, "class":"premium", "rows":3, "seatsInRow":["A","F"]},
             {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"]},
             {"number":3, "class":"second", "seatsCount":16},
-            {"number":4, "class":"second", "seatsCount":16}
+            {"number":4, "class":"second", "seatsCount":12}
         ] },
-        { "name":"DE134-300", "seats":[
+        { 
+            "name":"DE134-300", "maxSpeed":300,
+            "gallery":[
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/a/a2/%E9%80%9A%E8%BF%90%E6%99%AE%E9%80%9A%E7%89%B9%E6%80%A5%E8%BD%A6.jpg/600px-%E9%80%9A%E8%BF%90%E6%99%AE%E9%80%9A%E7%89%B9%E6%80%A5%E8%BD%A6.jpg"},
+                {"class":"premium", "image":"gallery1.jpg"},
+                {"class":"first", "image":"gallery1.jpg"},
+                {"class":"second", "image":"gallery1.jpg"}
+            ], "seats":[
             {"number":1, "class":"premium", "rows":3, "seatsInRow":["A","F"]},
             {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"]},
             {"number":3, "class":"first", "rows":6, "seatsInRow":["A","C"]},
             {"number":4, "class":"second", "seatsCount":16},
             {"number":5, "class":"second", "seatsCount":16},
-            {"number":6, "class":"second", "seatsCount":16}
+            {"number":6, "class":"second", "seatsCount":12}
         ] }
     ]
 }

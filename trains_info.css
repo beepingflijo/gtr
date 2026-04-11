@@ -101,6 +101,11 @@ main .item {
     color: var(--color-text-secondary);
 }
 
+.train-cars:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .next-station {
     max-width: 30vw;
 }

@@ -827,6 +827,9 @@ function createTrainSection(train) {
     const carsElement = document.createElement('div');
     carsElement.className = 'train-cars';
     carsElement.textContent = trainSeries + strings.trains_info.series[lang] +train.cars.length + (strings.trains_info.cars[lang] || '-car');
+    carsElement.addEventListener('click', () => {
+        loadSeriesInfo(trainSeries);
+    });
 
     const lineElement = document.createElement('a');
     lineElement.className = 'train-line';

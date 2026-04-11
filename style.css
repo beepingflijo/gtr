@@ -1479,3 +1479,63 @@ footer .search-bar.collapsed {
 .dialog-container:has(.shortcut-key) .dialog-content span:not(.shortcut-description) {
     white-space: pre;
 }
+
+.train-info img { 
+    width: -webkit-fill-available;
+    max-height: 8em;
+}
+
+.carriage-info { 
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    margin-top: 4px;
+    gap: 8px
+}
+
+.seat-map { 
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-around;
+    height: 8em;
+    width: 3em;
+    gap: 4px;
+    border: 1px solid var(--color-text-secondary);
+    padding: 12px 1px;
+    border-radius: 6px;
+}
+
+.carriage-info:first-of-type .seat-map { 
+    padding-top: 2em;
+    border-radius: 12px 12px 6px 6px;
+}
+
+.carriage-info:last-of-type .seat-map { 
+    padding-bottom: 2em;
+    border-radius: 6px 6px 12px 12px;
+}
+
+.seat-map .row { 
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: -webkit-fill-available;
+}
+
+.seat-map .row > * { 
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+}
+
+.seat-item { 
+    background-color: var(--color-text-secondary);
+    width: 1em;
+    text-align: center;
+    border-radius: 4px;
+}
+
+.carriage-no { 
+    font-weight: bold;
+}

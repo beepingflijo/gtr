@@ -233,6 +233,10 @@ footer .search-panel .selection .selection-item.active:hover {
     color: var(--color-text-secondary);
 }
 
+.line-info span:last-of-type { 
+    color: var(--color-text-primary);
+}
+
 .segment:hover { 
     filter: brightness(110%);
     cursor: pointer;
@@ -272,7 +276,7 @@ footer .search-panel .selection .selection-item.active:hover {
     padding-top: 0;
     padding-bottom: 12px;
     font-size: 0.9em;
-    list-style: '> ' inside;
+    list-style: ' - ' inside;
     transition: all 0.35s ease;
 }
 
@@ -305,6 +309,7 @@ footer .search-panel .selection .selection-item.active:hover {
     gap: 8px;
     margin: 2px 0;
     overflow-y: hidden;
+    height: fit-content;
 }
 
 .transfer span { 
@@ -338,6 +343,7 @@ footer .search-panel .selection .selection-item.active:hover {
     max-width: 6px;
     top: 20px;
     height: -webkit-fill-available;
+    max-height: 1em;
     margin-bottom: 24px;
     background-color: var(--color-text-secondary);
     position: relative;
@@ -346,6 +352,10 @@ footer .search-panel .selection .selection-item.active:hover {
 
 .transfer.depart::after, .transfer.arrive::after { 
     margin-bottom: 26px;
+}
+
+.transfer.arrive::after { 
+    display: none;
 }
 
 .transfer.depart, .transfer.arrive { 

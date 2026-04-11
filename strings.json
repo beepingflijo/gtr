@@ -360,7 +360,9 @@
         "first_class": {"zh_hans": "一等座", "en": "First class", "zh_hant": "一等座", "uk": "Перший клас"},
         "second_class": {"zh_hans": "二等座", "en": "Second class", "zh_hant": "二等座", "uk": "Другий клас"},
         "no_seat_class": {"zh_hans": "无座", "en": "No seat", "zh_hant": "無座", "uk": "Без місць"},
-        "if_available": {"zh_hans": "如有", "en": "if available", "zh_hant": "如有", "uk": "якщо доступно"}
+        "if_available": {"zh_hans": "如有", "en": "if available", "zh_hant": "如有", "uk": "якщо доступно"},
+        "seats_count":{"zh_hans":"座位数", "en": "Seats count", "zh_hant":"座位數", "uk": "Кількість місць"},
+        "carriage_no":{"zh_hans":"{no} 车厢", "en": "Carriage {no}", "zh_hant":"{no} 車廂", "uk": "Сіль {no}"}
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
