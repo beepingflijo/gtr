@@ -1494,20 +1494,28 @@ function renderSearchResults(routes, container) {
                 }
 
                 routeHTML += `
-                    <div class="segment">
+                    <div class="segment collapsed">
                         <div class="line-info" style="
                             border-color: ${line.color};
                             border-left-style:${(line.id.match('-R'))?
                                 'double':''}
                         ">
-                            <span class="line-name">${line.name[lang]}</span>
+                            <a class="line-name" 
+                                href="lines_info.html?line=${line.id.replace('-R', '')}"
+                                >${line.name[lang]}</a>
                             <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]}</span>
                             <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
+                            <span class="material-symbols-outlined">keyboard_arrow_down</span>
                         </div>
-                        <!--<div class="stations">
-                            <span>${strings.ticket_calculator.board_at[lang] || '上车'}: ${getStationName(segment.stations[0],lang)}</span>
-                            <span>${strings.ticket_calculator.alight_at[lang] || '下车'}: ${getStationName(segment.stations[segment.stations.length - 1],lang)}</span>
-                        </div>-->
+                        <div class="stations" style="
+                            border-color: ${line.color};
+                            border-left-style:${(line.id.match('-R'))?
+                                'double':''}
+                        ">
+                            <li class="station-list" style="
+                                ${segment.stations.length < 3 ? 'display: none;' : ''};">
+                                ${segment.stations.slice(1, -1).map((station) => getStationName(station, lang)).join('</li><li>')}</li>
+                        </div>
                     </div>
                 `;
                 
@@ -1532,6 +1540,24 @@ function renderSearchResults(routes, container) {
         </div>`;
         
         routeElement.innerHTML = routeHTML;
+
+        const segments = routeElement.querySelectorAll('.segment');
+        segments.forEach(segment => {
+            segment.addEventListener('click', () => {
+                const stationList = segment.querySelector('.station-list');
+                if (stationList.style.display !== 'none') {
+                    segment.classList.toggle('collapsed');
+                }
+            });
+            segment.addEventListener('mouseenter', () => {
+                const stationList = segment.querySelector('.station-list');
+                if (stationList.style.display === 'none') {
+                    const icon = segment.querySelector('.material-symbols-outlined');
+                    icon.style.display = 'none';
+                    segment.style.cursor = 'default';
+                }
+            });
+        });
 
         const fareDetails = document.createElement('div');
         fareDetails.className = 'fare-details';

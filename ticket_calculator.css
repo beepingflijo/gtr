@@ -223,7 +223,7 @@ footer .search-panel .selection .selection-item.active:hover {
     padding: 12px;
 }
 
-.line-info {
+.line-info, .stations {
     display: inline-block;
     align-items: center;
     padding: 8px 16px;
@@ -233,19 +233,68 @@ footer .search-panel .selection .selection-item.active:hover {
     color: var(--color-text-secondary);
 }
 
+.segment:hover { 
+    filter: brightness(110%);
+    cursor: pointer;
+}
+
+.line-info .material-symbols-outlined { 
+    font-size: 1em;
+    opacity: 0;
+    filter: blur(6px);
+    transition: all 0.35s ease;
+}
+
+.segment:hover .line-info .material-symbols-outlined { 
+    opacity: 1;
+    filter: none;
+}
+
+.segment:not(.collapsed) .line-info .material-symbols-outlined { 
+    rotate: 180deg;
+}
+
 .line-name {
     font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.line-name:hover { 
+    filter: brightness(110%);
+    text-decoration: underline;
 }
 
 .stations {
     display: flex;
     flex-direction: column;
+    align-items: start;
     gap: 5px;
-    padding-left: 10px;
+    padding-top: 0;
+    padding-bottom: 12px;
+    font-size: 0.9em;
+    list-style: '> ' inside;
+    transition: all 0.35s ease;
 }
 
-.stations span {
-    color: var(--color-text-secondary);
+.stations li { 
+    transition: all 0.35s ease;
+    line-height: 1.2;
+    height: 1.4em;
+    opacity: 0.5;
+}
+
+.segment.collapsed .stations { 
+    padding-top: 0;
+    padding-bottom: 0;
+    height: 0;
+}
+
+.segment.collapsed .stations li { 
+    height: 0;
+    filter: blur(4px);
+    opacity: 0;
+    line-height: 0;
+    overflow: hidden;
 }
 
 .transfer {
