@@ -432,6 +432,13 @@ function displayTrains(trains, container) {
         container.appendChild(trainSection);
     });
     
+    document.addEventListener('touchstart', () => {
+        const trainCarsElements = document.querySelectorAll('.train-cars');
+        trainCarsElements.forEach(e => { 
+            e.style.textDecoration = 'underline';
+        });
+    });
+    
     // 应用当前搜索过滤条件
     applySearchFilter(searchTerm);
 }

@@ -102,7 +102,10 @@ async function loadSeriesInfo(seriesName) {
                         const seatItem = document.createElement('div');
                         seatItem.classList.add('seat-item');
                         seatItem.textContent = seat;
-                        if (carriage.class === 'premium') seatItem.style.backgroundColor = 'var(--color-primary)';
+                        if (carriage.class === 'premium') {
+                            seatItem.style.backgroundColor = 'var(--color-primary)';
+                            seatItem.style.color = 'var(--color-text-on-primary)';
+                        }
                         else seatItem.style.backgroundColor = 'var(--color-primary-transparent)';
                         if (seat.match(/[A-C]/)) seatsAbc.appendChild(seatItem);
                         else if (seat.match(/[D-F]/)) seatsDef.appendChild(seatItem);
@@ -110,6 +113,12 @@ async function loadSeriesInfo(seriesName) {
                     row.appendChild(seatsAbc);
                     row.appendChild(seatsDef);
                     seatMap.appendChild(row);
+                }
+                const storage = document.createElement('div');
+                storage.classList.add('storage');
+                if (carriage.class === 'premium') { 
+                    if (index === 0) seatMap.insertBefore(storage, seatMap.firstChild);
+                    else seatMap.appendChild(storage);
                 }
             } else { 
                 const row = document.createElement('div');

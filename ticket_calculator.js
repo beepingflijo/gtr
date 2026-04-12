@@ -1571,13 +1571,6 @@ function renderSearchResults(routes, container) {
                     lineName.style.textDecoration = 'underline';
                 });
             });
-            document.addEventListener('mouseenter', () => {
-                const icons = segment.querySelectorAll('.line-info .material-symbols-outlined');
-                icons.forEach(icon => { 
-                    icon.style.opacity = '';
-                    icon.style.filter = '';
-                });
-            });
         });
 
         const fareDetails = document.createElement('div');
