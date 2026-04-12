@@ -164,7 +164,7 @@ function listenKeyboardShortcuts() {
                     break;
             }
         }
-        if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) { 
+        if (event.ctrlKey || event.altKey || event.shiftKey) { 
             // 根据系统判断显示alt还是option
             const altKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌥' : 'Alt';
             const ctrlKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '^' : 'Ctrl';
@@ -317,8 +317,6 @@ function listenKeyboardShortcuts() {
                         <span class="shortcut-key">${altKeyName}</span>
                         <span>/</span>
                         <span class="shortcut-key">⇧</span>
-                        <span>/</span>
-                        <span class="shortcut-key">${metaKeyName}</span>
                     </div>`;
                     listParent.appendChild(listShortcut);
                     listShortcut.style.width = '-webkit-fill-available';

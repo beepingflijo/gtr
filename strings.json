@@ -362,7 +362,13 @@
         "no_seat_class": {"zh_hans": "无座", "en": "No seat", "zh_hant": "無座", "uk": "Без місць"},
         "if_available": {"zh_hans": "如有", "en": "if available", "zh_hant": "如有", "uk": "якщо доступно"},
         "seats_count":{"zh_hans":"座位数", "en": "Seats count", "zh_hant":"座位數", "uk": "Кількість місць"},
-        "carriage_no":{"zh_hans":"{no} 车厢", "en": "Carriage {no}", "zh_hant":"{no} 車廂", "uk": "Сіль {no}"}
+        "carriage_no":{"zh_hans":"{no} 车厢", "en": "Carriage {no}", "zh_hant":"{no} 車廂", "uk": "Сіль {no}"},
+        "facility_luggage": {"zh_hans": "行李架", "en": "Luggage rack", "zh_hant": "行李架", "uk": "Багажна полиця"},
+        "facility_tray": {"zh_hans": "小桌板", "en": "Tray table", "zh_hant": "小桌板", "uk": "Складний столик"},
+        "facility_box": {"zh_hans": "包厢", "en": "Compartment", "zh_hant": "包廂", "uk": "Відсік"},
+        "facility_seats": {"zh_hans": "纵向座位", "en": "Vertical seats", "zh_hant": "縱向座位", "uk": "Вертикальні сидіння"},
+        "facility_no_seat": {"zh_hans": "可能需站立", "en": "Possibly need to stand", "zh_hant": "可能需站立", "uk": "Можливо потрібно стояти"},
+        "_seats": {"zh_hans": "个座位", "en": " seats,", "zh_hant": "个座位", "uk": " місць,"}
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
@@ -378,6 +384,7 @@
         "stopped":{"zh_hans":"已停车", "en": "Stopped", "zh_hant":"已停車", "uk": "Зупинився"},
         "unknown_eta":{"zh_hans":"未知", "en": "Unknown", "zh_hant":"未知", "uk": "Невідомо"},
         "series":{"zh_hans":"型 ", "en": " Series, ", "zh_hant":"型 ", "uk": " Серія, "},
+        "_series":{"zh_hans":"型", "en": " Series", "zh_hant":"型", "uk": " Серія"},
         "line_unregistered":{"zh_hans":"未分配线路", "en": "Unregistered Line", "zh_hant":"未分配路線", "uk": "Незареєстрована лінія"},
         "searching_for":{"zh_hans":"正在搜索", "en": "Searching for ", "zh_hant":"正在搜尋", "uk": "Пошук "},
         "search_placeholder":{"zh_hans":"车号/站名/线路…","en": "Train/Station/Line...","zh_hant":"車號/站名/路線…","uk": "Потяг/Станція/Лінія..."},

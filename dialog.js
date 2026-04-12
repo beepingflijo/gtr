@@ -1,4 +1,4 @@
-function loadHistory() { 
+function loadHistory(inDialog = true) { 
     const history = localStorage.getItem('visitedPages');
     if (history) {
         const historyList = document.createElement('div');
@@ -63,11 +63,12 @@ function loadHistory() {
             
             historyList.appendChild(historyItem);
         })
-        pushDialog(historyList, 'custom', strings.general.history[lang]);
+        if (inDialog === true) pushDialog(historyList, 'custom', strings.general.history[lang]);
+        else return historyList;
     }
 }
 
-async function loadSeriesInfo(seriesName) { 
+async function loadSeriesInfo(seriesName,inDialog = true) { 
     console.log('loadSeriesInfo', seriesName);
     const trainInfo = document.createElement('div');
     trainInfo.classList.add('train-info');
@@ -78,9 +79,11 @@ async function loadSeriesInfo(seriesName) {
         
         const sereisData = trainData.series.find(series => series.name === seriesName);
 
-        const seriesCover = document.createElement('img');
+        const seriesCover = document.createElement('div');
         seriesCover.classList.add('series-cover');
-        seriesCover.src = sereisData.gallery.find(img => img.class === 'cover').image;
+        const seriesImg = document.createElement('img');
+        seriesImg.src = sereisData.gallery.find(img => img.class === 'cover').image;
+        seriesCover.appendChild(seriesImg);
         trainInfo.appendChild(seriesCover);
 
         const seriesInfo = document.createElement('div');
@@ -121,18 +124,20 @@ async function loadSeriesInfo(seriesName) {
                     else seatMap.appendChild(storage);
                 }
             } else { 
-                const row = document.createElement('div');
-                row.classList.add('row');
-                for (let i=0; i<2; i++) {
-                    const seatItem = document.createElement('div');
-                    seatItem.classList.add('seat-item');
-                    seatItem.style.opacity = 0.5;
-                    seatItem.style.borderRadius = '0';
-                    seatItem.style.height = '-webkit-fill-available';
-                    row.appendChild(seatItem);
+                for (let i=0; i<carriage.seatsCount/2; i++) {
+                    const row = document.createElement('div');
+                    row.classList.add('row');
+                    for (let j=0; j<2; j++) {
+                        const seatItem = document.createElement('div');
+                        seatItem.classList.add('seat-item');
+                        seatItem.style.opacity = 0.5;
+                        seatItem.style.borderRadius = '0';
+                        seatItem.textContent = i*2+j+1;
+                        row.appendChild(seatItem);
+                    }
+                    seatMap.appendChild(row);
                 }
-                row.style.height = '-webkit-fill-available'
-                seatMap.appendChild(row);
+                seatMap.style.justifyContent = 'center';
             }
             carriageInfo.appendChild(seatMap);
 
@@ -146,23 +151,46 @@ async function loadSeriesInfo(seriesName) {
             carriageClass.classList.add('carriage-class');
             carriageClass.textContent = strings.ticket_calculator[carriage.class+'_class'][lang];
             carriageDesc.appendChild(carriageClass);
-            const carriageSeats = document.createElement('div');
-            carriageSeats.classList.add('carriage-seats');
-            //console.log(carriage.seatsCount,carriage.seatsInRow,carriage.seatsInRow.length,carriage.rows,carriage.seatsInRow.length * carriage.rows);
-            carriageSeats.textContent = 
-                strings.ticket_calculator.seats_count[lang] + ': ' + 
-                (carriage.seatsCount ? carriage.seatsCount : (carriage.seatsInRow.length * carriage.rows));
-            carriageDesc.appendChild(carriageSeats);
-            const carriageImg = document.createElement('img');
-            carriageImg.classList.add('carriage-img');
-            carriageImg.src = sereisData.gallery.find(img => img.class === carriage.class).image;
-            carriageDesc.appendChild(carriageImg);
+            const facilitiesContainer = document.createElement('div');
+            facilitiesContainer.classList.add('facilities-container');
+            carriage.facilities?.forEach(facility => { 
+                const facilityItem = document.createElement('div');
+                facilityItem.classList.add('facility-item');
+                const facilityIcon = document.createElement('span');
+                facilityIcon.classList.add('material-symbols-outlined');
+                const facilityText = document.createElement('span');
+                switch (facility) { 
+                    case 'luggage': 
+                        facilityIcon.textContent = 'checked_bag'; 
+                        break;
+                    case 'tray': 
+                        facilityIcon.textContent = 'table_restaurant'; 
+                        break;
+                    case 'box': 
+                        facilityIcon.textContent = 'door_sliding'; 
+                        break;
+                    case 'no_seat': 
+                        facilityItem.style.opacity = 0.3;
+                        facilityIcon.classList.add('no-seat');
+                        facilityIcon.textContent = 'airline_seat_recline_normal'; 
+                        facilityText.textContent = carriage.seatsCount + strings.ticket_calculator._seats[lang] + ' ';
+                        break;
+                    case 'seats': 
+                        facilityIcon.textContent = 'flight_class'; 
+                        facilityText.textContent = (carriage.seatsInRow.length * carriage.rows) + strings.ticket_calculator._seats[lang] + ' ';
+                        break;
+                }
+                facilityText.textContent += strings.ticket_calculator['facility_'+facility][lang];
+                facilityItem.appendChild(facilityIcon);
+                facilityItem.appendChild(facilityText);
+                facilitiesContainer.appendChild(facilityItem);
+            });
+            carriageDesc.appendChild(facilitiesContainer);
             carriageInfo.appendChild(carriageDesc);
             seriesInfo.appendChild(carriageInfo);
         });
     
         trainInfo.appendChild(seriesInfo);
-        pushDialog(trainInfo, 'custom', seriesName);
 
         const images = trainInfo.querySelectorAll('img');
         images.forEach(image => { 
@@ -170,7 +198,8 @@ async function loadSeriesInfo(seriesName) {
                 image.style.opacity = 0;
             });
         });
-            
+        if (inDialog === true) pushDialog(trainInfo, 'custom', seriesName + strings.trains_info._series[lang]);
+        else return trainInfo;            
     } catch (error) {
         console.error('Error loading series info:', error);
     }

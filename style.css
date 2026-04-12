@@ -1332,7 +1332,7 @@ datalist {
     font-size: 14px;
     color: var(--color-text);
     border: none;
-    border-radius: 24px;
+    border-radius: 48px;
 }
 
 .search-bar.collapsed {
@@ -1383,34 +1383,6 @@ footer .selection.collapsed .selection-item.active, footer .search-bar.collapsed
 
 footer .search-bar.collapsed { 
     padding: 12px 10px;
-}
-
-.history-list { 
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.history-item { 
-    display: inline-flex;
-    flex-wrap: wrap;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 0.5em;
-    padding: 8px 12px;
-    border-radius: 18px;
-    transition: all 0.2s ease;
-}
-
-.history-item:hover { 
-    background: var(--icon-btn-hover);
-    transform: scale(1.05);
-}
-
-.history-time { 
-    color: var(--color-text-secondary);
-    font-size: 0.8em;
 }
 
 .shortcut-list { 
@@ -1478,68 +1450,4 @@ footer .search-bar.collapsed {
 
 .dialog-container:has(.shortcut-key) .dialog-content span:not(.shortcut-description) {
     white-space: pre;
-}
-
-.train-info img { 
-    width: -webkit-fill-available;
-    max-height: 8em;
-}
-
-.carriage-info { 
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    margin-top: 4px;
-    gap: 8px
-}
-
-.seat-map { 
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: space-around;
-    height: 8em;
-    width: 3em;
-    border: 1px solid var(--color-text-secondary);
-    padding: 12px 1px;
-    border-radius: 6px;
-}
-
-.carriage-info:first-of-type .seat-map { 
-    padding-top: 1em;
-    border-radius: 12px 12px 6px 6px;
-}
-
-.carriage-info:last-of-type .seat-map { 
-    padding-bottom: 1em;
-    border-radius: 6px 6px 12px 12px;
-}
-
-.seat-map .row { 
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    width: -webkit-fill-available;
-}
-
-.seat-map .row > * { 
-    display: flex;
-    flex-direction: row;
-    gap: 2px;
-}
-
-.seat-item { 
-    background-color: var(--color-text-secondary);
-    width: 1em;
-    text-align: center;
-    border-radius: 4px;
-}
-
-.carriage-no { 
-    font-weight: bold;
-}
-
-.seat-map .storage { 
-    height: 3em;
-    background-color: var(--color-secondary-hover);
 }

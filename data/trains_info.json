@@ -42,10 +42,10 @@
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
             ], "seats":[
-                {"number":1, "class":"first", "rows":6, "seatsInRow":["A","C"]},
-                {"number":2, "class":"second", "seatsCount":16},
-                {"number":3, "class":"second", "seatsCount":16},
-                {"number":4, "class":"second", "seatsCount":12}
+                {"number":1, "class":"first", "rows":6, "seatsInRow":["A","C"],"facilities":["seats","luggage"]},
+                {"number":2, "class":"second", "seatsCount":16,"facilities":["no_seat"]},
+                {"number":3, "class":"second", "seatsCount":16,"facilities":["no_seat"]},
+                {"number":4, "class":"second", "seatsCount":12,"facilities":["no_seat"]}
             ] 
         },
         { 
@@ -56,12 +56,12 @@
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
             ], "seats":[
-            {"number":1, "class":"premium", "rows":3, "seatsInRow":["F"]},
-            {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"]},
-            {"number":3, "class":"first", "rows":6, "seatsInRow":["A","C"]},
-            {"number":4, "class":"second", "seatsCount":16},
-            {"number":5, "class":"second", "seatsCount":16},
-            {"number":6, "class":"second", "seatsCount":16}
+            {"number":1, "class":"premium", "rows":3, "seatsInRow":["F"],"facilities":["seats","luggage","tray","box"]},
+            {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"],"facilities":["seats","luggage"]},
+            {"number":3, "class":"first", "rows":6, "seatsInRow":["A","C"],"facilities":["seats","luggage"]},
+            {"number":4, "class":"second", "seatsCount":16,"facilities":["no_seat"]},
+            {"number":5, "class":"second", "seatsCount":16,"facilities":["no_seat"]},
+            {"number":6, "class":"second", "seatsCount":12,"facilities":["no_seat"]}
         ] },
         { 
             "name":"DE92-i300", "maxSpeed":300,
@@ -71,10 +71,10 @@
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
             ], "seats":[
-            {"number":1, "class":"premium", "rows":3, "seatsInRow":["A","F"]},
-            {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"]},
-            {"number":3, "class":"second", "seatsCount":16},
-            {"number":4, "class":"second", "seatsCount":12}
+            {"number":1, "class":"premium", "rows":3, "seatsInRow":["A","F"],"facilities":["seats","luggage","tray"]},
+            {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"],"facilities":["seats","luggage"]},
+            {"number":3, "class":"second", "seatsCount":16,"facilities":["no_seat"]},
+            {"number":4, "class":"second", "seatsCount":12,"facilities":["no_seat"]}
         ] },
         { 
             "name":"DE134-300", "maxSpeed":300,
@@ -84,12 +84,12 @@
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
             ], "seats":[
-            {"number":1, "class":"premium", "rows":3, "seatsInRow":["A","F"]},
-            {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"]},
-            {"number":3, "class":"first", "rows":6, "seatsInRow":["A","C"]},
-            {"number":4, "class":"second", "seatsCount":16},
-            {"number":5, "class":"second", "seatsCount":16},
-            {"number":6, "class":"second", "seatsCount":12}
+            {"number":1, "class":"premium", "rows":3, "seatsInRow":["A","F"],"facilities":["seats","luggage","tray"]},
+            {"number":2, "class":"first", "rows":6, "seatsInRow":["A","C"],"facilities":["seats","luggage"]},
+            {"number":3, "class":"first", "rows":6, "seatsInRow":["A","C"],"facilities":["seats","luggage"]},
+            {"number":4, "class":"second", "seatsCount":16,"facilities":["no_seat"]},
+            {"number":5, "class":"second", "seatsCount":16,"facilities":["no_seat"]},
+            {"number":6, "class":"second", "seatsCount":12,"facilities":["no_seat"]}
         ] }
     ]
 }

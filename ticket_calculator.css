@@ -233,10 +233,6 @@ footer .search-panel .selection .selection-item.active:hover {
     color: var(--color-text-secondary);
 }
 
-.line-info span:last-of-type { 
-    color: var(--color-text-primary);
-}
-
 .segment:hover { 
     filter: brightness(110%);
     cursor: pointer;
