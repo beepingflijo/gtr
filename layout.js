@@ -664,7 +664,7 @@ function initHistoryBtn() {
     });
 }
 
-function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
+function pushDialog(content, type = 'confirm', title = '', defaultValue = '', coverSrc = '') {
     if (compactParam === 'true') return;
     // 返回Promise以支持异步等待
     return new Promise(async (resolve) => {
@@ -703,6 +703,9 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
             dialogHeader.appendChild(dialogTitle);
             if(title!=='')dialogContainer.appendChild(dialogHeader);
 
+            const contentContainer = document.createElement('div');
+            contentContainer.classList.add('content-container');
+
             const dialogContent = document.createElement('div');
             dialogContent.classList.add('dialog-content');
             if (type === 'custom') {
@@ -715,12 +718,49 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '') {
             if (title === '' && !content.classList?.contains('shortcut-list')) {
                 dialogContent.style.paddingTop = '24px';
             }
-            dialogContainer.appendChild(type==='custom'?content:dialogContent);
+            contentContainer.appendChild(type==='custom'?content:dialogContent);
+
+            if (coverSrc !== '') { 
+                const dialogCover = document.createElement('div');
+                dialogCover.classList.add('dialog-cover');
+                const dialogCoverImg = document.createElement('img');
+                dialogCoverImg.src = coverSrc;
+                dialogCover.appendChild(dialogCoverImg);
+                const targetElement = type === 'custom' ? content : dialogContent;
+                contentContainer.insertBefore(dialogCover, targetElement);
+                contentContainer.style.width = '-webkit-fill-available';
+                targetElement.classList.add('item');
+                contentContainer.addEventListener('scroll', (e) => { 
+                    e.stopPropagation();
+                    const scrollTop = contentContainer.scrollTop;
+                    if (scrollTop > 0) { 
+                        contentContainer.classList.remove('cover');
+                        contentContainer.style.height = '-webkit-fill-available';
+                        contentContainer.style.paddingBottom = 'calc(240px - 6em)';
+                    } else { 
+                        if (contentContainer.style.height==='-webkit-fill-available') {
+                            contentContainer.classList.add('cover');
+                            setTimeout(() => { 
+                                contentContainer.scroll(0, scrollTop);
+                            }, 300);
+                        }
+                    }
+                });
+                dialogCoverImg.addEventListener('load', () => { 
+                    dialogCoverImg.style.opacity = 1;
+                    contentContainer.classList.add('cover');
+                });
+                dialogCoverImg.addEventListener('error', () => { 
+                    dialogCoverImg.style.opacity = 0;
+                    contentContainer.classList.remove('cover');
+                });
+            } else dialogContainer.style.width = 'fit-content';
+            dialogContainer.appendChild(contentContainer);
 
             const dialogInput = document.createElement('input');
             dialogInput.classList.add('dialog-input');
             dialogInput.value = defaultValue;
-            if (type === 'prompt') dialogContent.appendChild(dialogInput);
+            if (type === 'prompt') contentContainer.appendChild(dialogInput);
 
             const dialogButtons = document.createElement('div');
             dialogButtons.classList.add('dialog-buttons');

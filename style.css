@@ -298,7 +298,7 @@
         width: -webkit-fill-available !important;
     }
 
-    .dialog-content { 
+    .dialog-container .content-container { 
         padding: 0 16px !important;
     }
 
@@ -707,14 +707,14 @@ header * {
     max-width: 480px;
 }
 
-.dialog-container .dialog-content { 
+.dialog-container .content-container { 
     padding-top: 48px;
     padding-bottom: 60px;
     scrollbar-width: thin;
     scrollbar-color: var(--color-text-secondary) transparent;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 12px;
     overflow-y: auto;
     overflow-x: visible;
@@ -752,7 +752,7 @@ header * {
     width: -webkit-fill-available;
 }
 
-.effect-reduced .dialog-content { 
+.effect-reduced .dialog-container .content-container { 
     padding: 0 16px;
 }
 
@@ -1447,13 +1447,13 @@ footer .search-bar.collapsed {
     display: none;
 }
 
-.dialog-container:has(.shortcut-key) .dialog-content { 
+.dialog-container:has(.shortcut-key) .dialog-container .content-container { 
     padding: 0;
     align-items: stretch;
     gap: 12px 24px;
     overflow: visible;
 }
 
-.dialog-container:has(.shortcut-key) .dialog-content span:not(.shortcut-description) {
+.dialog-container:has(.shortcut-key) .dialog-container .content-container span:not(.shortcut-description) {
     white-space: pre;
 }

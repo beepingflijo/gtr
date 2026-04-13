@@ -79,17 +79,11 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
         
         const sereisData = trainData.series.find(series => series.name === seriesName);
         if (!sereisData) throw showToast(strings.trains_info.series_not_found[lang]);
-
-        const seriesCover = document.createElement('div');
-        seriesCover.classList.add('series-cover');
-        const seriesImg = document.createElement('img');
-        seriesImg.src = sereisData.gallery.find(img => img.class === 'cover').image;
-        seriesCover.appendChild(seriesImg);
-        trainInfo.appendChild(seriesCover);
+        
+        const seriesImg = sereisData.gallery.find(img => img.class === 'cover').image;
 
         const seriesInfo = document.createElement('div');
         seriesInfo.classList.add('series-info');
-        seriesInfo.classList.add('item');
         sereisData.seats.forEach((carriage,index) => { 
             const carriageInfo = document.createElement('div');
             carriageInfo.classList.add('carriage-info');
@@ -194,26 +188,8 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
             carriageInfo.appendChild(carriageDesc);
             seriesInfo.appendChild(carriageInfo);
         });
-    
-        trainInfo.appendChild(seriesInfo);
-
-        const images = trainInfo.querySelectorAll('img');
-        images.forEach(image => { 
-            image.addEventListener('error', () => { 
-                image.style.opacity = 0;
-            });
-        });
-
-        trainInfo.addEventListener('scroll',() => { 
-            const scrollTop = trainInfo.scrollTop;
-            if (scrollTop > 0) { 
-                trainInfo.classList.add('scrolled');
-            } else { 
-                trainInfo.classList.remove('scrolled');
-            }
-        })
-        if (inDialog === true) pushDialog(trainInfo, 'custom', seriesName + strings.trains_info._series[lang]);
-        else return trainInfo;            
+        if (inDialog === true) pushDialog(seriesInfo, 'custom', seriesName + strings.trains_info._series[lang], '', seriesImg);
+        else return seriesInfo;            
     } catch (error) {
         console.error('Error loading series info:', error);
     }
