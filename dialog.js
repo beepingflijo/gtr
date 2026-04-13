@@ -172,7 +172,7 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
                     case 'no_seat': 
                         facilityItem.style.opacity = 0.3;
                         facilityIcon.classList.add('no-seat');
-                        facilityIcon.textContent = 'airline_seat_recline_normal'; 
+                        facilityIcon.textContent = 'tatami_seat'; 
                         facilityText.textContent = carriage.seatsCount + strings.ticket_calculator._seats[lang] + ' ';
                         break;
                     case 'seats': 

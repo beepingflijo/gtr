@@ -47,14 +47,18 @@
 
 .series-cover img { 
     width: -webkit-fill-available;
+    height: -webkit-fill-available;
+    object-fit: cover;
 }
 
-.series-cover:hover img { 
-    transform: scale(1.2);
+.series-cover:hover { 
+    transform: scale(1.05);
+    filter: brightness(1.05) var(--filter-item-shadow-hover);
 }
 
 .series-info { 
     width: -webkit-fill-available;
+    max-width: 70vw;
 }
 
 .carriage-info { 

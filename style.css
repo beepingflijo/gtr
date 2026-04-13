@@ -717,7 +717,7 @@ header * {
 .dialog-container .dialog-buttons { 
     position:fixed;
     bottom: 8px;
-    left: 8px;
+    left: 16px;
     right: 16px;
     padding: 16px 6px;
     padding-top: 4px;
@@ -733,7 +733,6 @@ header * {
 .dialog-container button { 
     background-color: var(--color-secondary-hover);
     transition: all 0.2s ease-in-out;
-    filter: var(--filter-item-shadow);
     -webkit-backdrop-filter: var(--background-filter-transparent);
     backdrop-filter: var(--background-filter-transparent);
 }
@@ -1252,7 +1251,7 @@ button, input[type="button"], input[type="submit"], input#file-upload-button {
 
 button:hover { 
     transform: scale(1.05);
-    filter: brightness(110%);
+    filter: brightness(110%) var(--filter-item-shadow-hover);
 }
 
 button.active { 
