@@ -26,39 +26,89 @@
     font-size: 0.8em;
 }
 
-.train-info { 
-    max-width: 80vw;
+.series-info-container,
+.dialog-content.series-info-container { 
+    width: min-content;
+    display: flex;
+    align-items: center;
+    position: relative;
+    gap: 0;
 }
 
-.train-info * { 
+.series-info-container * { 
     transition: all 0.3s ease;
 }
 
 .series-cover { 
-    min-height: 10em;
     width: -webkit-fill-available;
-    overflow: hidden;
+    height: 36vw;
+    max-height: 216px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    border-radius: 12px;
-    box-shadow: var(--item-shadow-inset);
+    mix-blend-mode: multiply;
+}
+
+.dark .series-cover { 
+    mix-blend-mode: lighten;
 }
 
 .series-cover img { 
+    border-radius: 12px;
     width: -webkit-fill-available;
-    height: -webkit-fill-available;
     object-fit: cover;
+    mask-image: 
+        linear-gradient(white 40%, transparent 95%);
+}
+
+.effect-reduced .series-cover img { 
+    height: -webkit-fill-available;
+    mask-image: none;
 }
 
 .series-cover:hover { 
-    transform: scale(1.05);
-    filter: brightness(1.05) var(--filter-item-shadow-hover);
+    filter: brightness(1.1) var(--filter-item-shadow-hover);
+    transform: scale(1.02);
 }
 
-.series-info { 
+.series-info {
+    z-index: 0;
     width: -webkit-fill-available;
-    max-width: 70vw;
+    backdrop-filter: var(--background-filter-transparent);
+    background-color: var(--color-background-card-transparent);
+    box-shadow: var(--item-shadow-inset-hover);
+    margin: 0 2vw;
+    min-width: min-content;
+}
+
+.series-info-container.scrolled .series-info,
+.effect-reduced .series-info {
+    backdrop-filter: none;
+    background-color: transparent;
+    box-shadow: none;
+    padding: none;
+    margin: 0;
+    padding: 12px;
+    border-radius: 0;
+    background-color: var(--color-background-card-solid);
+}
+
+.series-info-container.scrolled .series-cover { 
+    filter: blur(12px);
+    opacity: 0;
+    height: 6em;
+    transform: translateY(2em);
+}
+
+.effect-reduced .series-info-container > * { 
+    margin-top: 12px;
+}
+
+.effect-reduced .series-info-container.scrolled .series-cover { 
+    height: 36vw;
+    opacity: 1;
+    filter: none;
+    transform: none;
 }
 
 .carriage-info { 
@@ -109,8 +159,14 @@
     background-color: var(--color-text-secondary);
     width: 1em;
     text-align: center;
-    border-radius: 4px;
+    border-radius: 2px;
     font-size: 0.8em;
+}
+
+.carriage-title { 
+    display: flex;
+    gap: 0.5em;
+    flex-wrap: wrap;
 }
 
 .carriage-no { 
@@ -137,7 +193,7 @@
     color: var(--color-text-secondary);
     display: flex; 
     flex-direction: column;
-    font-size: 0.8em;
+    font-size: 0.9em;
     margin-top: 4px;
     padding-top: 4px;
     border-top: 1px solid var(--color-text-secondary);
@@ -163,9 +219,44 @@
 .facility-item .material-symbols-outlined.no-seat::after { 
     content: 'question_mark';
     font-size: 0.6em;
-    -webkit-text-stroke: 1px var(--color-background-card-solid);
-    font-variation-settings: 'wght' 700, 'opsz' 20, 'GRAD' 200;
+    background-color: var(--color-background-card-solid);
+    font-variation-settings: 'wght' 500, 'opsz' 20;
     right: 0;
-    bottom: 0;
+    top: 0.1em;
     position: absolute;
+}
+
+@media (prefers-color-scheme: dark) { 
+    .series-cover { 
+        mix-blend-mode: lighten;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) { 
+    .series-cover { 
+        mix-blend-mode: none;
+    }
+    .series-cover img { 
+        height: -webkit-fill-available;
+        mask-image: none;
+    }
+    .series-info {
+        backdrop-filter: none;
+        background-color: transparent;
+        box-shadow: none;
+        padding: none;
+        margin: 0;
+        padding: 12px;
+        border-radius: 0;
+        background-color: var(--color-background-card-solid);
+    }
+    .series-info-container .series-cover { 
+        margin-top: 12px;
+    }
+    .series-info-container.scrolled .series-cover { 
+        height: 10em;
+        opacity: 1;
+        filter: none;
+        transform: none;
+    }
 }

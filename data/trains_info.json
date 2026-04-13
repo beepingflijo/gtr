@@ -38,7 +38,7 @@
         { 
             "name":"DE92-i200", "maxSpeed":180, 
             "gallery":[
-                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/2/26/DE92%E7%B3%BB%E5%88%97%E5%AE%A2%E8%BD%A6.png/600px-DE92%E7%B3%BB%E5%88%97%E5%AE%A2%E8%BD%A6.png"},
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/2/23/DE92-i200.png/1600px-DE92-i200.png?20260413075143"},
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
             ], "seats":[
@@ -51,7 +51,7 @@
         { 
             "name":"DE134-280", "maxSpeed":280,
             "gallery":[
-                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/c/cd/%E9%95%93%E5%9F%8E%E5%BF%AB%E8%BD%A6.png/600px-%E9%95%93%E5%9F%8E%E5%BF%AB%E8%BD%A6.png"},
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/1/14/DE134-280.png/1600px-DE134-280.png?20260413075150"},
                 {"class":"premium", "image":"gallery1.jpg"},
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
@@ -66,7 +66,7 @@
         { 
             "name":"DE92-i300", "maxSpeed":300,
             "gallery":[
-                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/2/26/DE92%E7%B3%BB%E5%88%97%E5%AE%A2%E8%BD%A6.png/600px-DE92%E7%B3%BB%E5%88%97%E5%AE%A2%E8%BD%A6.png"},
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/e/ea/DE92-i300.png/1600px-DE92-i300.png?20260413075146"},
                 {"class":"premium", "image":"gallery1.jpg"},
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
@@ -79,7 +79,7 @@
         { 
             "name":"DE134-300", "maxSpeed":300,
             "gallery":[
-                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/a/a2/%E9%80%9A%E8%BF%90%E6%99%AE%E9%80%9A%E7%89%B9%E6%80%A5%E8%BD%A6.jpg/600px-%E9%80%9A%E8%BF%90%E6%99%AE%E9%80%9A%E7%89%B9%E6%80%A5%E8%BD%A6.jpg"},
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/thumb/4/4a/DE134-300.png/1600px-DE134-300.png?20260413075153"},
                 {"class":"premium", "image":"gallery1.jpg"},
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}

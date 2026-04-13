@@ -294,12 +294,12 @@
     .dialog-container .dialog-buttons { 
         background: var(--color-background-card-solid) !important;
         position: sticky !important;
-        padding: 18px 16px;
-        width: -webkit-fill-available;
+        padding: 18px 16px !important;
+        width: -webkit-fill-available !important;
     }
 
     .dialog-content { 
-        padding: 0 16px;
+        padding: 0 16px !important;
     }
 
 }
@@ -653,6 +653,10 @@ header * {
     justify-content: center;
 }
 
+.dialog-container { 
+    overflow: hidden;
+}
+
 .dialog-container, .dialog-container.item { 
     background-color: var(--color-background-card-solid);
     display: flex;
@@ -681,14 +685,15 @@ header * {
 
 .dialog-container .dialog-header { 
     position:fixed;
-    top: 8px;
-    left: 12px;
+    top: 0;
+    left: 0;
     right: 12px;
     height: 24px;
+    max-width: unset;
     display: flex;
     align-items: center;
     background: linear-gradient(var(--color-background-card-solid) 60%,transparent);
-    padding: 18px 16px;
+    padding: 24px 28px;
     padding-bottom: 4px;
     z-index: 2001;
     text-shadow: 0 2px 12px var(--color-background-card-solid);
@@ -712,6 +717,7 @@ header * {
     align-items: flex-start;
     gap: 12px;
     overflow: auto;
+    max-width: 80vw;
 }
 
 .dialog-container .dialog-buttons { 

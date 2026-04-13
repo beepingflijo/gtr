@@ -71,7 +71,7 @@ function loadHistory(inDialog = true) {
 async function loadSeriesInfo(seriesName,inDialog = true) { 
     console.log('loadSeriesInfo', seriesName);
     const trainInfo = document.createElement('div');
-    trainInfo.classList.add('train-info');
+    trainInfo.classList.add('series-info-container');
     
     try {
         // 从./data/trains_info.json中获取数据
@@ -88,6 +88,7 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
 
         const seriesInfo = document.createElement('div');
         seriesInfo.classList.add('series-info');
+        seriesInfo.classList.add('item');
         sereisData.seats.forEach((carriage,index) => { 
             const carriageInfo = document.createElement('div');
             carriageInfo.classList.add('carriage-info');
@@ -143,14 +144,17 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
 
             const carriageDesc = document.createElement('div');
             carriageDesc.classList.add('carriage-desc');
-            const carriageNo = document.createElement('div');
+            const carriageTitle = document.createElement('div');
+            carriageTitle.classList.add('carriage-title');
+            const carriageNo = document.createElement('span');
             carriageNo.classList.add('carriage-no');
             carriageNo.textContent = strings.ticket_calculator.carriage_no[lang].replace('{no}', index+1);
-            carriageDesc.appendChild(carriageNo);
-            const carriageClass = document.createElement('div');
+            carriageTitle.appendChild(carriageNo);
+            const carriageClass = document.createElement('small');
             carriageClass.classList.add('carriage-class');
             carriageClass.textContent = strings.ticket_calculator[carriage.class+'_class'][lang];
-            carriageDesc.appendChild(carriageClass);
+            carriageTitle.appendChild(carriageClass);
+            carriageDesc.appendChild(carriageTitle);
             const facilitiesContainer = document.createElement('div');
             facilitiesContainer.classList.add('facilities-container');
             carriage.facilities?.forEach(facility => { 
@@ -172,7 +176,7 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
                     case 'no_seat': 
                         facilityItem.style.opacity = 0.3;
                         facilityIcon.classList.add('no-seat');
-                        facilityIcon.textContent = 'tatami_seat'; 
+                        facilityIcon.textContent = 'flight_class'; 
                         facilityText.textContent = carriage.seatsCount + strings.ticket_calculator._seats[lang] + ' ';
                         break;
                     case 'seats': 
@@ -198,6 +202,15 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
                 image.style.opacity = 0;
             });
         });
+
+        trainInfo.addEventListener('scroll',() => { 
+            const scrollTop = trainInfo.scrollTop;
+            if (scrollTop > 0) { 
+                trainInfo.classList.add('scrolled');
+            } else { 
+                trainInfo.classList.remove('scrolled');
+            }
+        })
         if (inDialog === true) pushDialog(trainInfo, 'custom', seriesName + strings.trains_info._series[lang]);
         else return trainInfo;            
     } catch (error) {
