@@ -78,6 +78,7 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
         const trainData = await getTrainData();
         
         const sereisData = trainData.series.find(series => series.name === seriesName);
+        if (!sereisData) throw showToast(strings.trains_info.series_not_found[lang]);
 
         const seriesCover = document.createElement('div');
         seriesCover.classList.add('series-cover');

@@ -374,6 +374,7 @@
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
         "page_title_short": {"zh_hans":"列车", "en": "Trains", "zh_hant":"列車", "uk": "Потяги"},
         "train_not_found":{"zh_hans":"未找到该列车信息", "en": "Train info not found", "zh_hant":"未找到該列車資訊", "uk": "Інформація про потяг не знайдена"},
+        "series_not_found":{"zh_hans":"未找到该车型信息", "en": "Series info not found", "zh_hant":"未找到該車型資訊", "uk": "Інформація про серія не знайдена"},
         "cars":{"zh_hans":"编", "en": "-car", "zh_hant":"輌", "uk": "-сіль"},
         "km_to":{"zh_hans":"km后到达", "en": "km to ", "zh_hant":"km後到達", "uk": "km до "},
         "platform":{"zh_hans":"站台", "en": "Platform ", "zh_hant":"月臺", "uk": "Платформа "},

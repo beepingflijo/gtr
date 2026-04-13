@@ -28,7 +28,7 @@
 
 .series-info-container,
 .dialog-content.series-info-container { 
-    width: min-content;
+    width: -webkit-fill-available;
     display: flex;
     align-items: center;
     position: relative;
@@ -41,8 +41,7 @@
 
 .series-cover { 
     width: -webkit-fill-available;
-    height: 36vw;
-    max-height: 216px;
+    max-height: 180px;
     display: flex;
     align-items: flex-start;
     justify-content: center;

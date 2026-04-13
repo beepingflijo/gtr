@@ -103,16 +103,16 @@ const PositionUtils = (function() {
     function getSeriesForTrain(trainName) {
         if (!trainsInfo || !Array.isArray(trainsInfo)) {
             console.warn('trainsInfo 数据不可用');
-            return '未知车型';
+            return strings.trains_info.unknown_eta[lang] + ' ';
         }
         
         const train = trainsInfo.find(t => t.name === trainName);
         if (!train) {
             //console.warn(`未找到列车 ${trainName} 的型号信息`);
-            return '未知车型';
+            return strings.trains_info.unknown_eta[lang] + ' ';
         }
         
-        return train.series || '未知车型';
+        return train.series || strings.trains_info.unknown_eta[lang] + ' ';
     }
     
     /**
@@ -1143,7 +1143,7 @@ const PositionUtils = (function() {
                         
                         // 构造通知正文
                         const lineName = trainLine || '未知线路';
-                        const series = trainSeries || '未知车型';
+                        const series = trainSeries || strings.trains_info.unknown_eta[lang] + ' ';
                         const speed = Math.round(trainSpeed) || 0;
                         const count = carsCount || 0;
                         
