@@ -433,6 +433,7 @@ function handleFooterItemCollapse() {
             });
         }
     });
+    window.handleWindowResize();
 }
 
 function initBlurLayers() {
@@ -463,7 +464,7 @@ function initSidebar() {
                 </div>
             </div>
             <div class="side-bar-list side-bar-navigation">
-                <div class="side-bar-item ${currentPage === 'lines_info' ? 'active' : ''}">
+                <a href="lines_info.html" class="side-bar-item ${currentPage === 'lines_info' ? 'active' : ''}">
                     <div class="icon-btn lines-btn ${currentPage === 'lines_info' ? 'active' : ''}">
                         <span class="material-symbols-outlined">
                         route
@@ -471,8 +472,8 @@ function initSidebar() {
                         <span>${window.strings?.lines_info?.page_title[lang] || '线路信息'}</span>
                     </div>
                     <div class="selection line-selector no-collapse" style="display:${currentPage === 'lines_info' ? 'flex' : 'none'}"></div>
-                </div>
-                <div class="side-bar-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
+                </a>
+                <a href="ticket_calculator.html" class="side-bar-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
                     <div class="icon-btn fare-btn ${currentPage === 'ticket_calculator' ? 'active' : ''}">
                         <span class="material-symbols-outlined">
                         universal_currency_alt
@@ -523,25 +524,25 @@ function initSidebar() {
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="side-bar-item ${currentPage === 'trains_info' ? 'active' : ''}">
+                </a>
+                <a href="trains_info.html" class="side-bar-item ${currentPage === 'trains_info' ? 'active' : ''}">
                     <div class="icon-btn trains-btn ${currentPage === 'trains_info' ? 'active' : ''}">
                         <span class="material-symbols-outlined">
                         directions_subway
                         </span>
                         <span>${window.strings?.trains_info?.page_title[lang] || '列车信息'}</span>
                     </div>
-                </div>
+                </a>
             </div>
             <div class="side-bar-list">
-                <div class="side-bar-item"> 
+                <a href="preferences.html" class="side-bar-item"> 
                     <div class="icon-btn preferences-btn">
                         <span class="material-symbols-outlined filled">
                         account_circle 
                         </span>
                         <span>${window.strings?.preferences?.page_title[lang] || '偏好设置'}</span>
                     </div>
-                </div>
+                </a>
                 <div class="side-bar-item"> 
                     <div class="icon-btn history-btn">
                         <span class="material-symbols-outlined">
@@ -607,17 +608,21 @@ function initPrefActions() {
     const prefActions = document.querySelectorAll('.pref-actions');
     prefActions.forEach(prefAction => {
         prefAction.innerHTML = `
-            <div class="icon-btn history-btn">
+            <div class="icon-btn history-btn" title="${window.strings?.general.history[lang] || 'History'}">
                 <span class="material-symbols-outlined">
                 history
                 </span>
             </div>
-            <div class="icon-btn preferences-btn">
+            <div class="icon-btn preferences-btn" title="${window.strings?.preferences.page_title[lang] || 'Preferences'}"></a>
                 <span class="material-symbols-outlined filled">
                 account_circle
                 </span>
             </div>
         `;
+    });
+    const prefBtns = document.querySelectorAll('.pref-actions .preferences-btn');
+    if (prefBtns.length > 0) prefBtns[0].addEventListener('click', () => { 
+        window.location.href = 'preferences.html';
     });
 }
 
@@ -626,30 +631,30 @@ function initTabs() {
     const currentPage = window.location.pathname.split('/').pop().split('.')[0];
     tabsContainers.forEach(container => {
         container.innerHTML = `
-            <div class="tab-item ${currentPage === 'lines_info' ? 'active' : ''}">
+            <a href="lines_info.html" class="tab-item ${currentPage === 'lines_info' ? 'active' : ''}">
                 <div class="icon-btn lines-btn ${currentPage === 'lines_info' ? 'active' : ''}">
                     <span class="material-symbols-outlined">
                     route
                     </span>
                     <span class="tab-text">${window.strings?.lines_info.page_title_short[lang] || 'Lines'}</span>
                 </div>
-            </div>
-            <div class="tab-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
+            </a>
+            <a href="ticket_calculator.html" class="tab-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
                 <div class="icon-btn fare-btn ${currentPage === 'ticket_calculator' ? 'active' : ''}">
                     <span class="material-symbols-outlined">
                     universal_currency_alt
                     </span>
                     <span class="tab-text">${window.strings?.ticket_calculator.page_title_short[lang] || 'Fare'}</span>
                 </div>
-            </div>
-            <div class="tab-item ${currentPage === 'trains_info' ? 'active' : ''}">
+            </a>
+            <a href="trains_info.html" class="tab-item ${currentPage === 'trains_info' ? 'active' : ''}">
                 <div class="icon-btn trains-btn ${currentPage === 'trains_info' ? 'active' : ''}">
                     <span class="material-symbols-outlined">
                     directions_subway
                     </span>
                     <span class="tab-text">${window.strings?.trains_info.page_title_short[lang] || 'Trains'}</span>
                 </div>
-            </div>
+            </a>
         `;
     });
 }
@@ -730,21 +735,19 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
                 contentContainer.insertBefore(dialogCover, targetElement);
                 contentContainer.style.width = '-webkit-fill-available';
                 targetElement.classList.add('item');
+                let scrollTimeout;
                 contentContainer.addEventListener('scroll', (e) => { 
+                    const contentElement = contentContainer.querySelector('.dialog-content');
                     e.stopPropagation();
-                    const scrollTop = contentContainer.scrollTop;
-                    if (scrollTop > 0) { 
-                        contentContainer.classList.remove('cover');
-                        contentContainer.style.height = '-webkit-fill-available';
-                        dialogContent.style.minHeight = '240px';
-                    } else if (!contentContainer.classList.contains('error')) { 
-                        if (contentContainer.style.height==='-webkit-fill-available') {
-                            contentContainer.classList.add('cover');
-                            setTimeout(() => { 
-                                contentContainer.scroll(0, scrollTop);
-                            }, 300);
+                        const scrollTop = contentContainer.scrollTop;
+                        if (scrollTop > 0) { 
+                            contentContainer.classList.remove('cover');
+                            console.log('scrollTop', contentElement);
+                            contentElement.style.minHeight = '240px';
+                            contentElement.style.paddingBottom = '6em';
+                        } else if (!contentContainer.classList.contains('error')) { 
+                                contentContainer.classList.add('cover');
                         }
-                    }
                 });
                 dialogCoverImg.addEventListener('load', () => { 
                     dialogCoverImg.style.opacity = 1;

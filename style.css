@@ -285,7 +285,7 @@
     .selection-item:hover :not(.material-symbols-outlined),
     .tab-item:hover :not(.material-symbols-outlined),
     button:hover :not(.material-symbols-outlined),
-    a:hover :not(.material-symbols-outlined),
+    a:not(.side-bar-item,.tab-item):hover :not(.material-symbols-outlined),
     .train-item:hover :not(.material-symbols-outlined) { 
         text-decoration: underline;
     }
@@ -364,7 +364,7 @@
 .effect-reduced .selection-item:hover :not(.material-symbols-outlined),
 .effect-reduced .tab-item:hover :not(.material-symbols-outlined),
 .effect-reduced button:hover :not(.material-symbols-outlined),
-.effect-reduced a:hover :not(.material-symbols-outlined),
+.effect-reduced a:not(.side-bar-item,.tab-item):hover :not(.material-symbols-outlined),
 .effect-reduced .train-item:hover :not(.material-symbols-outlined) { 
     text-decoration: underline;
 }
@@ -420,7 +420,7 @@ a {
     text-decoration: none;
 }
 
-a:hover :not(.material-symbols-outlined) { 
+a:not(.side-bar-item,.tab-item):hover :not(.material-symbols-outlined) { 
     text-decoration: underline;
 }
 
@@ -719,6 +719,23 @@ header * {
     overflow-y: auto;
     overflow-x: visible;
     max-width: -webkit-fill-available;
+}
+
+.dialog-container .content-container:has(.shortcut-list) { 
+    padding: 0;
+    max-width: fit-content;
+    height: fit-content;
+    background: transparent;
+    overflow: hidden;
+}
+
+.dialog-container .content-container:has(.shortcut-list) span { 
+    line-height: 1.2;
+}
+
+.dialog-container .content-container:has(.shortcut-list) .dialog-content { 
+    height: fit-content;
+    background: transparent !important;
 }
 
 .dialog-container .dialog-buttons { 
@@ -1407,6 +1424,10 @@ footer .search-bar.collapsed {
     max-width: -webkit-fill-available;
 }
 
+.shortcut-item span { 
+    white-space: nowrap;
+}
+
 .shortcut-description { 
     width: -webkit-fill-available;
     margin-inline-end: 1em;
@@ -1456,4 +1477,130 @@ footer .search-bar.collapsed {
 
 .dialog-container:has(.shortcut-key) .dialog-container .content-container span:not(.shortcut-description) {
     white-space: pre;
+}
+
+
+
+.dialog-container * { 
+    transition: all 0.3s ease;
+}
+
+.dialog-cover { 
+    width: -webkit-fill-available;
+    max-height: 180px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    mix-blend-mode: multiply;
+}
+
+.dark .dialog-cover { 
+    mix-blend-mode: lighten;
+}
+
+.dialog-cover img { 
+    border-radius: 12px;
+    width: -webkit-fill-available;
+    object-fit: cover;
+    -webkit-mask-image: 
+        -webkit-linear-gradient(white 40%, transparent 95%);
+    mask-image: 
+        linear-gradient(white 40%, transparent 95%);
+}
+
+.effect-reduced .dialog-cover img { 
+    height: -webkit-fill-available;
+    -webkit-mask-image: none;
+    mask-image: none;
+}
+
+.dialog-cover:hover { 
+    filter: brightness(1.1) var(--filter-item-shadow-hover);
+    transform: scale(1.02);
+}
+
+.dialog-container .content-container .dialog-content { 
+    z-index: 0;
+    width: -webkit-fill-available;
+    white-space: pre-line;
+}
+
+.dialog-container .content-container.cover .dialog-content{
+    -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
+    background-color: var(--color-background-card-transparent);
+    box-shadow: var(--item-shadow-inset-hover);
+    margin: 0 2vw;
+    min-width: min-content;
+}
+
+.dialog-container .content-container:not(.cover) .dialog-content:not(.shortcut-list),
+.effect-reduced .dialog-content{
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: transparent;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background-color: var(--color-background-card-solid);
+}
+
+.dialog-container .content-container:has(.shortcut-list) .dialog-content:not(.shortcut-list){
+    padding: 0;
+}
+
+.dialog-container .content-container:not(.cover) .dialog-cover{ 
+    filter: blur(12px);
+    opacity: 0;
+    height: 6em;
+    transform: translateY(2em);
+}
+
+.effect-reduced .dialog-container .content-container > * { 
+    margin-top: 12px;
+}
+
+.effect-reduced .dialog-container .content-container:not(.cover) .dialog-cover { 
+    height: 36vw;
+    opacity: 1;
+    filter: none;
+    transform: none;
+}
+
+@media (prefers-color-scheme: dark) { 
+    .dialog-cover { 
+        mix-blend-mode: lighten;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) { 
+    .dialog-cover { 
+        mix-blend-mode: none;
+    }
+    .dialog-cover img { 
+        height: -webkit-fill-available;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+    .dialog-content{
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        background-color: transparent;
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        padding: 12px;
+        border-radius: 0;
+        background-color: var(--color-background-card-solid);
+    }
+    .dialog-container .content-container .dialog-cover { 
+        margin-top: 12px;
+    }
+    .dialog-container .content-container:not(.cover) .dialog-cover { 
+        height: 10em;
+        opacity: 1;
+        filter: none;
+        transform: none;
+    }
 }

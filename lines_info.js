@@ -61,26 +61,7 @@ function init() {
     pageTitle.textContent = strings.lines_info.page_title[lang] + ' - ' + strings.mainpage.gtr_info[lang];
     
     // 获取线路选择和车站显示的DOM元素
-    //const lineSelection = document.querySelector('.line-selection');
     const stationsDisplay = document.querySelector('.stations-display');
-
-    // 动态生成线路选择按钮
-    /*const buttonGroup = document.createElement('div');
-    buttonGroup.className = 'lines-button';
-    window.lines.forEach(line => {
-        const button = document.createElement('button');
-        button.classList.remove('active');
-        // 加载对应语言的文本，如中文为line.name.zh_hans，英文为line.name.en
-        button.textContent = line.name[lang];
-        button.addEventListener('click', () => {
-            //displayStations(line);
-            //displayTrains();
-            // 点击后添加对应的url参数
-            window.location.href = `?line=${line.id}&lang=${lang}`;
-        });
-        buttonGroup.appendChild(button);
-    });
-    lineSelection.appendChild(buttonGroup);*/
 
     // 为selection.line-selector也添加线路选项selection-item
     const lineSelectors = document.querySelectorAll('.line-selector');
@@ -119,69 +100,12 @@ function init() {
     lineSelectors.forEach(lineSelector => {
         lineSelector.setAttribute('style', `--color-primary: ${window.lines.find(line => line.id === getActiveLineId()).color}`);
     });
-
-    //const divider = document.createElement('div');
-    //divider.className = 'divider';
-    //lineSelection.appendChild(divider);
     
     const mapBtn = document.querySelector('.map-btn');
     mapBtn.title = strings.pov_frame.page_title[lang];
     mapBtn.addEventListener('click', () => {
         window.open('pov-frame.html', '_blank');
     });
-    
-    // 修改以下代码以处理多个按钮实例
-    const fareBtns = document.querySelectorAll('.fare-btn');
-    fareBtns.forEach(fareBtn => {
-        const fareBtnText = fareBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (fareBtnText) {
-            fareBtnText.textContent = strings.ticket_calculator[fareBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-            fareBtn.title = strings.ticket_calculator.page_title[lang];
-        }
-        fareBtn.addEventListener('click', () => {
-            window.open(`ticket_calculator.html`, '_self');
-        });
-    });
-    
-    const trainsBtns = document.querySelectorAll('.trains-btn');
-    trainsBtns.forEach(trainsBtn => {
-        const trainsBtnText = trainsBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (trainsBtnText) {
-            trainsBtnText.textContent = strings.trains_info[trainsBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-            trainsBtn.title = strings.trains_info.page_title[lang];
-        }
-        trainsBtn.addEventListener('click', () => {
-            window.open(`trains_info.html`, '_self');
-        });
-    });
-    
-    const linesBtns = document.querySelectorAll('.lines-btn');
-    linesBtns.forEach(linesBtn => {
-        const linesBtnText = linesBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (linesBtnText) {
-            linesBtnText.textContent = strings.lines_info[linesBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-            linesBtn.title = strings.lines_info.page_title[lang];
-        }
-        linesBtn.addEventListener('click', () => {
-            window.open('lines_info.html', '_self');
-        });
-    });
-
-    const prefBtns = document.querySelectorAll('.preferences-btn');
-    prefBtns.forEach(prefBtn => {
-        const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (prefBtnText) {
-            prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-            prefBtn.title = strings.preferences.page_title[lang];
-        }
-        prefBtn.addEventListener('click', () => { 
-            window.open(`preferences.html`, '_self');
-        });
-    })
 
     const lineId = getActiveLineId();
     // 获取lineId对应的线路数据、
@@ -259,6 +183,10 @@ function displayStations(line) {
                 <span class="station-name-original">${getStationName(station.code,'original')!==getStationName(station.code) ? getStationName(station.code,'original') : ''}</span>
             </div>
         `;
+        const stationNameElement = li.querySelector('.station-name');
+        stationNameElement.addEventListener('click', () => {
+            loadStationInfo(station.code);
+        })
         ul.appendChild(li);
 
         // 在每一站之间加上垂直连接线

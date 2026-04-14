@@ -308,6 +308,20 @@ function getTrainData() {
     });
 }
 
+function getStationData(code) { 
+    return new Promise((resolve, reject) => { 
+        fetch(`./data/stations_info.json`) 
+            .then(response => response.json()) 
+            .then(data => { 
+                resolve(data[code]); 
+            }) 
+            .catch(error => { 
+                console.error('Error fetching station data:', error); 
+                reject(error); 
+            })
+    });
+}
+
 // 从 strings.json 获取支持的语言列表
 function getSupportedLanguages(page) {
     return new Promise((resolve, reject) => {

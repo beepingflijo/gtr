@@ -35,89 +35,6 @@
     gap: 0;
 }
 
-.dialog-container * { 
-    transition: all 0.3s ease;
-}
-
-.dialog-cover { 
-    width: -webkit-fill-available;
-    max-height: 180px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    mix-blend-mode: multiply;
-}
-
-.dark .dialog-cover { 
-    mix-blend-mode: lighten;
-}
-
-.dialog-cover img { 
-    border-radius: 12px;
-    width: -webkit-fill-available;
-    object-fit: cover;
-    -webkit-mask-image: 
-        -webkit-linear-gradient(white 40%, transparent 95%);
-    mask-image: 
-        linear-gradient(white 40%, transparent 95%);
-}
-
-.effect-reduced .dialog-cover img { 
-    height: -webkit-fill-available;
-    -webkit-mask-image: none;
-    mask-image: none;
-}
-
-.dialog-cover:hover { 
-    filter: brightness(1.1) var(--filter-item-shadow-hover);
-    transform: scale(1.02);
-}
-
-.dialog-container .content-container .dialog-content { 
-    z-index: 0;
-    width: -webkit-fill-available;
-}
-
-.dialog-container .content-container.cover .dialog-content{
-    -webkit-backdrop-filter: var(--background-filter-transparent);
-    backdrop-filter: var(--background-filter-transparent);
-    background-color: var(--color-background-card-transparent);
-    box-shadow: var(--item-shadow-inset-hover);
-    margin: 0 2vw;
-    min-width: min-content;
-}
-
-.dialog-container .content-container:not(.cover) .dialog-content,
-.effect-reduced .dialog-content{
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background-color: transparent;
-    box-shadow: none;
-    padding: none;
-    margin: 0;
-    padding: 12px;
-    border-radius: 0;
-    background-color: var(--color-background-card-solid);
-}
-
-.dialog-container .content-container:not(.cover) .dialog-cover{ 
-    filter: blur(12px);
-    opacity: 0;
-    height: 6em;
-    transform: translateY(2em);
-}
-
-.effect-reduced .dialog-container .content-container > * { 
-    margin-top: 12px;
-}
-
-.effect-reduced .dialog-container .content-container:not(.cover) .dialog-cover { 
-    height: 36vw;
-    opacity: 1;
-    filter: none;
-    transform: none;
-}
-
 .carriage-info { 
     display: flex;
     flex-direction: row;
@@ -233,39 +150,46 @@
     position: absolute;
 }
 
-@media (prefers-color-scheme: dark) { 
-    .dialog-cover { 
-        mix-blend-mode: lighten;
-    }
+.station-info { 
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
 }
 
-@media (prefers-reduced-transparency: reduce) { 
-    .dialog-cover { 
-        mix-blend-mode: none;
-    }
-    .dialog-cover img { 
-        height: -webkit-fill-available;
-        -webkit-mask-image: none;
-        mask-image: none;
-    }
-    .dialog-content{
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-        background-color: transparent;
-        box-shadow: none;
-        padding: none;
-        margin: 0;
-        padding: 12px;
-        border-radius: 0;
-        background-color: var(--color-background-card-solid);
-    }
-    .dialog-container .content-container .dialog-cover { 
-        margin-top: 12px;
-    }
-    .dialog-container .content-container:not(.cover) .dialog-cover { 
-        height: 10em;
-        opacity: 1;
-        filter: none;
-        transform: none;
-    }
+.exit-info { 
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: start;
+    gap: 0.5em;
+    padding: 4px 0;
+}
+
+.exit-info .exit-id { 
+    font-weight: bold;
+    background: linear-gradient(110deg,#F8D90C 49%,white 51%);
+    padding: 0.1em;
+    min-width: 1.3em;
+    text-align: center;
+    border: 2px solid #222;
+    color: black;
+    line-height: 0.9;
+    border-radius: 4px;
+    font-family: 'HarmonyOS Sans SC';
+}
+
+.exit-info .exit-id.in { 
+    background: white;
+}
+
+.exit-info .exit-id.out { 
+    background: #F8D90C;
+}
+
+.exit-info .exit-dir { 
+    min-width: 4em;
+}
+
+.exit-info .exit-desc { 
+    width: -webkit-fill-available;
 }

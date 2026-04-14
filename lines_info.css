@@ -155,6 +155,12 @@
 .station-name-container {
     max-width: 53%;
     gap: 2px;
+    cursor: pointer;
+}
+
+.station-name-container:hover {
+    font-size: 1.05em;
+    text-decoration: underline;
 }
 
 .station-name {

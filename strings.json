@@ -368,7 +368,8 @@
         "facility_box": {"zh_hans": "包厢", "en": "Compartment", "zh_hant": "包廂", "uk": "Відсік"},
         "facility_seats": {"zh_hans": "纵向座位", "en": "Vertical seats", "zh_hant": "縱向座位", "uk": "Вертикальні сидіння"},
         "facility_no_seat": {"zh_hans": "可能需站立", "en": "Possibly need to stand", "zh_hant": "可能需站立", "uk": "Можливо потрібно стояти"},
-        "_seats": {"zh_hans": "个座位", "en": " seats,", "zh_hant": "个座位", "uk": " місць,"}
+        "_seats": {"zh_hans": "个座位", "en": " seats,", "zh_hant": "个座位", "uk": " місць,"},
+        "fare_info": {"zh_hans":"计费规则","en": "Billing rules", "zh_hant":"計費規則", "uk":"Правила виставлення рахунків"}
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
@@ -395,5 +396,48 @@
     },
     "pov_frame": {
         "page_title":{"zh_hans":"动态导览", "en": "Dynamic Guide (in Chinese)", "zh_hant":"動態導覽（簡體）", "uk": "Динамічний посібник (китайською)"}
+    },
+    "station_info": {
+        "info_not_found":{"zh_hans":"未找到此站信息", "en": "No station info found", "zh_hant":"未找到此站信息", "uk": "Не знайдено інформації про станцію"},
+        "check_train_info":{"zh_hans":"查看列车信息", "en": "Check train info", "zh_hant":"查看列车信息", "uk": "Переглянути інформацію про поїзд"},
+        "exits":{"zh_hans":"出口", "en": "Exits", "zh_hant":"出口", "uk": "Виходи"},
+        "north":{"zh_hans":"北", "en": "North", "zh_hant":"北", "uk": "Північ"},
+        "south":{"zh_hans":"南", "en": "South", "zh_hant":"南", "uk": "Південь"},
+        "east":{"zh_hans":"东", "en": "East", "zh_hant":"東", "uk": "Схід"},
+        "west":{"zh_hans":"西", "en": "West", "zh_hant":"西", "uk": "Захід"},
+        "northwest":{"zh_hans":"西北", "en": "Northwest", "zh_hant":"西北", "uk": "Північ-Захід"},
+        "southwest":{"zh_hans":"西南", "en": "Southwest", "zh_hant":"西南", "uk": "Півдньо-Захід"},
+        "southeast":{"zh_hans":"东南", "en": "Southeast", "zh_hant":"東南", "uk": "Півдньо-Схід"},
+        "northeast":{"zh_hans":"东北", "en": "Northeast", "zh_hant":"東北", "uk": "Північ-Схід"},
+        "facilities":{"zh_hans":"设施", "en": "Facilities", "zh_hant":"設施", "uk": "Обладнання"},
+        "toilet":{"zh_hans":"厕所", "en": "Toilet", "zh_hant":"廁所", "uk": "Туалет"},
+        "longue":{"zh_hans":"休息室", "en": "Longue", "zh_hant":"休息室", "uk": "Лонгю"},
+        "services":{"zh_hans":"服务台", "en": "Services", "zh_hant":"服務台", "uk": "Сервіс"},
+        "ticket":{"zh_hans":"售票处", "en": "Tickets", "zh_hant":"售票處", "uk": "Білет"},
+        "luggage":{"zh_hans":"行李托运", "en": "Luggage check-in", "zh_hant":"行李託運", "uk": "Вантажовий перевіз"},
+        "claim":{"zh_hans":"行李提取", "en": "Luggage claim", "zh_hant":"行李提取", "uk": "Вантажний вивіз"},
+        "road":{"zh_hans":"道路", "en": "Road", "zh_hant":"道路", "uk": "Дорога"},
+        "square":{"zh_hans":"广场", "en": "Square", "zh_hant":"广场", "uk": "Квартал"},
+        "building":{"zh_hans":"建筑物", "en": "Building", "zh_hant":"建筑物", "uk": "Будинок"},
+        "tracks":{"zh_hans":"轨道", "en": "Tracks", "zh_hant":"轨道", "uk": "Треки"},
+        "north_side":{"zh_hans":"北侧", "en": ", North side", "zh_hant":"北側", "uk": ", На північ"},
+        "south_side":{"zh_hans":"南侧", "en": ", South side", "zh_hant":"南側", "uk": ", На південь"},
+        "east_side":{"zh_hans":"东侧", "en": ", East side", "zh_hant":"東側", "uk": ", На схід"},
+        "west_side":{"zh_hans":"西侧", "en": ", West side", "zh_hant":"西側", "uk": ", На захід"},
+        "no_exit":{"zh_hans":"无出口", "en": "No exit", "zh_hant":"無出口", "uk": "Без виходу"},
+        "plat_side_up":{"zh_hans": "上行端", "en":"upwards side", "zh_hant":"上行端", "uk": " нагору"},
+        "plat_side_down":{"zh_hans": "下行端", "en":"downwards side", "zh_hant":"下行端", "uk": " нанизу"},
+        "plat_side_mid":{"zh_hans": "站台中部", "en":" middle of platform", "zh_hant":"站台中部", "uk": " посередині станції"},
+        "way_out":{"zh_hans": "仅出口", "en":"Way out only", "zh_hant":"僅出口", "uk": "Лише вихід"},
+        "way_in":{"zh_hans": "仅入口", "en":"Way in only", "zh_hant":"僅入口", "uk": "Лише вхід"},
+        "north_part":{"zh_hans": "北部", "en":"North part", "zh_hant":"北部", "uk": "Північ"},
+        "south_part":{"zh_hans": "南部", "en":"South part", "zh_hant":"南部", "uk": "Південь"},
+        "east_part":{"zh_hans": "东部", "en":"East part", "zh_hant":"東部", "uk": "Схід"},
+        "west_part":{"zh_hans": "西部", "en":"West part", "zh_hant":"西部", "uk": "Захід"},
+        "northwest_part":{"zh_hans": "西北部", "en":"Northwest part", "zh_hant":"西北部", "uk": "Північ-Захід"},
+        "southwest_part":{"zh_hans": "西南部", "en":"Southwest part", "zh_hant":"西南部", "uk": "Південь-Захід"},
+        "southeast_part":{"zh_hans": "东南部", "en":"Southeast part", "zh_hant":"東南部", "uk": "Південь-Захід"},
+        "northeast_part":{"zh_hans": "东北部", "en":"Northeast part", "zh_hant":"東北部", "uk": "Північ-Захід"},
+        "mid_part":{"zh_hans": "中部", "en":"Middle part", "zh_hant":"中部", "uk": "Середній"}
     }
 }

@@ -194,3 +194,66 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
         console.error('Error loading series info:', error);
     }
 }
+
+async function loadStationInfo(code, inDialog = true) { 
+    try { 
+        const data = await getStationData(code);
+        console.log('Station info:', data);
+        if (!data) throw showToast(strings.station_info.info_not_found[lang]);
+
+        const stationName = strings.station_names[code][lang];
+        const originalName = strings.station_names[code].original || strings.station_names[code].zh_hans;
+
+        const stationInfo = document.createElement('div');
+        stationInfo.classList.add('station-info');
+
+        const trainInfoTitle = document.createElement('h4');
+        trainInfoTitle.textContent = strings.trains_info.page_title[lang];
+        stationInfo.appendChild(trainInfoTitle);
+
+        const trainInfoBtn = document.createElement('div');
+        trainInfoBtn.classList.add('train-info-link');
+        trainInfoBtn.classList.add('icon-btn');
+        trainInfoBtn.style.width = 'fit-content';
+        trainInfoBtn.style.padding = 0;
+        const trainInfoLink = document.createElement('a');
+        trainInfoLink.textContent = strings.station_info.check_train_info[lang];
+        trainInfoLink.href = `trains_info.html?q=${strings.station_names[code][lang]}`;
+        trainInfoBtn.appendChild(trainInfoLink);
+        stationInfo.appendChild(trainInfoBtn);
+
+        const exitsTitle = document.createElement('h4');
+        exitsTitle.textContent = strings.station_info.exits[lang];
+        stationInfo.appendChild(exitsTitle);
+        const exitsInfo = document.createElement('div');
+        exitsInfo.classList.add('exits-info');
+        if (data.exits.length > 0) { 
+            data.exits.forEach(exit => { 
+                const exitInfo = document.createElement('div');
+                exitInfo.classList.add('exit-info');
+                exitInfo.innerHTML = `
+                    <div class="exit-id ${exit.oneway!==undefined?exit.oneway:''}">${exit.id.split('.')[0]}<small ${exit.id.split('.').length<=1?'style="display:none"':''}>.${exit.id.split('.')[1]}</small></div>
+                    <div class="exit-dir">${exit.floor+' <small>'+strings.station_info[exit.dir][lang]+'</small>'}</div>
+                    <div class="exit-desc">${(strings.station_info[exit.desc]?
+                        strings.station_info[exit.desc][lang]:exit.desc)+
+                        strings.station_info[exit.desc_dir+'_side'][lang]+' '+
+                        (exit.oneway!==undefined?(' ('+strings.station_info['way_'+exit.oneway][lang]+')'):'')}</div>
+                    <div class="exit-facilities material-symbols-outlined">${Array.isArray(exit.facilities) ? exit.facilities.join('') : ''}</div>
+                `;
+                exitsInfo.appendChild(exitInfo);
+            });
+        } else { 
+            const exitInfo = document.createElement('div');
+            exitInfo.classList.add('exit-info');
+            exitInfo.textContent = strings.station_info.no_exit[lang];
+            exitsInfo.appendChild(exitInfo);
+        }
+        stationInfo.appendChild(exitsInfo);
+
+
+        if (inDialog === true) pushDialog(stationInfo, 'custom', strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):''), '', data.cover);
+        else return stationInfo;  
+    } catch (error) {
+        console.error('Error loading station info:', error);
+    }
+}

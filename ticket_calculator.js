@@ -189,127 +189,119 @@ function init() {
     inputHint.textContent = strings.ticket_calculator.type_and_search_to_display_results[lang];
     searchResult.appendChild(inputHint);
     recordLastVisitedPage();
-    
-    
-    // 修改以下代码以处理多个按钮实例
-    const fareBtns = document.querySelectorAll('.fare-btn');
-    fareBtns.forEach(fareBtn => {
-        const fareBtnText = fareBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (fareBtnText) {
-            fareBtnText.textContent = strings.ticket_calculator[fareBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-        fareBtn.title = strings.ticket_calculator.page_title[lang];
-        }
-        fareBtn.addEventListener('click', () => {
-            window.open(`ticket_calculator.html`, '_self');
-        });
-    });
-    
-    const trainsBtns = document.querySelectorAll('.trains-btn');
-    trainsBtns.forEach(trainsBtn => {
-        const trainsBtnText = trainsBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (trainsBtnText) {
-            trainsBtnText.textContent = strings.trains_info[trainsBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-        trainsBtn.title = strings.trains_info.page_title[lang];
-        }
-        trainsBtn.addEventListener('click', () => {
-            window.open(`trains_info.html`, '_self');
-        });
-    });
-    
-    const linesBtns = document.querySelectorAll('.lines-btn');
-    linesBtns.forEach(linesBtn => {
-        const linesBtnText = linesBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (linesBtnText) {
-            linesBtnText.textContent = strings.lines_info[linesBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-        linesBtn.title = strings.lines_info.page_title[lang];
-        }
-        linesBtn.addEventListener('click', () => {
-            window.open('lines_info.html', '_self');
-        });
-    });
 
-    const prefBtns = document.querySelectorAll('.preferences-btn');
-    prefBtns.forEach(prefBtn => {
-        const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (prefBtnText) {
-            prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-        prefBtn.title = strings.preferences.page_title[lang];
-        }
-        prefBtn.addEventListener('click', () => { 
-            window.open(`preferences.html`, '_self');
+    const fareInfoBtns = document.querySelectorAll('.fare-info-btn');
+    const fareInfoContent = {
+        'zh_hans': `
+> 普通/快速车次收取基础票价：
+- 3公里内起步价3元
+- 3-18公里每增加2.5公里加收1元
+- 18-32公里每增加3.5公里加收1元
+- 32公里以上每增加5公里加收1元
+- 不足按相应公里数计算
+
+> 急行车次按里程加收加快费：
+- 超出3公里部分每公里收0.65元
+- 超出15公里部分每公里收0.45元
+- 不足1公里按1公里计算
+
+> 一等座加收一半基础票价
+> 商务座加收2倍加快费，最低票价29元`,
+        'zh_hant': `
+> 普通/快速车次收取基礎票價：
+- 3公里内起步價3元
+- 3-18公里每增加2.5公里加收1元
+- 18-32公里每增加3.5公里加收1元
+- 32公里以上每增加5公里加收1元
+- 不足按相应公里數計算
+
+> 急行车次按里程加收加快費：
+- 超出3公里部分每公里收0.65元
+- 超出15公里部分每公里收0.45元
+- 不足1公里按1公里計算
+
+> 一等座加收一半基礎票價
+> 商務座加收2倍加快費，最低票價29元`,
+        'en': `
+> Local/Express trains charge a Basic fare:
+- Starting fare of ￥3 within 3 km
+- ￥1 for every additional 2.5 km between 3–18 km
+- ￥1 for every additional 3.5 km between 18–32 km
+- ￥1 for every additional 5 km beyond 32 km
+- Fractions are calculated according to the corresponding distance
+
+> Express trains charge an Express addition based on distance:
+- ￥0.65/km for the portion exceeding 3 km
+- ￥0.45/km for the portion exceeding 15 km
+- Distances less than 1 km are counted as 1 km
+
+> First-class seats charge an additional half of the basic fare
+> Premium-class seats charge twice the Express addition, minimum fare ￥29`,
+        'uk': `
+> Місцеві/експрес-поїзди стягують базовий тариф:
+- Початковий тариф ¥3 за перші 3 км
+- ¥1 за кожні додаткові 2,5 км між 3–18 км
+- ¥1 за кожні додаткові 3,5 км між 18–32 км
+- ¥1 за кожні додаткові 5 км понад 32 км
+- Частини кілометрів розраховуються відповідно до відповідної відстані
+
+> Експрес-поїзди стягують додаткову плату за експрес в залежності від відстані:
+- ¥0,65/км за частину понад 3 км
+- ¥0,45/км за частину понад 15 км
+- Відстані менше 1 км вважаються 1 км
+
+> Місця першого класу стягують додатково половину базового тарифу
+> Місця преміум-класу стягують вдвічі більше доплати за експрес, мінімальний тариф ¥29`,
+    };
+    fareInfoBtns.forEach(fareInfoBtn => {
+        fareInfoBtn.title = strings.ticket_calculator.fare_info[lang];
+        fareInfoBtn.addEventListener('click', () => {
+            pushDialog(fareInfoContent[lang],'alert',strings.ticket_calculator.fare_info[lang]);
         });
-    })
-
-    const swapBtns = document.querySelectorAll('.swap-btn');
-    swapBtns.forEach(swapBtn => {
-        swapBtn.title = strings.ticket_calculator.swap[lang];
-        const swapText = swapBtn.querySelector('span:not(.material-symbols-outlined)');
-        swapText.textContent = strings.ticket_calculator.swap[lang];
-    });
-
-    const sortByTimeTexts = document.querySelectorAll('.sort-by-time span:not(.material-symbols-outlined)');
-    sortByTimeTexts.forEach(sortByTimeText => {
-        sortByTimeText.textContent = strings.ticket_calculator.faster[lang];
-        sortByTimeText.parentElement.title = strings.ticket_calculator.faster[lang];
-    });
-    
-    const sortByTransfersTexts = document.querySelectorAll('.sort-by-transfers span:not(.material-symbols-outlined)');
-    sortByTransfersTexts.forEach(sortByTransfersText => {
-        sortByTransfersText.textContent = strings.ticket_calculator.direct[lang];
-        sortByTransfersText.parentElement.title = strings.ticket_calculator.direct[lang];
-    });
-    
-    const sortByPriceTexts = document.querySelectorAll('.sort-by-price span:not(.material-symbols-outlined)');
-    sortByPriceTexts.forEach(sortByPriceText => {
-        sortByPriceText.textContent = strings.ticket_calculator.cheaper[lang];
-        sortByPriceText.parentElement.title = strings.ticket_calculator.cheaper[lang];
     });
 
     // 添加交换按钮点击事件处理程序
     let rotation = 0;
-        swapBtns.forEach(swapBtn => {
-        swapBtn.addEventListener('click', () => {
-            // 交换起始站和终点站输入框的内容
-            const tempValue = startInputs[0].value;
-            startInputs.forEach(input => input.value = endInputs[0].value);
-            endInputs.forEach(input => input.value = tempValue);
-            
-            // 旋转图标180度
-            rotation += 180;
-            const swapIcons = swapBtn.querySelectorAll('.material-symbols-outlined');
-            swapIcons.forEach(swapIcon => {
-                swapIcon.style.transform = `rotate(${rotation}deg)`;
-                swapIcon.style.transition = 'transform 0.3s ease-in-out';
-            });
-            
-            // 获取当前激活的排序方式
-            let sortBy = 'time'; // 默认排序方式
-            const activeSortButton = document.querySelector('.sort-selector .icon-btn.active');
-            
-            if (activeSortButton) {
-                if (activeSortButton.classList.contains('sort-by-time')) {
-                    sortBy = 'time';
-                } else if (activeSortButton.classList.contains('sort-by-transfers')) {
-                    sortBy = 'transfer';
-                } else if (activeSortButton.classList.contains('sort-by-price')) {
-                    sortBy = 'price';
-                }
-            }
-            
-            // 触发搜索并传递当前排序方式
-            handleSearch(sortBy);
-            
-            // 更新URL参数
-            const startCode = parseStationInput(startInputs[0].value);
-            const endCode = parseStationInput(endInputs[0].value);
-            if (startCode && endCode) {
-                recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=${sortBy}`);
-            }
+    const swapBtns = document.querySelectorAll('.swap-btn');
+    swapBtns.forEach(swapBtn => {
+    swapBtn.addEventListener('click', () => {
+        // 交换起始站和终点站输入框的内容
+        const tempValue = startInputs[0].value;
+        startInputs.forEach(input => input.value = endInputs[0].value);
+        endInputs.forEach(input => input.value = tempValue);
+        
+        // 旋转图标180度
+        rotation += 180;
+        const swapIcons = swapBtn.querySelectorAll('.material-symbols-outlined');
+        swapIcons.forEach(swapIcon => {
+            swapIcon.style.transform = `rotate(${rotation}deg)`;
+            swapIcon.style.transition = 'transform 0.3s ease-in-out';
         });
+        
+        // 获取当前激活的排序方式
+        let sortBy = 'time'; // 默认排序方式
+        const activeSortButton = document.querySelector('.sort-selector .icon-btn.active');
+        
+        if (activeSortButton) {
+            if (activeSortButton.classList.contains('sort-by-time')) {
+                sortBy = 'time';
+            } else if (activeSortButton.classList.contains('sort-by-transfers')) {
+                sortBy = 'transfer';
+            } else if (activeSortButton.classList.contains('sort-by-price')) {
+                sortBy = 'price';
+            }
+        }
+        
+        // 触发搜索并传递当前排序方式
+        handleSearch(sortBy);
+        
+        // 更新URL参数
+        const startCode = parseStationInput(startInputs[0].value);
+        const endCode = parseStationInput(endInputs[0].value);
+        if (startCode && endCode) {
+            recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=${sortBy}`);
+        }
+    });
     });
 
     window.addEventListener('resize', handleWindowResize);
@@ -1420,7 +1412,7 @@ function calculateFareWithBillingRoute(route, billingRoute) {
         // GX线路部分费用：超出3公里部分每公里收0.65元，超出15公里部分每公里收0.45元，不足1公里按1公里计算
         let gxExtraFare = 0;
         if (gxDistance >= 3000) {
-            if (gxDistance <= 10000) gxExtraFare = Math.ceil((gxDistance - 3000) / 1000) * 0.65;
+            if (gxDistance <= 15000) gxExtraFare = Math.ceil((gxDistance - 3000) / 1000) * 0.65;
             else gxExtraFare = Math.ceil((gxDistance - 15000) / 1000) * 0.45 + 7.8; // 7.8元是3-15公里部分的费用
         }
         
@@ -1434,11 +1426,12 @@ function calculateFareWithBillingRoute(route, billingRoute) {
 // 计算票价
 function calculateFare(distance) {
     // 旧规则：2公里内（含2公里）执行起步价1.25元，超出2公里后每增加1公里加收0.75元，不足1公里按1公里计算
-    // 新规则：3公里内（含3公里）执行起步价3元，3-9公里每增加1.2公里加收1元，9-18公里每增加1.5公里加收1元，18公里以上每增加1.8公里加收1元，不足按相应公里数计算
+    // 旧规则：3公里内（含3公里）执行起步价3元，3-9公里每增加1.2公里加收1元，9-18公里每增加1.5公里加收1元，18公里以上每增加1.8公里加收1元，不足按相应公里数计算
+    // 新规则：3公里内（含3公里）执行起步价3元，3-18公里每增加2.5公里加收1元，18-32公里每增加3.5公里加收1元，32公里以上每增加5公里加收1元，不足按相应公里数计算
     if (distance <= 3000) return 3;
-    else if (distance <= 9000) return 3 + Math.ceil((distance - 3000) / 1200);
-    else if (distance <= 18000) return 8 + Math.ceil((distance - 12000) / 1500);
-    else return 14 + Math.ceil((distance - 18000) / 1800);
+    else if (distance <= 18000) return 3 + Math.ceil((distance - 3000) / 2500);
+    else if (distance <= 32000) return 9 + Math.ceil((distance - 18000) / 3500);
+    else return 13 + Math.ceil((distance - 32000) / 5000);
 }
 
 // 渲染搜索结果
@@ -1488,7 +1481,7 @@ function renderSearchResults(routes, container) {
                 // 如果是第一段，添加上车站信息
                 if (segIndex === 0) {
                     routeHTML += `
-                        <div class="transfer depart">
+                        <div class="transfer depart" data-station="${segment.stations[0]}">
                             <span>${!lang.includes('zh')?strings.ticket_calculator.depart_from[lang]:''}${getStationName(segment.stations[0],lang)}${lang.includes('zh')?strings.ticket_calculator.depart_from[lang]:''}</span>
                         </div>`
                 }
@@ -1522,13 +1515,13 @@ function renderSearchResults(routes, container) {
                 // 如果不是最后一段，添加换乘提示
                 if (segIndex < route.segments.length - 1) {
                     routeHTML += `
-                        <div class="transfer">
+                        <div class="transfer" data-station="${segment.stations[segment.stations.length - 1]}">
                             <span>${!lang.includes('zh')?strings.ticket_calculator.transfer_at[lang]:''}${getStationName(segment.stations[segment.stations.length - 1],lang)}${lang.includes('zh')?strings.ticket_calculator.transfer_at[lang]:''}</span>
                         </div>
                     `;
                 } else {
                     routeHTML += `
-                        <div class="transfer arrive">
+                        <div class="transfer arrive" data-station="${segment.stations[segment.stations.length - 1]}">
                             <span>${strings.ticket_calculator.arrive_at[lang] || '到达'} ${getStationName(segment.stations[segment.stations.length - 1],lang)}</span>
                         </div>`
                 }
@@ -1570,6 +1563,19 @@ function renderSearchResults(routes, container) {
                 lineNames.forEach(lineName => { 
                     lineName.style.textDecoration = 'underline';
                 });
+            });
+        });
+
+        const transfers = routeElement.querySelectorAll('.transfer');
+        transfers.forEach(transfer => { 
+            transfer.addEventListener('click', () => { 
+                const station = transfer.dataset.station;
+                if (station) {
+                    loadStationInfo(station);
+                }
+            });
+            transfer.addEventListener('touchstart', () => { 
+                transfer.textDecoration = 'underline';
             });
         });
 
@@ -1798,8 +1804,25 @@ function handleWindowResize() {
         activeTab.removeChild(activeTab.children[1]);
     }
 
-    const searchTitle = document.querySelectorAll('.search-title h4');
-    searchTitle.forEach(title => title.textContent = strings.ticket_calculator.search[lang]);
+    const allPanels = document.querySelectorAll('.search-panel');
+    allPanels.forEach(panel => {
+        const title = panel.querySelector('.search-title');
+        const titleIcon = title.querySelector('.material-symbols-outlined');
+        const titleText = title.querySelector('h4');
+        if (panel.classList.contains('collapsed')) {
+            if (titleIcon && titleIcon.textContent !== 'search') titleIcon.textContent = 'search';
+            if (titleText && titleText.textContent !== strings.ticket_calculator.search[lang]) {
+                titleText.textContent = strings.ticket_calculator.search[lang] || 'Search';
+                titleText.style.fontWeight = '';
+            }
+        } else { 
+            if (titleIcon && titleIcon.textContent !== 'keyboard_arrow_down') titleIcon.textContent = 'keyboard_arrow_down';
+            if (titleText && titleText.textContent !== strings.ticket_calculator.collapse[lang]) {
+                titleText.textContent = strings.ticket_calculator.collapse[lang] || 'Search';
+                titleText.style.fontWeight = 'normal';
+            }
+        }
+    });
     
     // 检查是否是由于虚拟键盘弹出导致的窗口大小变化
     // 通过检测窗口宽度没有变化而高度发生变化来判断
@@ -1887,14 +1910,6 @@ function handleWindowResize() {
                     tabs.classList.remove('collapsed');
                 }, 150);
             });
-            footerPanel.addEventListener('click' , (e) => { 
-                e.stopPropagation();
-                const isCollapsed = footerPanel.classList.contains('collapsed');
-                searchTitleText.textContent = isCollapsed ?
-                    '' : 
-                    strings.ticket_calculator.collapse[lang];
-                searchTitleText.style.fontWeight = isCollapsed ? '' : 'normal';
-            })
         }
         else footerPanel.classList.remove('no-collapse');
     } else {
