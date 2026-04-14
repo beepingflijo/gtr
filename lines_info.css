@@ -25,8 +25,12 @@
     height: fit-content;
 }
 
-.selection.line-selector .selection-item.active {
+.selection.line-selector a {
     color: var(--color-text);
+}
+
+.selection.line-selector .selection-item a:hover {
+    text-decoration: none;
 }
 
 .side-bar .line-selector .selection-item {

@@ -201,6 +201,8 @@ async function loadStationInfo(code, inDialog = true) {
         console.log('Station info:', data);
         if (!data) throw showToast(strings.station_info.info_not_found[lang]);
 
+        const platforms = window.stationsNetwork.filter(station => station.name.startsWith(code));
+
         const stationName = strings.station_names[code][lang];
         const originalName = strings.station_names[code].original || strings.station_names[code].zh_hans;
 
@@ -246,9 +248,81 @@ async function loadStationInfo(code, inDialog = true) {
             const exitInfo = document.createElement('div');
             exitInfo.classList.add('exit-info');
             exitInfo.textContent = strings.station_info.no_exit[lang];
+            exitInfo.style.color = 'var(--color-text-secondary)';
             exitsInfo.appendChild(exitInfo);
         }
         stationInfo.appendChild(exitsInfo);
+
+        const facilitiesTitle = document.createElement('h4');
+        facilitiesTitle.textContent = strings.station_info.floors[lang];
+        stationInfo.appendChild(facilitiesTitle);
+        const platformsItem = document.createElement('div');
+        platformsItem.classList.add('platforms-item');
+        platformsItem.textContent = strings.station_info.platforms_[lang]
+            .replace('{plat}',[
+                ...new Set(
+                    platforms
+                    .map(platform => platform.name.replace(/[A-Z]/g,'').replace(/^0+/,'')))
+                ].sort((a, b) => parseInt(a) - parseInt(b)).join('/'));
+        if (data.floors.length > 0) { 
+            data.floors.forEach(f => { 
+                const floorsInfo = document.createElement('div');
+                floorsInfo.classList.add('floors-info');
+                const floorNo = document.createElement('div');
+                floorNo.classList.add('floor-no');
+                floorNo.innerHTML = f.id+`<br /><small>${strings.station_info['floor_'+f.type][lang]}</small>`;
+                const floorInfo = document.createElement('div');
+                floorInfo.classList.add('facilities-container');
+                const facilitiesData = data.facilities.filter(fd => fd.floor === f.id);
+                facilitiesData.forEach(fd => { 
+                    const facilityItem = document.createElement('div');
+                    facilityItem.classList.add('facility-item');
+                    const facilityIcon = document.createElement('span');
+                    facilityIcon.classList.add('material-symbols-outlined');
+                    const textToIcon = {
+                        toilet: 'wc',
+                        longue: 'airline_seat_recline_extra',
+                        services: 'help',
+                        ticket: 'transit_ticket',
+                        luggage: 'checked_bag',
+                        claim: 'massage',
+                        shopping: 'shopping_bag',
+                        food: 'local_dining',
+                        wheelchair: 'accessible',
+                        elevator: 'elevator',
+                        parking: 'local_parking',
+                        wifi: 'wifi',
+                        restaurant: 'restaurant',
+                        coffee: 'coffee',
+                        food: 'local_dining',
+                        phone: 'phone',
+                        tv: 'tv',
+                        internet: 'wifi',
+
+                    }
+                    facilityIcon.textContent = textToIcon[fd.type] || 'info';
+                    const facilityText = document.createElement('span');
+                    facilityText.textContent = strings.station_info[fd.type][lang] || fd.type;
+                    if (fd.dir) {
+                        facilityText.textContent += 
+                            strings.station_info._of_the_floor[lang]
+                            .replace('{dir}', strings.station_info[fd.dir+'_part'][lang]);
+                    } else if (fd.plat) { 
+                        facilityText.textContent += 
+                            strings.station_info._of_platform_no_[lang]
+                            .replace('{side}', strings.station_info['plat_side_'+fd.plat_side][lang])
+                            .replace('{plat}', fd.plat);
+                    }
+                    facilityItem.appendChild(facilityIcon);
+                    facilityItem.appendChild(facilityText);
+                    floorInfo.appendChild(facilityItem);
+                });
+                if (f.type === 'platform') floorInfo.appendChild(platformsItem);
+                floorsInfo.appendChild(floorNo);
+                floorsInfo.appendChild(floorInfo);
+                stationInfo.appendChild(floorsInfo);
+            });
+        }
 
 
         if (inDialog === true) pushDialog(stationInfo, 'custom', strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):''), '', data.cover);

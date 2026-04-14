@@ -1500,14 +1500,10 @@ function renderSearchResults(routes, container) {
                             <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
                             <span class="material-symbols-outlined">keyboard_arrow_down</span>
                         </div>
-                        <div class="stations" style="
-                            border-color: ${line.color};
-                            border-left-style:${(line.id.match('-R'))?
-                                'double':''}
-                        ">
-                            <li class="station-list" style="
-                                ${segment.stations.length < 3 ? 'display: none;' : ''};">
-                                ${segment.stations.slice(1, -1).map((station) => getStationName(station, lang)).join('</li><li>')}</li>
+                        <div class="stations" style="border-color: ${line.color};border-left-style:${(line.id.match('-R'))?'double':''}">
+                            <ul class="station-list" ${segment.stations.length < 3 ? 'style="display: none;"' : ''}>
+                                <li data-station="${segment.stations[1]}">${segment.stations.slice(1, -1).map((station,index) => getStationName(station, lang) + `</li><li data-station="${segment.stations[index+2]}">`).join('')}</li>
+                            </ul>
                         </div>
                     </div>
                 `;
@@ -1566,16 +1562,20 @@ function renderSearchResults(routes, container) {
             });
         });
 
-        const transfers = routeElement.querySelectorAll('.transfer');
+        const transfers = routeElement.querySelectorAll('.transfer, .station-list li');
         transfers.forEach(transfer => { 
-            transfer.addEventListener('click', () => { 
+            transfer.addEventListener('click', (e) => { 
+                e.stopPropagation();
                 const station = transfer.dataset.station;
                 if (station) {
                     loadStationInfo(station);
                 }
             });
-            transfer.addEventListener('touchstart', () => { 
-                transfer.textDecoration = 'underline';
+            document.addEventListener('touchstart', () => { 
+                const span = transfer.querySelectorAll('span');
+                span.forEach(s => { 
+                    s.style.textDecoration = 'underline';
+                });
             });
         });
 

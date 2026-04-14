@@ -72,21 +72,15 @@ function init() {
                 const item = document.createElement('div');
                 item.className = `selection-item ${lineId}`;
                 item.innerHTML = `
-                <div class="item-content">
+                <a href="?line=${line.id}" class="item-content">
                     <div class="line-code">${line.id.replace(/[^A-Z]/g, '').trim()}<small>${line.id.replace(/[^0-9]/g, '')}</small>
                     </div>
                     <div class="line-name-container">
                         <span class="line-name">${line.name[lang]}</span>
                         <span class="line-name-original">${!lang.startsWith('zh') ? line.name['zh_hans'] : ''}</span>
                     </div>
-                </div>
+                </a>
                 `;
-                item.addEventListener('click', () => {
-                    //displayStations(line);
-                    //displayTrains();
-                    // 点击后添加对应的url参数
-                    window.location.href = `?line=${line.id}&lang=${lang}`;
-                })
                 item.setAttribute('style', `--current-color: ${line.color}`);
                 lineSelector.appendChild(item);
                 if (line.id === getActiveLineId()) {
@@ -1864,7 +1858,7 @@ function handleWindowResize() {
                     }
                 }
             }
-        } else console.log('sidebarCollapseDone');
+        }
         sidebarCollapseDone = true;
         setTimeout(() => {
             const lineSelectorWidth = sideBar.getBoundingClientRect().width <= 60 ? 0 : sideBar.getBoundingClientRect().width;

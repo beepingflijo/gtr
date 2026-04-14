@@ -48,7 +48,7 @@
         "floors":[
             {"id":"3F","type":"platform"},
             {"id":"2F","type":"transfer"},
-            {"id":"2F","type":"concourse"}
+            {"id":"1F","type":"concourse"}
         ],
         "cover":"https://assets.wiki.hydcraft.cn/b/b9/%E9%80%9A%E8%BF%90%E9%93%81%E8%B7%AF%E7%AC%AC%E4%B8%89%E4%BB%A3%E5%AF%BC%E8%A7%86%E7%89%8C.png"
     },
@@ -111,6 +111,10 @@
         ],
         "facilities":[
             {
+                "type":"shopping","floor":"3F",
+                "dir":"mid"
+            },
+            {
                 "type":"services","floor":"B1",
                 "dir":"west"
             },
@@ -128,7 +132,7 @@
             }
         ],
         "floors":[
-            {"id":"2F","type":"concourse"},
+            {"id":"3F","type":"concourse"},
             {"id":"1F","type":"platform"},
             {"id":"B1","type":"transfer"}
         ],
@@ -138,12 +142,12 @@
         "exits":[
             {
                 "id":"2","dir":"southwest","floor":"B1",
-                "desc":"road","desc_dir":"west",
+                "desc":"crossing","desc_dir":"southwest",
                 "facilities":["escalator","stairs"]
             },
             {
                 "id":"3","dir":"southeast","floor":"B1",
-                "desc":"road","desc_dir":"east",
+                "desc":"crossing","desc_dir":"southeast",
                 "facilities":["escalator","stairs"]
             }
         ],
@@ -163,6 +167,26 @@
         ],
         "cover":"https://assets.wiki.hydcraft.cn/3/3e/%E9%80%9A%E8%BF%90%E9%93%81%E8%B7%AF%E5%8C%97%E9%BA%93%E7%AB%99.png"
     },
+    "QGL":{
+        "exits":[
+        ],
+        "facilities":[
+            {
+                "type":"services","floor":"4F",
+                "dir":"mid"
+            },
+            {
+                "type":"ticket","floor":"4F",
+                "dir":"mid"
+            }
+        ],
+        "floors":[
+            {"id":"4F","type":"transfer"},
+            {"id":"3F","type":"platform"},
+            {"id":"2F","type":"concourse"}
+        ],
+        "cover":""
+    },
     "XYD":{
         "exits":[
             {
@@ -172,7 +196,7 @@
             },
             {
                 "id":"2","dir":"south","floor":"B1",
-                "desc":"road","desc_dir":"east",
+                "desc":"crossing","desc_dir":"northeast",
                 "facilities":["escalator","stairs"]
             },
             {

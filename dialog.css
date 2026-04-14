@@ -136,6 +136,10 @@
     align-items: center;
 }
 
+.facility-item span:not(.material-symbols-outlined) {
+    line-height: 1.2;
+}
+
 .facility-item:hover { 
     cursor: default;
 }
@@ -167,14 +171,13 @@
 
 .exit-info .exit-id { 
     font-weight: bold;
-    background: linear-gradient(110deg,#F8D90C 49%,white 51%);
+    background: linear-gradient(110deg,#F8D90C 40%,white 60%);
     padding: 0.1em;
     min-width: 1.3em;
     text-align: center;
     border: 2px solid #222;
     color: black;
     line-height: 0.9;
-    border-radius: 4px;
     font-family: 'HarmonyOS Sans SC';
 }
 
@@ -187,9 +190,35 @@
 }
 
 .exit-info .exit-dir { 
-    min-width: 4em;
+    min-width: 3.5em;
 }
 
 .exit-info .exit-desc { 
     width: -webkit-fill-available;
+}
+
+.floors-info { 
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.5em;
+}
+
+.floors-info .floor-no { 
+    font-weight: bold;
+    min-width: 5.75em;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--color-text-secondary);
+}
+
+.floors-info .floor-no small { 
+    font-weight: normal;
+}
+
+.platforms-item { 
+    color:var(--color-text);
+    font-weight: 500;
+    font-size: 1rem;
 }

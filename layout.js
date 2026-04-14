@@ -735,18 +735,16 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
                 contentContainer.insertBefore(dialogCover, targetElement);
                 contentContainer.style.width = '-webkit-fill-available';
                 targetElement.classList.add('item');
-                let scrollTimeout;
                 contentContainer.addEventListener('scroll', (e) => { 
                     const contentElement = contentContainer.querySelector('.dialog-content');
                     e.stopPropagation();
                         const scrollTop = contentContainer.scrollTop;
                         if (scrollTop > 0) { 
                             contentContainer.classList.remove('cover');
-                            console.log('scrollTop', contentElement);
-                            contentElement.style.minHeight = '240px';
-                            contentElement.style.paddingBottom = '6em';
+                            //contentElement.style.minHeight = 'calc(60dvh - 6em)';
                         } else if (!contentContainer.classList.contains('error')) { 
-                                contentContainer.classList.add('cover');
+                            contentContainer.classList.add('cover');
+                            contentElement.style.minHeight = '';
                         }
                 });
                 dialogCoverImg.addEventListener('load', () => { 
