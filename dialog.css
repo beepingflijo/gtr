@@ -56,12 +56,15 @@
     border-radius: 12px;
     width: -webkit-fill-available;
     object-fit: cover;
+    -webkit-mask-image: 
+        -webkit-linear-gradient(white 40%, transparent 95%);
     mask-image: 
         linear-gradient(white 40%, transparent 95%);
 }
 
 .effect-reduced .dialog-cover img { 
     height: -webkit-fill-available;
+    -webkit-mask-image: none;
     mask-image: none;
 }
 
@@ -242,6 +245,7 @@
     }
     .dialog-cover img { 
         height: -webkit-fill-available;
+        -webkit-mask-image: none;
         mask-image: none;
     }
     .dialog-content{

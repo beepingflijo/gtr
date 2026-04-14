@@ -736,8 +736,8 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
                     if (scrollTop > 0) { 
                         contentContainer.classList.remove('cover');
                         contentContainer.style.height = '-webkit-fill-available';
-                        contentContainer.style.paddingBottom = 'calc(240px - 6em)';
-                    } else { 
+                        dialogContent.style.minHeight = '240px';
+                    } else if (!contentContainer.classList.contains('error')) { 
                         if (contentContainer.style.height==='-webkit-fill-available') {
                             contentContainer.classList.add('cover');
                             setTimeout(() => { 
@@ -748,11 +748,14 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
                 });
                 dialogCoverImg.addEventListener('load', () => { 
                     dialogCoverImg.style.opacity = 1;
+                    dialogCover.style.height = '';
                     contentContainer.classList.add('cover');
                 });
                 dialogCoverImg.addEventListener('error', () => { 
                     dialogCoverImg.style.opacity = 0;
+                    dialogCover.style.height = 0;
                     contentContainer.classList.remove('cover');
+                    contentContainer.classList.add('error');
                 });
             } else dialogContainer.style.width = 'fit-content';
             dialogContainer.appendChild(contentContainer);

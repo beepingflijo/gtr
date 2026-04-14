@@ -169,7 +169,7 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
                         facilityIcon.textContent = 'door_sliding'; 
                         break;
                     case 'no_seat': 
-                        facilityItem.style.opacity = 0.3;
+                        facilityItem.style.opacity = 0.5;
                         facilityIcon.classList.add('no-seat');
                         facilityIcon.textContent = 'flight_class'; 
                         facilityText.textContent = carriage.seatsCount + strings.ticket_calculator._seats[lang] + ' ';
