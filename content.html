@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <!-- 添加视口元标签 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>通运铁路信息</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dialog.css">
+    <link rel="stylesheet" href="preferences.css">
+</head>
+<body>
+<div class="app-container">
+    <header>
+        <div class="actions"> 
+            <a href="index.html" class="icon-btn back-btn">
+                <span class="material-symbols-outlined">
+                arrow_back
+                </span>
+            </a>
+        </div>
+        <div class="title">
+            <img src="./res/gtr.png" alt="logo">
+            <h1></h1>
+        </div>
+        <div class="gradient-blur"></div>
+    </header>
+    <main>
+    </main>
+</div>
+<script src="script.js"></script>
+<script src="layout.js"></script>
+<script src="dialog.js"></script>
+<script src="keyboard.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+    function handleWindowResize() {}
+    window.handleWindowResize = handleWindowResize;
+    // 修复：将事件处理器声明为async函数
+    document.addEventListener("DOMContentLoaded", async function() {
+        fetch ('strings.json')
+        .then(response => response.json())
+        .then(async data => {
+            strings = data;
+            fetch('./data/network.json')
+                .then(response => response.json())
+                .then(async data => { 
+                    window.stationsNetwork = data.stations;
+                    fetch('./data/lines.json')
+                        .then(response => response.json())
+                        .then(async data => { 
+                            window.lines = data.lines;
+                            const typeParam = new URLSearchParams(window.location.search).get('type');
+                            const queryParam = new URLSearchParams(window.location.search).get('q');
+                            const main = document.querySelector('main');
+                            const h1 = document.querySelector('h1');
+                            let contnet;
+                            switch (typeParam) {
+                                case 'series':
+                                    contnet = await loadSeriesInfo(queryParam,false);
+                                    break;
+                                case 'station':
+                                    contnet = await loadStationInfo(queryParam,false);
+                                    break;
+                                case 'history':
+                                            console.log(window.lines);
+                                    contnet = await loadHistory(false);
+                                    break;
+                                default:
+                                    window.location.href = '404.html';
+                                    break;
+                            }
+                            console.log(contnet);
+                            if (contnet) {
+                                contnet.classList.add('content');
+                                contnet.classList.add('item');
+                                contnet.style.background = 'transparent';
+                                contnet.style.boxShadow = 'none';
+                                main.appendChild(contnet);
+                                h1.textContent = contnet.dataset.title;
+                                if (contnet.dataset.cover) {
+                                    const cover = document.createElement('img');
+                                    cover.classList.add('item');
+                                    cover.src = contnet.dataset.cover;
+                                    cover.classList.add('cover');
+                                    cover.style.padding = 0;
+                                    main.insertBefore(cover,contnet);
+                                }
+                            } else {
+                                window.location.href = '404.html';
+                            }
+                        })
+                })
+        })
+        .catch(error => {
+            console.error('Error loading strings.json:', error);
+        });
+    });
+</script>
+</body>
+</html>

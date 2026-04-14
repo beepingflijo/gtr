@@ -64,7 +64,10 @@ function loadHistory(inDialog = true) {
             historyList.appendChild(historyItem);
         })
         if (inDialog === true) pushDialog(historyList, 'custom', strings.general.history[lang]);
-        else return historyList;
+        else {
+            historyList.dataset.title = strings.general.history[lang];
+            return historyList;
+        }
     }
 }
 
@@ -189,7 +192,11 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
             seriesInfo.appendChild(carriageInfo);
         });
         if (inDialog === true) pushDialog(seriesInfo, 'custom', seriesName + strings.trains_info._series[lang], '', seriesImg);
-        else return seriesInfo;            
+        else {
+            seriesInfo.dataset.title=seriesName + strings.trains_info._series[lang];
+            seriesInfo.dataset.cover=seriesImg;
+            return seriesInfo; 
+        }           
     } catch (error) {
         console.error('Error loading series info:', error);
     }
@@ -326,7 +333,11 @@ async function loadStationInfo(code, inDialog = true) {
 
 
         if (inDialog === true) pushDialog(stationInfo, 'custom', strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):''), '', data.cover);
-        else return stationInfo;  
+        else {
+            stationInfo.dataset.cover = data.cover;
+            stationInfo.dataset.title = strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):'');
+            return stationInfo;
+        }  
     } catch (error) {
         console.error('Error loading station info:', error);
     }
