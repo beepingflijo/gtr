@@ -55,6 +55,7 @@
                             const queryParam = new URLSearchParams(window.location.search).get('q');
                             const main = document.querySelector('main');
                             const h1 = document.querySelector('h1');
+                            const title = document.querySelector('title');
                             let contnet;
                             switch (typeParam) {
                                 case 'series':
@@ -79,6 +80,7 @@
                                 contnet.style.boxShadow = 'none';
                                 main.appendChild(contnet);
                                 h1.textContent = contnet.dataset.title;
+                                title.textContent = contnet.dataset.title+' - '+strings.mainpage.gtr_info[lang];
                                 if (contnet.dataset.cover) {
                                     const cover = document.createElement('img');
                                     cover.classList.add('item');
