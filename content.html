@@ -138,10 +138,27 @@
                             } else {
                                 window.location.href = '404.html';
                             }
+                            let scrollY = 0;
                             document.addEventListener('scroll', function() {
                                 const cover = document.querySelector('.cover-img');
                                 if (cover) {
-                                    const scrollY = window.scrollY;
+                                    scrollY = window.scrollY;
+                                    //console.log(scrollY);
+                                    handleScroll();
+                                }
+                            });
+                            appContainer.addEventListener('scroll', function() {
+                                const cover = document.querySelector('.cover-img');
+                                if (cover) {
+                                    scrollY = appContainer.scrollTop;
+                                    //console.log(scrollY);
+                                    handleScroll();
+                                }
+                            });
+                            function handleScroll() {
+                                const cover = document.querySelector('.cover-img');
+                                if (cover) {
+                                    console.log(scrollY);
                                     const maxOpacity = 1;
                                     const minOpacity = 0;
                                     const opacity = Math.max(minOpacity, maxOpacity - scrollY / 100);
@@ -165,7 +182,7 @@
                                         title.style.opacity = 0;
                                     }
                                 }
-                            });
+                            }
                             const coverImg = document.querySelector('.cover-img');
                             coverImg.addEventListener('error', function() { 
                                 const coverTitle = document.querySelector('.cover-title');
