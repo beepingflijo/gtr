@@ -65,6 +65,44 @@
     .cover .title {
         opacity: 0;
     }
+    .effect-reduced .cover-img {
+        position: relative;
+        width: 100%;
+        transform-origin: center;
+        overflow: hidden;
+        -webkit-mask-image:none;
+        mask-image: none;
+        max-height: 40dvh;
+    }
+    .effect-reduced .cover-title {
+        display: none;
+    }
+    .effect-reduced .cover .title {
+        opacity: 1;
+    }
+    .effect-reduced .content {
+        padding: 0;
+    }
+    @media (prefers-reduced-transparency: reduce) {
+        .cover-img {
+            position: relative;
+            width: 100%;
+            transform-origin: center;
+            overflow: hidden;
+            -webkit-mask-image:none;
+            mask-image: none;
+        max-height: 40dvh;
+        }
+        .cover-title {
+            display: none;
+        }
+        .cover .title {
+            opacity: 1;
+        }
+        .content {
+            padding: 0;
+        }
+    }
 </style>
 <script src="script.js"></script>
 <script src="layout.js"></script>
@@ -158,22 +196,24 @@
                             function handleScroll() {
                                 const cover = document.querySelector('.cover-img');
                                 if (cover) {
-                                    console.log(scrollY);
-                                    const maxOpacity = 1;
-                                    const minOpacity = 0;
-                                    const opacity = Math.max(minOpacity, maxOpacity - scrollY / 100);
-                                    cover.style.opacity = opacity;
-                                    const maxBlur = 60;
-                                    const minBlur = 0;
-                                    const blur = Math.min(maxBlur, minBlur + scrollY / 10);
-                                    cover.style.filter = `blur(${blur}px)`;
-                                    const maxScale = 1.1;
-                                    const minScale = 1;
-                                    const scale = Math.min(maxScale, minScale + scrollY / 1000);
-                                    cover.style.transform = `scale(${scale})`;
+                                    //console.log(scrollY);
                                     const coverTitle = document.querySelector('.cover-title');
                                     const title = document.querySelector('.title');
                                     const titleHeight = coverTitle.getBoundingClientRect().height;
+                                    const maxScroll = titleHeight - 72;
+                                    const scrollProgress = Math.min(1, Math.max(0, scrollY / maxScroll));
+                                    const maxOpacity = 1;
+                                    const minOpacity = 0;
+                                    const opacity = maxOpacity-scrollProgress*1.1;
+                                    cover.style.opacity = opacity;
+                                    const maxBlur = 36;
+                                    const minBlur = 0;
+                                    const blur = maxBlur * scrollProgress;
+                                    cover.style.filter = `blur(${blur}px)`;
+                                    const maxScale = 1.1;
+                                    const minScale = 1;
+                                    const scale = minScale + (maxScale - minScale) * scrollProgress;
+                                    cover.style.transform = `scale(${scale})`;
                                     if (scrollY > titleHeight - 72) {
                                         coverTitle.classList.add('collapsed');
                                         title.style.opacity = 1;
@@ -184,7 +224,7 @@
                                 }
                             }
                             const coverImg = document.querySelector('.cover-img');
-                            coverImg.addEventListener('error', function() { 
+                            coverImg?.addEventListener('error', function() { 
                                 const coverTitle = document.querySelector('.cover-title');
                                 coverTitle.style.height = 'fit-content';
                             });

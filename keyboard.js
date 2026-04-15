@@ -113,7 +113,7 @@ function listenKeyboardShortcuts() {
                     sortByPrice?.click();
                     break;
                 case 'Enter': 
-                    backBtn?.click();
+                    if (currentPage!=='content.html') backBtn?.click();
                     break;
                 case '\\': 
                     setUpwardsSwitch?.click();
@@ -154,6 +154,9 @@ function listenKeyboardShortcuts() {
         } else { 
             switch (event.key) { 
                 case 'Escape': 
+                    if (currentPage === 'content.html') {
+                        document.querySelector('.back-btn')?.click();
+                    }
                     modalOverlay.forEach(overlay => {
                         closeDialog(overlay);
                     });
@@ -227,10 +230,14 @@ function listenKeyboardShortcuts() {
                     <span class="shortcut-key">⇧</span>
                     <span class="shortcut-key">Q</span>
                 </div>
-                <div class="shortcut-item" ${backBtn ? '' : 'style="display: none;"'}>
+                <div class="shortcut-item" ${(backBtn && currentPage!=='content.html') ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${strings.preferences.save_and_exit[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key">${enterKeyName}</span>
+                </div>
+                <div class="shortcut-item" ${currentPage==='content.html' ? '' : 'style="display: none;"'}>
+                    <span class="shortcut-description">${strings.general.back[lang]}</span>
+                    <span class="shortcut-key">esc</span>
                 </div>
                 <div class="shortcut-item" ${currentPage === 'preferences.html' ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${strings.preferences.reset_preferences[lang]}</span>

@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initHistoryLimitInput();
             initResumeOnLoadingSwitch();
             initUseDialogSwitch();
+            initOpenInContentSwitch();
             initCollapseSwitch();
             initSwapFooterSwitch();
             initReduceMotionSwitch();
@@ -112,6 +113,8 @@ function init() {
     resumeOnLoadingPref.textContent = strings.preferences.resume_on_loading[lang];
     const useDialogPref = document.getElementById('useDialogPref');
     useDialogPref.textContent = strings.preferences.use_system_dialog[lang];
+    const openInContentPref = document.getElementById('openInContentPref');
+    openInContentPref.textContent = strings.preferences.open_in_content[lang];
     const collapsePref = document.getElementById('collapseSideBarPref');
     collapsePref.textContent = strings.preferences.collapse_sidebar[lang];
     const swapFooterPref = document.getElementById('swapFooterPref');
@@ -779,16 +782,16 @@ function initHistoryLimitInput() {
 }
 
 function initResumeOnLoadingSwitch() { 
-    const resumeOnLoadingSwitch = document.querySelector('.resume-on-loading');
-    if (!resumeOnLoadingSwitch) return;
+    const sw = document.querySelector('.resume-on-loading');
+    if (!sw) return;
 
     const prefs = getPreferences();
     if (prefs.resumeOnLoading !== false) { 
-        resumeOnLoadingSwitch.classList.add('active');
+        sw.classList.add('active');
     } else { 
-        resumeOnLoadingSwitch.classList.remove('active');
+        sw.classList.remove('active');
     }
-    resumeOnLoadingSwitch.addEventListener('click', function() { 
+    sw.addEventListener('click', function() { 
         const isActive = this.classList.toggle('active');
         prefs.resumeOnLoading = isActive;
         savePreferences(prefs);
@@ -796,16 +799,16 @@ function initResumeOnLoadingSwitch() {
 }
 
 function initUseDialogSwitch() { 
-    const useDialogSwitch = document.querySelector('.use-system-dialog');
-    if (!useDialogSwitch) return;
+    const sw = document.querySelector('.use-system-dialog');
+    if (!sw) return;
 
     const prefs = getPreferences();
     if (prefs.useSystemDialog !== false) { 
-        useDialogSwitch.classList.add('active');
+        sw.classList.add('active');
     } else { 
-        useDialogSwitch.classList.remove('active');
+        sw.classList.remove('active');
     }
-    useDialogSwitch.addEventListener('click', function() { 
+    sw.addEventListener('click', function() { 
         const isActive = this.classList.toggle('active');
         const prefs = getPreferences();
         prefs.useSystemDialog = isActive;
@@ -813,18 +816,36 @@ function initUseDialogSwitch() {
     });
 }
 
+function initOpenInContentSwitch() { 
+    const sw = document.querySelector('.open-in-content');
+    if (!sw) return;
+
+    const prefs = getPreferences();
+    if (prefs.openInContent !== true) { 
+        sw.classList.remove('active');
+    } else { 
+        sw.classList.add('active');
+    }
+    sw.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        const prefs = getPreferences();
+        prefs.openInContent = isActive;
+        savePreferences(prefs);
+    });
+}
+
 function initCollapseSwitch() { 
-    const collapseSwitch = document.querySelector('.collapse-sidebar');
-    if (!collapseSwitch) return;
+    const sw = document.querySelector('.collapse-sidebar');
+    if (!sw) return;
 
     const prefs = getPreferences();
     if (prefs.collapseSidebar) { 
-        collapseSwitch.classList.add('active');
+        sw.classList.add('active');
     } else { 
-        collapseSwitch.classList.remove('active');
+        sw.classList.remove('active');
     }
 
-    collapseSwitch.addEventListener('click', function() { 
+    sw.addEventListener('click', function() { 
         const isActive = this.classList.toggle('active');
         prefs.collapseSidebar = isActive;
         savePreferences(prefs);
@@ -832,17 +853,17 @@ function initCollapseSwitch() {
 }
 
 function initSwapFooterSwitch() { 
-    const swapFooterSwitch = document.querySelector('.swap-footer');
-    if (!swapFooterSwitch) return;
+    const sw = document.querySelector('.swap-footer');
+    if (!sw) return;
 
     const prefs = getPreferences();
     if (prefs.swapFooterItems) { 
-        swapFooterSwitch.classList.add('active');
+        sw.classList.add('active');
     } else { 
-        swapFooterSwitch.classList.remove('active');
+        sw.classList.remove('active');
     }
 
-    swapFooterSwitch.addEventListener('click', function() { 
+    sw.addEventListener('click', function() { 
         const isActive = this.classList.toggle('active');
         prefs.swapFooterItems = isActive;
         savePreferences(prefs);
@@ -852,8 +873,8 @@ function initSwapFooterSwitch() {
 
 // 初始化减弱特效开关
 function initReduceMotionSwitch() {
-    const reduceMotionSwitch = document.querySelector('.reduce-motion');
-    if (!reduceMotionSwitch) return;
+    const sw = document.querySelector('.reduce-motion');
+    if (!sw) return;
 
     // 从偏好设置中获取保存的设置，默认为 false（关闭）
     const prefs = getPreferences();
@@ -861,16 +882,16 @@ function initReduceMotionSwitch() {
     
     // 设置开关状态
     if (reduceMotion) {
-        reduceMotionSwitch.classList.add('active');
+        sw.classList.add('active');
     } else {
-        reduceMotionSwitch.classList.remove('active');
+        sw.classList.remove('active');
     }
     
     // 应用当前设置
     applyReduceMotion(reduceMotion);
     
     // 添加点击事件
-    reduceMotionSwitch.addEventListener('click', function() {
+    sw.addEventListener('click', function() {
         const isActive = this.classList.toggle('active');
         const prefs = getPreferences();
         prefs.reduceMotion = isActive;

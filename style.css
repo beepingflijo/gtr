@@ -1538,6 +1538,11 @@ footer .search-bar.collapsed {
     min-width: min-content;
 }
 
+.effect-reduced .dialog-container .content-container.cover .dialog-content{
+    background-color: transparent;
+    margin: 0;
+}
+
 .dialog-container .content-container:not(.cover) .dialog-content:not(.shortcut-list),
 .effect-reduced .dialog-content{
     -webkit-backdrop-filter: none;
@@ -1606,5 +1611,9 @@ footer .search-bar.collapsed {
         opacity: 1;
         filter: none;
         transform: none;
+    }
+    .dialog-container .content-container.cover .dialog-content{
+        background-color: transparent;
+        margin: 0;
     }
 }

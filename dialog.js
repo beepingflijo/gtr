@@ -78,7 +78,10 @@ function loadHistory(inDialog = true) {
             
             historyList.appendChild(historyItem);
         })
-        if (inDialog === true) pushDialog(historyList, 'custom', strings.general.history[lang]);
+        if (inDialog === true) {
+            if (prefs.openInContent !== true) pushDialog(historyList, 'custom', strings.general.history[lang]);
+            else window.open('content.html?type=history','_self');
+        }
         else {
             historyList.dataset.title = strings.general.history[lang];
             return historyList;
@@ -237,7 +240,10 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
             seriesInfo.appendChild(carriageInfo);
         });
         seatsNum.textContent = totalSeats;
-        if (inDialog === true) pushDialog(seriesInfo, 'custom', seriesName + strings.trains_info._series[lang], '', seriesImg);
+        if (inDialog === true) {
+            if (prefs.openInContent !== true) pushDialog(seriesInfo, 'custom', seriesName + strings.trains_info._series[lang], '', seriesImg);
+            else window.open('content.html?type=series&q='+seriesName, '_self');
+        }
         recordLastVisitedPage('?type=series&q='+seriesName,'content.html');
         seriesInfo.dataset.title=seriesName + strings.trains_info._series[lang];
         seriesInfo.dataset.cover=seriesImg;
@@ -377,7 +383,10 @@ async function loadStationInfo(code, inDialog = true) {
         }
 
 
-        if (inDialog === true) pushDialog(stationInfo, 'custom', strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):''), '', data.cover);
+        if (inDialog === true) {
+            if (prefs.openInContent !== true) pushDialog(stationInfo, 'custom', strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):''), '', data.cover);
+            else window.open('content.html?type=station&q='+code,'_self');
+        }
         recordLastVisitedPage('?type=station&q='+code,'content.html');
         stationInfo.dataset.cover = data.cover;
         stationInfo.dataset.title = strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):'');

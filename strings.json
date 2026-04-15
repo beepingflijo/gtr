@@ -95,6 +95,7 @@
         },
         "resume_on_loading":{"zh_hans":"从离开的位置继续", "en": "Continue from last query", "zh_hant":"從離開的位置繼續", "uk": "Продовжити з останнього запиту"},
         "use_system_dialog":{"zh_hans":"使用系统对话框", "en": "Use system dialog", "zh_hant":"使用系統對話框", "uk":"Використати системний діалог"},
+        "open_in_content":{"zh_hans":"使用新页面展示详情", "en": "Show details in new page", "zh_hant":"使用新頁面展示詳情", "uk": "Відкрити в новий вміст"},
         "collapse_sidebar":{"zh_hans":"宽屏模式下收起侧边栏", "en": "Collapse side bar in wide screen", "zh_hant":"寬屏模式下折疊側欄", "uk": "Згорнути бічну панель на широкому екрані"},
         "swap_footer_items":{"zh_hans":"交换底栏控件顺序", "en": "Swap footer items", "zh_hant":"交換底欄控件順序", "uk": "Поміняти місцями елементи нижнього колонтитула"},
         "reduce_motion_and_transparency":{"zh_hans":"减弱特效", "en": "Reduce effects", "zh_hant":"減少特效", "uk": "Зменшити ефекти"},
