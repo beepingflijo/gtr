@@ -369,7 +369,8 @@
         "facility_seats": {"zh_hans": "纵向座位", "en": "Vertical seats", "zh_hant": "縱向座位", "uk": "Вертикальні сидіння"},
         "facility_no_seat": {"zh_hans": "可能需站立", "en": "Possibly need to stand", "zh_hant": "可能需站立", "uk": "Можливо потрібно стояти"},
         "_seats": {"zh_hans": "个座位", "en": " seats,", "zh_hant": "个座位", "uk": " місць,"},
-        "fare_info": {"zh_hans":"计费规则","en": "Billing rules", "zh_hant":"計費規則", "uk":"Правила виставлення рахунків"}
+        "fare_info": {"zh_hans":"计费规则","en": "Billing rules", "zh_hant":"計費規則", "uk":"Правила виставлення рахунків"},
+        "max_spd": {"zh_hans":"最高时速", "en": "Max speed", "zh_hant":"最高時速", "uk": "Максимальна швидкість"}
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},

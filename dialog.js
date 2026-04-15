@@ -45,6 +45,21 @@ function loadHistory(inDialog = true) {
                         routeText ? routeText :
                         strings.ticket_calculator.page_title[lang];
                     break;
+                case 'content':
+                    historyIcon.textContent = 'newsmode';
+                    const type = params.get('type');
+                    const query = params.get('q');
+                    console.log('content', type,query);
+                    switch (type) {
+                        case 'series':
+                            historyTitle.textContent = query+strings.trains_info._series[lang];
+                            break;
+                        case 'station':
+                            const stationName = strings.station_names[query][lang];
+                            const originalName = strings.station_names[query].original || strings.station_names[query].zh_hans;
+                            historyTitle.textContent = stationName+(stationName!==originalName?(' / '+originalName):'');
+                            break;
+                    }
             }
             historyItem.addEventListener('click', () => {
                 // 获取当前参数，如果已经有参数则添加&from=history，否则添加?from=history
@@ -87,6 +102,34 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
 
         const seriesInfo = document.createElement('div');
         seriesInfo.classList.add('series-info');
+        const statsContainer = document.createElement('div');
+        statsContainer.classList.add('stats-container');
+        const seatsInfo = document.createElement('div');
+        seatsInfo.classList.add('seats-info');
+        seatsInfo.classList.add('stats-item');
+        const seatsNum = document.createElement('div');
+        seatsNum.classList.add('stats-num');
+        let totalSeats = 0;
+        seatsInfo.appendChild(seatsNum);
+        const seatsDesc = document.createElement('div');
+        seatsDesc.textContent = strings.ticket_calculator.seats_count[lang];
+        seatsDesc.classList.add('stats-desc');
+        seatsInfo.appendChild(seatsDesc);
+        statsContainer.appendChild(seatsInfo);
+        const maxSpdInfo = document.createElement('div');
+        maxSpdInfo.classList.add('max-spd-info');
+        maxSpdInfo.classList.add('stats-item');
+        const maxSpdNum = document.createElement('div');
+        maxSpdNum.classList.add('stats-num');
+        maxSpdNum.innerHTML = (sereisData.maxSpeed || 0) + '<small>km/h</small>';
+        maxSpdInfo.appendChild(maxSpdNum);
+        const maxSpdDesc = document.createElement('div');
+        maxSpdDesc.textContent = strings.ticket_calculator.max_spd[lang];
+        maxSpdDesc.classList.add('stats-desc');
+        maxSpdInfo.appendChild(maxSpdDesc);
+        statsContainer.appendChild(maxSpdInfo);
+        seriesInfo.appendChild(statsContainer);
+
         sereisData.seats.forEach((carriage,index) => { 
             const carriageInfo = document.createElement('div');
             carriageInfo.classList.add('carriage-info');
@@ -104,6 +147,7 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
                         const seatItem = document.createElement('div');
                         seatItem.classList.add('seat-item');
                         seatItem.textContent = seat;
+                        totalSeats++;
                         if (carriage.class === 'premium') {
                             seatItem.style.backgroundColor = 'var(--color-primary)';
                             seatItem.style.color = 'var(--color-text-on-primary)';
@@ -129,6 +173,7 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
                     for (let j=0; j<2; j++) {
                         const seatItem = document.createElement('div');
                         seatItem.classList.add('seat-item');
+                        totalSeats++;
                         seatItem.style.opacity = 0.5;
                         seatItem.style.borderRadius = '0';
                         seatItem.textContent = i*2+j+1;
@@ -191,12 +236,12 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
             carriageInfo.appendChild(carriageDesc);
             seriesInfo.appendChild(carriageInfo);
         });
+        seatsNum.textContent = totalSeats;
         if (inDialog === true) pushDialog(seriesInfo, 'custom', seriesName + strings.trains_info._series[lang], '', seriesImg);
-        else {
-            seriesInfo.dataset.title=seriesName + strings.trains_info._series[lang];
-            seriesInfo.dataset.cover=seriesImg;
-            return seriesInfo; 
-        }           
+        recordLastVisitedPage('?type=series&q='+seriesName,'content.html');
+        seriesInfo.dataset.title=seriesName + strings.trains_info._series[lang];
+        seriesInfo.dataset.cover=seriesImg;
+        return seriesInfo;          
     } catch (error) {
         console.error('Error loading series info:', error);
     }
@@ -333,11 +378,10 @@ async function loadStationInfo(code, inDialog = true) {
 
 
         if (inDialog === true) pushDialog(stationInfo, 'custom', strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):''), '', data.cover);
-        else {
-            stationInfo.dataset.cover = data.cover;
-            stationInfo.dataset.title = strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):'');
-            return stationInfo;
-        }  
+        recordLastVisitedPage('?type=station&q='+code,'content.html');
+        stationInfo.dataset.cover = data.cover;
+        stationInfo.dataset.title = strings.station_names[code][lang]+(stationName!==originalName?(' / '+originalName):'');
+        return stationInfo;
     } catch (error) {
         console.error('Error loading station info:', error);
     }

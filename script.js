@@ -107,14 +107,14 @@ function requestNotificationPermission() {
 }
 
 // 记录用户访问的页面和参数
-function recordLastVisitedPage(paramsString) {
+function recordLastVisitedPage(paramsString,page) {
     if (compactParam === 'true') return;
     // 获取当前页面文件名
-    const currentPage = window.location.pathname.split('/').pop();
+    const currentPage = page?page:window.location.pathname.split('/').pop();
     console.log('Recording last visited page:', currentPage, paramsString);
     
     // 定义允许记录的页面
-    const allowedPages = ['lines_info.html', 'ticket_calculator.html', 'trains_info.html'];
+    const allowedPages = ['lines_info.html', 'ticket_calculator.html', 'trains_info.html', 'content.html'];
     
     // 检查当前页面是否是允许记录的页面
     if (allowedPages.includes(currentPage)) {

@@ -20,7 +20,7 @@
         var visitedPages = JSON.parse(visitedPagesStr);
         let latestTimestamp = 0;
         visitedPages.forEach(page => {
-            if (page.timestamp > latestTimestamp) {
+            if (page.timestamp > latestTimestamp && page.page !== 'content.html') {
                 latestTimestamp = page.timestamp;
                 redirectPage = page.page;
                 redirectParams = page.params;

@@ -222,3 +222,28 @@
     font-weight: 500;
     font-size: 1rem;
 }
+
+.stats-container { 
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1em;
+    margin-bottom: 2em;
+}
+
+.stats-container .stats-num { 
+    font-weight: 500;
+    font-size: 2em;
+}
+
+.stats-container .stats-num small { 
+    font-weight: normal;
+    font-size: 0.5em;
+}
+
+.stats-container .stats-desc { 
+    font-size: 0.9em;
+    color: var(--color-text-secondary);
+    line-height: 1.05;
+}

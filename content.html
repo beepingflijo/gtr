@@ -29,6 +29,43 @@
     <main>
     </main>
 </div>
+<style>
+    .cover-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        transform-origin: bottom;
+        overflow: visible;
+    }
+    .content { 
+        background: transparent;
+        box-shadow: none;
+    }
+    .cover .content { 
+        z-index: 1;
+        -webkit-backdrop-filter: var(--background-filter-transparent);
+        backdrop-filter: var(--background-filter-transparent);
+        background: var(--color-background-card-transparent);
+        margin-bottom: 3em;
+    }
+    .cover-title { 
+        height: 30dvw;
+        max-height: 50vh;
+        padding: 0 12px;
+        display: flex;
+        align-items: flex-end;
+        transition: all 0.3s ease-in-out;
+    }
+    .cover-title.collapsed { 
+        opacity: 0;
+        transform: translateY(-24px);
+        filter: blur(24px);
+    }
+    .cover .title {
+        opacity: 0;
+    }
+</style>
 <script src="script.js"></script>
 <script src="layout.js"></script>
 <script src="dialog.js"></script>
@@ -54,8 +91,10 @@
                             const typeParam = new URLSearchParams(window.location.search).get('type');
                             const queryParam = new URLSearchParams(window.location.search).get('q');
                             const main = document.querySelector('main');
+                            const appContainer = document.querySelector('.app-container');
                             const h1 = document.querySelector('h1');
                             const title = document.querySelector('title');
+                            const header = document.querySelector('header');
                             let contnet;
                             switch (typeParam) {
                                 case 'series':
@@ -76,22 +115,62 @@
                             if (contnet) {
                                 contnet.classList.add('content');
                                 contnet.classList.add('item');
-                                contnet.style.background = 'transparent';
-                                contnet.style.boxShadow = 'none';
+                                //contnet.style.background = 'transparent';
+                                //contnet.style.boxShadow = 'none';
                                 main.appendChild(contnet);
                                 h1.textContent = contnet.dataset.title;
                                 title.textContent = contnet.dataset.title+' - '+strings.mainpage.gtr_info[lang];
                                 if (contnet.dataset.cover) {
                                     const cover = document.createElement('img');
-                                    cover.classList.add('item');
+                                    //cover.classList.add('item');
                                     cover.src = contnet.dataset.cover;
-                                    cover.classList.add('cover');
+                                    cover.classList.add('cover-img');
                                     cover.style.padding = 0;
                                     main.insertBefore(cover,contnet);
+                                    appContainer.classList.add('cover');
+                                    const coverTitleContainer = document.createElement('div');
+                                    coverTitleContainer.classList.add('cover-title');
+                                    const coverTitle = document.createElement('h1');
+                                    coverTitle.textContent = contnet.dataset.title;
+                                    coverTitleContainer.appendChild(coverTitle);
+                                    main.insertBefore(coverTitleContainer,contnet);
                                 }
                             } else {
                                 window.location.href = '404.html';
                             }
+                            document.addEventListener('scroll', function() {
+                                const cover = document.querySelector('.cover-img');
+                                if (cover) {
+                                    const scrollY = window.scrollY;
+                                    const maxOpacity = 1;
+                                    const minOpacity = 0;
+                                    const opacity = Math.max(minOpacity, maxOpacity - scrollY / 100);
+                                    cover.style.opacity = opacity;
+                                    const maxBlur = 60;
+                                    const minBlur = 0;
+                                    const blur = Math.min(maxBlur, minBlur + scrollY / 10);
+                                    cover.style.filter = `blur(${blur}px)`;
+                                    const maxScale = 1.1;
+                                    const minScale = 1;
+                                    const scale = Math.min(maxScale, minScale + scrollY / 1000);
+                                    cover.style.transform = `scale(${scale})`;
+                                    const coverTitle = document.querySelector('.cover-title');
+                                    const title = document.querySelector('.title');
+                                    const titleHeight = coverTitle.getBoundingClientRect().height;
+                                    if (scrollY > titleHeight - 72) {
+                                        coverTitle.classList.add('collapsed');
+                                        title.style.opacity = 1;
+                                    } else {
+                                        coverTitle.classList.remove('collapsed');
+                                        title.style.opacity = 0;
+                                    }
+                                }
+                            });
+                            const coverImg = document.querySelector('.cover-img');
+                            coverImg.addEventListener('error', function() { 
+                                const coverTitle = document.querySelector('.cover-title');
+                                coverTitle.style.height = 'fit-content';
+                            });
                         })
                 })
         })
