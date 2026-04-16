@@ -1617,3 +1617,19 @@ footer .search-bar.collapsed {
         margin: 0;
     }
 }
+
+.line-code {
+    display: block;
+    font-weight: bold;
+    font-family: "HarmonyOS Sans SC";
+    white-space: nowrap;
+    height: fit-content;
+    min-height: fit-content;
+    border-bottom: 0.35em solid var(--current-color);
+    transition: all 0.3s ease;
+    width: fit-content;
+}
+
+.selection.line-selector:not(.collapsed) .line-code {
+    font-size: 0.7em;
+}

@@ -413,7 +413,7 @@
         "northeast":{"zh_hans":"东北", "en": "NE", "zh_hant":"東北", "uk": "Півн.-Сх."},
         "facilities":{"zh_hans":"设施", "en": "Facilities", "zh_hant":"設施", "uk": "Обладнання"},
         "floors":{"zh_hans":"楼层", "en": "Floors", "zh_hant":"樓層", "uk": "Поверхи"},
-        "toilet":{"zh_hans":"厕所", "en": "Toilet", "zh_hant":"廁所", "uk": "Туалет"},
+        "toilet":{"zh_hans":"卫生间", "en": "Toilet", "zh_hant":"衛生間", "uk": "Туалет"},
         "longue":{"zh_hans":"休息室", "en": "Longue", "zh_hant":"休息室", "uk": "Лонгю"},
         "services":{"zh_hans":"服务台", "en": "Services", "zh_hant":"服務台", "uk": "Сервіс"},
         "ticket":{"zh_hans":"售票处", "en": "Tickets", "zh_hant":"售票處", "uk": "Білет"},
@@ -421,6 +421,9 @@
         "claim":{"zh_hans":"行李提取", "en": "Luggage claim", "zh_hant":"行李提取", "uk": "Вантажний вивіз"},
         "shopping":{"zh_hans":"购物", "en": "Shopping", "zh_hant":"購物", "uk": "Покупки"},
         "food":{"zh_hans":"美食", "en": "Food", "zh_hant":"美食", "uk": "Їжа"},
+        "nursing":{"zh_hans":"母婴室", "en": "Nursing room", "zh_hant":"母婴室", "uk": "Малюльня"},
+        "accessible_toilet":{"zh_hans":"无障碍卫生间", "en": "Accessible toilet", "zh_hant":"無障礙衛生間", "uk": "Безпечний туалет"},
+        "family_toilet":{"zh_hans":"第三卫生间", "en": "Family toilet", "zh_hant":"第三衛生間", "uk": "Дружній туалет"},
         "road":{"zh_hans":"道路", "en": "Road", "zh_hant":"道路", "uk": "Дорога"},
         "square":{"zh_hans":"广场", "en": "Square", "zh_hant":"广场", "uk": "Квартал"},
         "building":{"zh_hans":"建筑物", "en": "Building", "zh_hant":"建筑物", "uk": "Будинок"},
@@ -431,10 +434,10 @@
         "south_side":{"zh_hans":"南侧", "en": ", South side", "zh_hant":"南側", "uk": ", На південь"},
         "east_side":{"zh_hans":"东侧", "en": ", East side", "zh_hant":"東側", "uk": ", На схід"},
         "west_side":{"zh_hans":"西侧", "en": ", West side", "zh_hant":"西側", "uk": ", На захід"},
-        "northwest_side":{"zh_hans":"西北侧", "en": ", Northwest side", "zh_hant":"西北側", "uk": ", На північ-захід"},
-        "southwest_side":{"zh_hans":"西南侧", "en": ", Southwest side", "zh_hant":"西南側", "uk": ", На півднь-захід"},
-        "southeast_side":{"zh_hans":"东南侧", "en": ", Southeast side", "zh_hant":"東南側", "uk": ", На півднь-схід"},
-        "northeast_side":{"zh_hans":"东北侧", "en": ", Northeast side", "zh_hant":"東北側", "uk": ", На північ-схід"},
+        "northwest_side":{"zh_hans":"西北角", "en": ", Northwest corner", "zh_hant":"西北角", "uk": ", На північ-захід"},
+        "southwest_side":{"zh_hans":"西南角", "en": ", Southwest corner", "zh_hant":"西南角", "uk": ", На півднь-захід"},
+        "southeast_side":{"zh_hans":"东南角", "en": ", Southeast corner", "zh_hant":"東南角", "uk": ", На півднь-схід"},
+        "northeast_side":{"zh_hans":"东北角", "en": ", Northeast corner", "zh_hant":"東北角", "uk": ", На північ-схід"},
         "no_exit":{"zh_hans":"无出口", "en": "No exit", "zh_hant":"無出口", "uk": "Без виходу"},
         "plat_side_up":{"zh_hans": "上行端/入口旁", "en":"upwards side/entrance", "zh_hant":"上行端/入口旁", "uk": "нагору сторона/вхід"},
         "plat_side_down":{"zh_hans": "下行端/入口旁", "en":"downwards side/entrance", "zh_hant":"下行端/入口旁", "uk": "нанизу сторона/вхід"},
@@ -455,6 +458,6 @@
         "floor_platform":{"zh_hans": "站台层", "en":"Platform", "zh_hant":"站台", "uk": "Треки"},
         "_of_the_floor":{"zh_hans": " 位于楼层{dir}", "en":", {dir} of this floor", "zh_hant":" 位於樓層{dir}", "uk":", {dir} від цього поверху"},
         "_of_platform_no_":{"zh_hans": " 位于{plat}站台{side}", "en": ", {side} of platform {plat}", "zh_hant": " 位於{plat}月台{side}", "uk": ", {side} на треки {plat}"},
-        "platforms_":{"zh_hans": "{plat}站台", "en": "Platforms {plat}", "zh_hant": "{plat}月台", "uk": "Треки {plat}"}
+        "platforms":{"zh_hans": "{plat}站台", "en": "Platforms {plat}", "zh_hant": "{plat}月台", "uk": "Треки {plat}"}
     }
 }

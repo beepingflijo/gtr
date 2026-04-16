@@ -39,8 +39,7 @@
         overflow: visible;
     }
     .content { 
-        background: transparent;
-        box-shadow: none;
+        transition: all 0.3s ease-in-out;
     }
     .cover .content { 
         z-index: 1;
@@ -214,7 +213,7 @@
                                     const minScale = 1;
                                     const scale = minScale + (maxScale - minScale) * scrollProgress;
                                     cover.style.transform = `scale(${scale})`;
-                                    if (scrollY > titleHeight - 72) {
+                                    if (scrollProgress >= 1) {
                                         coverTitle.classList.add('collapsed');
                                         title.style.opacity = 1;
                                     } else {

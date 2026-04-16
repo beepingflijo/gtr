@@ -843,3 +843,8 @@ async function sendTrainApproachingNotification(trainName, playerName, body) {
 function getLineName(lineId) { 
     return lines.find(line => line.id === lineId)?.name?.[lang] || lineId;
 }
+
+function getLinesForStation(stationCode) { 
+    const linesForSearch = lines.filter(line => !line.id.includes('-R') && !line.id.includes('GX'));
+    return linesForSearch.filter(line => line.route.some(step => step.code === stationCode));
+}

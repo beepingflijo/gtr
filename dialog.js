@@ -289,14 +289,21 @@ async function loadStationInfo(code, inDialog = true) {
         exitsInfo.classList.add('exits-info');
         if (data.exits.length > 0) { 
             data.exits.forEach(exit => { 
+                const exitId = exit.id;
+                // 如果是字母开头，取第一段连续的字母部分；否则取字母或小数点前的部分
+                const exitMain = /^[a-zA-Z]/.test(exitId) ? 
+                    exitId.match(/^[a-zA-Z]+/)[0] : 
+                    exitId.split(/[a-zA-Z.]/)[0];
+                // 剩余部分用小字表示
+                const exitSub = exitId.replace(exitMain,'');
                 const exitInfo = document.createElement('div');
                 exitInfo.classList.add('exit-info');
                 exitInfo.innerHTML = `
-                    <div class="exit-id ${exit.oneway!==undefined?exit.oneway:''}">${exit.id.split('.')[0]}<small ${exit.id.split('.').length<=1?'style="display:none"':''}>.${exit.id.split('.')[1]}</small></div>
-                    <div class="exit-dir">${exit.floor+' <small>'+strings.station_info[exit.dir][lang]+'</small>'}</div>
+                    <div class="exit-id ${exit.oneway!==undefined?exit.oneway:''}">${exitMain}<small ${exitSub===''?'style="display:none"':''}>${exitSub}</small></div>
+                    <div class="exit-dir">${exit.floor+' <small>'+(exit.dir?strings.station_info[exit.dir][lang]:'')+'</small>'}</div>
                     <div class="exit-desc">${(strings.station_info[exit.desc]?
                         strings.station_info[exit.desc][lang]:exit.desc)+
-                        strings.station_info[exit.desc_dir+'_side'][lang]+' '+
+                        (exit.desc_dir?strings.station_info[exit.desc_dir+'_side'][lang]:'')+' '+
                         (exit.oneway!==undefined?(' ('+strings.station_info['way_'+exit.oneway][lang]+')'):'')}</div>
                     <div class="exit-facilities material-symbols-outlined">${Array.isArray(exit.facilities) ? exit.facilities.join('') : ''}</div>
                 `;
@@ -316,7 +323,11 @@ async function loadStationInfo(code, inDialog = true) {
         stationInfo.appendChild(facilitiesTitle);
         const platformsItem = document.createElement('div');
         platformsItem.classList.add('platforms-item');
-        platformsItem.textContent = strings.station_info.platforms_[lang]
+        console.log(getLinesForStation(code));
+        getLinesForStation(code).forEach(line => {
+            platformsItem.innerHTML+=`<a href="lines_info.html?line=${line.id}" title="${line.name[lang]}" class="line-code" style="--current-color:${line.color}">${line.id}</a>`
+        });
+        platformsItem.innerHTML += strings.station_info.platforms[lang]
             .replace('{plat}',[
                 ...new Set(
                     platforms
@@ -331,6 +342,7 @@ async function loadStationInfo(code, inDialog = true) {
                 floorNo.innerHTML = f.id+`<br /><small>${strings.station_info['floor_'+f.type][lang]}</small>`;
                 const floorInfo = document.createElement('div');
                 floorInfo.classList.add('facilities-container');
+                if (f.type === 'platform') floorInfo.appendChild(platformsItem);
                 const facilitiesData = data.facilities.filter(fd => fd.floor === f.id);
                 facilitiesData.forEach(fd => { 
                     const facilityItem = document.createElement('div');
@@ -346,22 +358,20 @@ async function loadStationInfo(code, inDialog = true) {
                         claim: 'massage',
                         shopping: 'shopping_bag',
                         food: 'local_dining',
-                        wheelchair: 'accessible',
+                        nursing: 'baby_changing_station',
+                        accessible_toilet: 'accessible',
+                        family_toilet: 'family_restroom',
                         elevator: 'elevator',
                         parking: 'local_parking',
-                        wifi: 'wifi',
-                        restaurant: 'restaurant',
-                        coffee: 'coffee',
-                        food: 'local_dining',
-                        phone: 'phone',
-                        tv: 'tv',
-                        internet: 'wifi',
-
+                        platforms: 'train',
+                        transfer: 'transfer',
                     }
                     facilityIcon.textContent = textToIcon[fd.type] || 'info';
                     const facilityText = document.createElement('span');
                     facilityText.textContent = strings.station_info[fd.type][lang] || fd.type;
-                    if (fd.dir) {
+                    if (fd.type === 'platforms') { 
+                        facilityText.textContent = facilityText.textContent.replace('{plat}', fd.desc);
+                    } else if (fd.dir) {
                         facilityText.textContent += 
                             strings.station_info._of_the_floor[lang]
                             .replace('{dir}', strings.station_info[fd.dir+'_part'][lang]);
@@ -375,7 +385,6 @@ async function loadStationInfo(code, inDialog = true) {
                     facilityItem.appendChild(facilityText);
                     floorInfo.appendChild(facilityItem);
                 });
-                if (f.type === 'platform') floorInfo.appendChild(platformsItem);
                 floorsInfo.appendChild(floorNo);
                 floorsInfo.appendChild(floorInfo);
                 stationInfo.appendChild(floorsInfo);
