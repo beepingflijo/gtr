@@ -324,15 +324,16 @@ async function loadStationInfo(code, inDialog = true) {
         const platformsItem = document.createElement('div');
         platformsItem.classList.add('platforms-item');
         console.log(getLinesForStation(code));
-        getLinesForStation(code).forEach(line => {
-            platformsItem.innerHTML+=`<a href="lines_info.html?line=${line.id}" title="${line.name[lang]}" class="line-code" style="--current-color:${line.color}">${line.id}</a>`
-        });
+        platformsItem.innerHTML += '<span class="material-symbols-outlined">train</span>';
         platformsItem.innerHTML += strings.station_info.platforms[lang]
             .replace('{plat}',[
                 ...new Set(
                     platforms
                     .map(platform => platform.name.replace(/[A-Z]/g,'').replace(/^0+/,'')))
                 ].sort((a, b) => parseInt(a) - parseInt(b)).join('/'));
+        getLinesForStation(code).forEach(line => {
+            platformsItem.innerHTML+=`<a href="lines_info.html?line=${line.id}" title="${line.name[lang]}" class="line-code" style="--current-color:${line.color}">${line.id}</a>`
+        });
         if (data.floors.length > 0) { 
             data.floors.forEach(f => { 
                 const floorsInfo = document.createElement('div');
@@ -370,7 +371,26 @@ async function loadStationInfo(code, inDialog = true) {
                     const facilityText = document.createElement('span');
                     facilityText.textContent = strings.station_info[fd.type][lang] || fd.type;
                     if (fd.type === 'platforms') { 
-                        facilityText.textContent = facilityText.textContent.replace('{plat}', fd.desc);
+                        facilityText.innerHTML = 
+                            facilityText.textContent.replace('{plat}', fd.desc);
+                        if (fd.lines) {
+                            // 并行获取所有线路的颜色和英文名称
+                            const lineDataPromises = fd.lines.map(async l => {
+                                const [color, englishName] = await Promise.all([
+                                    getColorForMtrLine(l),
+                                    getEnglishNameForMtrLine(l)
+                                ]);
+                                return { line: l, color, englishName };
+                            });
+                            
+                            Promise.all(lineDataPromises).then(results => {
+                                const lineElements = results.map(({ line, color, englishName }) => {
+                                    const displayName = lang.startsWith('zh') ? line : englishName;
+                                    return `<span class="line-mtr" style="background:${color+'30'};color:${color}">${displayName}</span>`;
+                                });
+                                facilityText.innerHTML += lineElements.join('');
+                            });
+                        }
                     } else if (fd.dir) {
                         facilityText.textContent += 
                             strings.station_info._of_the_floor[lang]

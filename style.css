@@ -1628,8 +1628,18 @@ footer .search-bar.collapsed {
     border-bottom: 0.35em solid var(--current-color);
     transition: all 0.3s ease;
     width: fit-content;
+    color: var(--color-text);
 }
 
 .selection.line-selector:not(.collapsed) .line-code {
     font-size: 0.7em;
+}
+
+.line-mtr { 
+    display: inline-flex;
+    color: var(--color-text-on-primary);
+    margin-inline-start: 0.3em;
+    border-radius: 2px;
+    padding: 0.1em 0.3em;
+    font-size: 0.8em;
 }

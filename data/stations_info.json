@@ -26,7 +26,11 @@
         "facilities":[
             {
                 "type":"platforms","floor":"2F",
-                "desc":"1/2/3/4"
+                "desc":"1/2","lines":["日光","輝夜"]
+            },
+            {
+                "type":"platforms","floor":"2F",
+                "desc":"3/4","lines":["霧島"]
             },
             {
                 "type":"toilet","floor":"2F",
@@ -77,7 +81,7 @@
         "facilities":[
             {
                 "type":"platforms","floor":"1F",
-                "desc":"1/4"
+                "desc":"1/4","lines":["捷運東西綫"]
             },
             {
                 "type":"shopping","floor":"3F",
@@ -180,23 +184,31 @@
         "facilities":[
             {
                 "type":"platforms","floor":"1F",
-                "desc":"1/2/3"
+                "desc":"1","lines":["RT2线"]
+            },
+            {
+                "type":"platforms","floor":"1F",
+                "desc":"2/3","lines":["径滨线"]
             },
             {
                 "type":"platforms","floor":"2F",
-                "desc":"4/5"
+                "desc":"4","lines":["1号线"]
+            },
+            {
+                "type":"platforms","floor":"2F",
+                "desc":"5","lines":["3号线"]
             },
             {
                 "type":"platforms","floor":"4F",
-                "desc":"6/7/8/9"
+                "desc":"6/7/8/9","lines":["北广城际","清沙高铁"]
             },
             {
                 "type":"platforms","floor":"B1",
-                "desc":"10/11"
+                "desc":"10/11","lines":["松北城际"]
             },
             {
                 "type":"platforms","floor":"B2",
-                "desc":"12/13"
+                "desc":"12/13","lines":["中央线"]
             },
             {
                 "type":"toilet","floor":"B4",
@@ -211,7 +223,7 @@
                 "plat":"14","plat_side":"up"
             },
             {
-                "type":"food","floor":"2F",
+                "type":"food","floor":"3F",
                 "dir":"west"
             },
             {
@@ -279,6 +291,14 @@
         ],
         "facilities":[
             {
+                "type":"platforms","floor":"B2",
+                "desc":"","lines":["1号线"]
+            },
+            {
+                "type":"ticket","floor":"B1",
+                "dir":"north"
+            },
+            {
                 "type":"ticket","floor":"B1",
                 "dir":"south"
             },
@@ -297,7 +317,8 @@
         ],
         "floors":[
             {"id":"B1","type":"concourse"},
-            {"id":"B2","type":"platform"}
+            {"id":"B2","type":"transfer"},
+            {"id":"B3","type":"platform"}
         ],
         "cover":"https://assets.wiki.hydcraft.cn/2/23/%E5%B9%B3%E5%AE%89%E9%87%8C%E7%AB%993%E5%8F%B7%E5%8F%A3.png"
     },
@@ -498,7 +519,7 @@
         "facilities":[
             {
                 "type":"platforms","floor":"1F",
-                "desc":"1/2/3/4/5/6/7/8/9/10"
+                "desc":"1/2/3/4/5/6/7/8/9/10","lines":["旧滨客专高速铁路"]
             },
             {
                 "type":"services","floor":"2F",
@@ -543,7 +564,7 @@
         "facilities":[
             {
                 "type":"platforms","floor":"B2",
-                "desc":"1/2/3/4"
+                "desc":"1/2/3/4","lines":["旧滨客专高速铁路","氢气沿江高速铁路"]
             },
             {
                 "type":"shopping","floor":"3F",
@@ -715,7 +736,7 @@
         "facilities":[
             {
                 "type":"platforms","floor":"1F",
-                "desc":"1/2"
+                "desc":"1/2","lines":["江户线","江户圆湖线"]
             },
             {
                 "type":"toilet","floor":"B1",
@@ -753,7 +774,7 @@
         "facilities":[
             {
                 "type":"platforms","floor":"5F",
-                "desc":"1/2/3/4/5"
+                "desc":"1/2/3/4/5","lines":["氢气沿江高速铁路","江户圆湖线"]
             }
         ],
         "floors":[
@@ -783,8 +804,12 @@
         ],
         "facilities":[
             {
+                "type":"platforms","floor":"1F",
+                "desc":"12/13","lines":["KQ京急线"]
+            },
+            {
                 "type":"platforms","floor":"B1",
-                "desc":"5/6/7/8/9/10/11/12/13"
+                "desc":"5/6/7/8/9/10/11"
             },
             {
                 "type":"ticket","floor":"1F",
@@ -796,6 +821,7 @@
             }
         ],
         "floors":[
+            {"id":"2F","type":"transfer"},
             {"id":"1F","type":"concourse"},
             {"id":"B1","type":"platform"}
         ],
@@ -851,7 +877,11 @@
         "facilities":[
             {
                 "type":"platforms","floor":"B2",
-                "desc":"3/4/5/6"
+                "desc":"3/4","lines":["輝夜號"]
+            },
+            {
+                "type":"platforms","floor":"B2",
+                "desc":"5/6","lines":["劍"]
             },
             {
                 "type":"toilet","floor":"1F",

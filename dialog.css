@@ -222,23 +222,21 @@
     font-weight: 500;
     font-size: 1rem;
     display: inline-flex;
-    gap: 0.25em;
-    padding-inline-start: 0.2em;
 }
 
-.platforms-item img { 
-    width: 0.9em;
-    margin: 0 0.1em;
+.platforms-item .material-symbols-outlined { 
+    font-size: 1.3em;
 }
 
 .platforms-item .line-code { 
     font-size: 0.75em;
     color: var(--color-text);
+    margin-inline-start: 0.25em;
 }
 
 .platforms-item .line-code:hover { 
     transform: scale(1.1);
-    margin: 0 0.1em;
+    margin: 0 0.3em;
 }
 
 .stats-container { 

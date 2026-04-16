@@ -840,21 +840,30 @@ function createTrainSection(train) {
 
     const lineElement = document.createElement('a');
     lineElement.className = 'train-line';
-    lineElement.textContent = getLineForTrain(train.name) || strings.trains_info.line_unregistered[lang];
-    lineElement.textContent += ' ' + directionText;
+    lineElement.innerHTML = strings.trains_info.line_unregistered[lang];
     if (getLineForTrain(train.name)) {
+        lineElement.innerHTML = '';
         lineElement.href = `lines_info.html${'?line='+getLineForTrain(train.name, 'id')}`;
         const lineColor = getLineColor(getLineForTrain(train.name, 'id'));
+        const lineCode = document.createElement('span');
+        lineCode.classList.add('line-code');
+        lineCode.textContent = getLineForTrain(train.name, 'id');
+        lineCode.style.setProperty('--current-color', lineColor);
+        lineCode.style.fontSize = '0.7em';
+        lineCode.style.marginInlineEnd = '0.5em';
+        lineElement.appendChild(lineCode);
         lineElement.style.color = lineColor;
+        lineElement.innerHTML += ' ' + getLineForTrain(train.name);
+        lineElement.innerHTML += ' ' + directionText;
         // 获取的线路颜色做透明化处理
         const tintedColor = (() => {
             // 处理十六进制颜色值
             if (lineColor.startsWith('#')) {
-                return lineColor + '10'; // 添加透明度33
+                return lineColor + '10'; // 添加透明度
             }
             else return 'var(--color-secondary-hover)'; // 其他情况直接返回原始颜色
         })();
-        lineElement.style.backgroundColor = tintedColor;
+        lineElement.style.background = tintedColor;
     } else {
         // 对于未分配线路的列车，显示特殊标记
         lineElement.textContent = strings.trains_info.line_unregistered[lang];

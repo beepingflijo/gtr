@@ -848,3 +848,42 @@ function getLinesForStation(stationCode) {
     const linesForSearch = lines.filter(line => !line.id.includes('-R') && !line.id.includes('GX'));
     return linesForSearch.filter(line => line.route.some(step => step.code === stationCode));
 }
+
+function getColorForMtrLine(line) { 
+    return fetch('https://rail.nitrogen.hydcraft.cn/data')
+        .then(response => response.json())
+        .then(data => {
+            const lineData = data[0].routes.find(l => l.name.includes(line));
+            if (!lineData || !lineData.color) {
+                console.warn(`No color found for MTR line: ${line}`);
+                return '#cccccc'; // 默认灰色
+            }
+            // 将颜色从数值转换为十六进制代码
+            const hexColor = '#' + lineData.color.toString(16).padStart(6, '0');
+            console.log('MTR line color:', hexColor, Date.now());
+            return hexColor;
+        })
+        .catch(error => {
+            console.error('Error fetching line data:', error);
+            return '#cccccc'; // 错误时返回默认色
+        });
+}
+
+function getEnglishNameForMtrLine(line) { 
+    return fetch('https://rail.nitrogen.hydcraft.cn/data')
+        .then(response => response.json())
+        .then(data => {
+            const lineData = data[0].routes.find(l => l.name.includes(line));
+            if (!lineData || !lineData.name.includes('|')) {
+                console.warn(`No English name found for MTR line: ${line}`);
+                return line;
+            }
+            const englishName = lineData.name.split('|')[1]||line;
+            console.log('MTR line English name:', englishName, Date.now());
+            return englishName;
+        })
+        .catch(error => {
+            console.error('Error fetching line data:', error);
+            return line; // 错误时返回原始名称
+        });
+}
