@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initOpenInContentSwitch();
             initCollapseSwitch();
             initSwapFooterSwitch();
+            initShowCursorSwitch();
             initReduceMotionSwitch();
             initStorageList();
             handleWindowResize();
@@ -119,6 +120,8 @@ function init() {
     collapsePref.textContent = strings.preferences.collapse_sidebar[lang];
     const swapFooterPref = document.getElementById('swapFooterPref');
     swapFooterPref.textContent = strings.preferences.swap_footer_items[lang];
+    const showCursorPref = document.getElementById('showCursorPref');
+    showCursorPref.textContent = strings.preferences.hover_effects[lang];
     const reduceMotionPref = document.getElementById('reduceMotionPref');
     reduceMotionPref.textContent = strings.preferences.reduce_motion_and_transparency[lang];
     const storagePref = document.getElementById('storagePref');
@@ -868,6 +871,24 @@ function initSwapFooterSwitch() {
         prefs.swapFooterItems = isActive;
         savePreferences(prefs);
         handleWindowResize();
+    });
+}
+
+function initShowCursorSwitch() { 
+    const sw = document.querySelector('.show-cursor');
+    if (!sw) return;
+
+    const prefs = getPreferences();
+    if (prefs.showCursor === true) { 
+        sw.classList.add('active');
+    } else { 
+        sw.classList.remove('active');
+    }
+
+    sw.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        prefs.showCursor = isActive;
+        savePreferences(prefs);
     });
 }
 

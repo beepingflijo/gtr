@@ -124,6 +124,7 @@
 .station-list-item { 
     height: 18px;
     overflow-y: visible;
+    border-radius: 12px;
 }
 
 .station-list li:last-child {

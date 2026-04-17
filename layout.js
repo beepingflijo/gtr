@@ -464,7 +464,7 @@ function initSidebar() {
                 </div>
             </div>
             <div class="side-bar-list side-bar-navigation">
-                <a href="lines_info.html" class="side-bar-item ${currentPage === 'lines_info' ? 'active' : ''}">
+                <${currentPage==='lines_info'?'div':'a'} href="lines_info.html" class="side-bar-item ${currentPage === 'lines_info' ? 'active' : ''}">
                     <div class="icon-btn lines-btn ${currentPage === 'lines_info' ? 'active' : ''}">
                         <span class="material-symbols-outlined">
                         route
@@ -472,8 +472,8 @@ function initSidebar() {
                         <span>${window.strings?.lines_info?.page_title[lang] || '线路信息'}</span>
                     </div>
                     <div class="selection line-selector no-collapse" style="display:${currentPage === 'lines_info' ? 'flex' : 'none'}"></div>
-                </a>
-                <a href="ticket_calculator.html" class="side-bar-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
+                </${currentPage==='lines_info'?'div':'a'}>
+                <${currentPage==='ticket_calculator'?'div':'a'} href="ticket_calculator.html" class="side-bar-item ${currentPage === 'ticket_calculator' ? 'active' : ''}">
                     <div class="icon-btn fare-btn ${currentPage === 'ticket_calculator' ? 'active' : ''}">
                         <span class="material-symbols-outlined">
                         universal_currency_alt
@@ -524,17 +524,17 @@ function initSidebar() {
                             </div>
                         </div>
                     </div>
-                </a>
-                <a href="trains_info.html" class="side-bar-item ${currentPage === 'trains_info' ? 'active' : ''}">
+                </${currentPage==='ticket_calculator'?'div':'a'}>
+                <${currentPage==='trains_info'?'div':'a'} href="trains_info.html" class="side-bar-item ${currentPage === 'trains_info' ? 'active' : ''}">
                     <div class="icon-btn trains-btn ${currentPage === 'trains_info' ? 'active' : ''}">
                         <span class="material-symbols-outlined">
                         directions_subway
                         </span>
                         <span>${window.strings?.trains_info?.page_title[lang] || '列车信息'}</span>
                     </div>
-                </a>
+                </${currentPage==='trains_info'?'div':'a'}>
             </div>
-            <div class="side-bar-list">
+            <div class="side-bar-list side-bar-pref">
                 <a href="preferences.html" class="side-bar-item"> 
                     <div class="icon-btn preferences-btn">
                         <span class="material-symbols-outlined filled">
@@ -656,6 +656,67 @@ function initTabs() {
                 </div>
             </a>
         `;
+    });
+}
+
+function addCursor() { 
+    if (prefs.showCursor !== true || prefs.reduceMotion === true) return;
+    const containers = document.querySelectorAll('.tabs,.side-bar,footer > *,.tooltip, main .selection');
+    containers.forEach(container => { 
+        const cursor = document.createElement('div');
+        cursor.classList.add('cursor');
+        cursor.classList.add('out');
+        container.appendChild(cursor);
+        
+        // 鼠标事件
+        container.addEventListener('mouseover', (e) => { 
+            setTimeout(() => {
+                cursor.classList.remove('out');
+            }, 100);
+            cursor.style.left = e.clientX - container.getBoundingClientRect().left + 'px';
+            cursor.style.top = e.clientY - container.getBoundingClientRect().top + 'px';
+        });
+        
+        container.addEventListener('mousemove', (e) => { 
+            cursor.style.left = e.clientX - container.getBoundingClientRect().left + 'px';
+            cursor.style.top = e.clientY - container.getBoundingClientRect().top + 'px';
+        });
+        
+        container.addEventListener('mousedown', (e) => { 
+            cursor.style.transform = 'scale(1.5) translate(-25%, -25%)';
+        });
+        
+        container.addEventListener('mouseup', (e) => { 
+            cursor.style.transform = '';
+        });
+        
+        container.addEventListener('mouseleave', (e) => { 
+            setTimeout(() => {
+                cursor.classList.add('out');
+            }, 100);
+        });
+        
+        // 触摸事件
+        container.addEventListener('touchstart', (e) => { 
+            const touch = e.touches[0];
+            setTimeout(() => {
+                cursor.classList.remove('out');
+            }, 100);
+            cursor.style.left = touch.clientX - container.getBoundingClientRect().left + 'px';
+            cursor.style.top = touch.clientY - container.getBoundingClientRect().top + 'px';
+        });
+        
+        container.addEventListener('touchmove', (e) => { 
+            const touch = e.touches[0];
+            cursor.style.left = touch.clientX - container.getBoundingClientRect().left + 'px';
+            cursor.style.top = touch.clientY - container.getBoundingClientRect().top + 'px';
+        });
+        
+        container.addEventListener('touchend', (e) => { 
+            setTimeout(() => {
+                cursor.classList.add('out');
+            }, 100);
+        });
     });
 }
 

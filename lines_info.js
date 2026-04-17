@@ -166,12 +166,12 @@ function displayStations(line) {
         li.innerHTML = `
             <div class="train-container"></div>
             <div class="station-circle" style="
-                border-color: ${isRapidStation ? 'var(--color-background-card)' : line.color};
+                border-color: ${isRapidStation ? 'var(--color-background-card-solid)' : line.color};
                 background-color: ${isRapidStation ? line.color : ''};
             "></div>
             <div class="station-name-container" style="
-                font-weight: ${isRapidStation ? 'bold' : ''};
-                text-decoration: ${isRapidStation ? 'underline' : ''};
+                font-weight: ${isRapidStation ? '500' : ''};
+                color: ${isRapidStation ? line.color : ''};
             ">
                 <span class="station-name">${getStationName(station.code,lang)}</span>
                 <span class="station-name-original">${getStationName(station.code,'original')!==getStationName(station.code) ? getStationName(station.code,'original') : ''}</span>

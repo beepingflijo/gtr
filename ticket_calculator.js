@@ -1900,7 +1900,8 @@ function handleWindowResize() {
                     showToast(strings.ticket_calculator.click_outside_to_collapse[lang]);
                 });
             });
-            document.addEventListener('click' , () => { 
+            document.addEventListener('click' , (e) => { 
+                if (e.target.closest('.search-panel')) return;
                 footerPanel.classList.remove('no-collapse');
                 footerPanel.classList.add('collapsed');
                 searchTitleImg.textContent = 'search';
@@ -1967,7 +1968,7 @@ function handleWindowResize() {
         setTimeout(() => {
             const footer = document.querySelector('footer');
             const isFooterHidden = footer.style.opacity <= 0;
-            console.log('isFooterHidden:', isFooterHidden, footer);
+            //console.log('isFooterHidden:', isFooterHidden, footer);
             if (isFooterHidden) {
                 const sideBarInput = document.querySelector('.side-bar #startInput');
                 sideBarInput.focus();

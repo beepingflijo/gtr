@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initHistoryBtn();
         setInterval(handleFooterItemCollapse, 150);
         listenKeyboardShortcuts();
+        addCursor();
         const tabs = document.querySelectorAll('footer .tabs');
         
         // 暴露 lang 到全局供其他模块使用
@@ -853,9 +854,9 @@ function getColorForMtrLine(line) {
     return fetch('https://rail.nitrogen.hydcraft.cn/data')
         .then(response => response.json())
         .then(data => {
-            const lineData = data[0].routes.find(l => l.name.includes(line));
+            const lineData = data[0].routes.find(l => l.name.includes('|')?(l.name.split('|')[0] === line):(l.name === line));
             if (!lineData || !lineData.color) {
-                console.warn(`No color found for MTR line: ${line}`);
+                console.warn(`No color found for MTR line: ${line}`,lineData);
                 return '#cccccc'; // 默认灰色
             }
             // 将颜色从数值转换为十六进制代码
@@ -873,13 +874,13 @@ function getEnglishNameForMtrLine(line) {
     return fetch('https://rail.nitrogen.hydcraft.cn/data')
         .then(response => response.json())
         .then(data => {
-            const lineData = data[0].routes.find(l => l.name.includes(line));
+            const lineData = data[0].routes.find(l => l.name.includes('|')?(l.name.split('|')[0] === line):(l.name === line));
             if (!lineData || !lineData.name.includes('|')) {
                 console.warn(`No English name found for MTR line: ${line}`);
                 return line;
             }
             const englishName = lineData.name.split('|')[1]||line;
-            console.log('MTR line English name:', englishName, Date.now());
+            console.log('MTR line English name:',lineData.name, englishName, Date.now());
             return englishName;
         })
         .catch(error => {

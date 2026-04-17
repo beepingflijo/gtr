@@ -30,20 +30,23 @@ function loadHistory(inDialog = true) {
                     break;
                 case 'ticket_calculator':
                     historyIcon.textContent = 'universal_currency_alt';
-                    const startCode = params.get('start');
-                    const endCode = params.get('end');
+                    const startCode = params.get('start') || '';
+                    const endCode = params.get('end') || '';
                     const sortBy = params.get('sort') || 'time';
                     let routeText = '';
-                    if (startCode && endCode) {
-                        routeText = 
-                            strings.station_names[startCode.toUpperCase()][lang] + ' → ' +
-                            strings.station_names[endCode.toUpperCase()][lang] + ' (' + 
-                            strings.ticket_calculator['sort_by_'+sortBy][lang] + ')';
-                    }
                     console.log(startCode, endCode);
+                    if (strings.station_names[startCode.toUpperCase()]) {
+                        routeText += strings.station_names[startCode.toUpperCase()][lang];
+                    } else routeText += '...';
+                    routeText += ' → ';
+                    if (strings.station_names[endCode.toUpperCase()]) {
+                        routeText += strings.station_names[endCode.toUpperCase()][lang];
+                    } else routeText += '...';
+                    routeText += ' (' + strings.ticket_calculator['sort_by_'+sortBy][lang] + ')';
                     historyTitle.textContent = 
-                        routeText ? routeText :
-                        strings.ticket_calculator.page_title[lang];
+                        (strings.station_names[startCode.toUpperCase()] || 
+                        strings.station_names[endCode.toUpperCase()]) ? 
+                        routeText : strings.ticket_calculator.page_title[lang];
                     break;
                 case 'content':
                     historyIcon.textContent = 'newsmode';
@@ -325,15 +328,18 @@ async function loadStationInfo(code, inDialog = true) {
         platformsItem.classList.add('platforms-item');
         console.log(getLinesForStation(code));
         platformsItem.innerHTML += '<span class="material-symbols-outlined">train</span>';
-        platformsItem.innerHTML += strings.station_info.platforms[lang]
+        const platformsContent = document.createElement('div');
+        platformsContent.classList.add('platforms-content');
+        platformsContent.innerHTML += strings.station_info.platforms[lang]
             .replace('{plat}',[
                 ...new Set(
                     platforms
                     .map(platform => platform.name.replace(/[A-Z]/g,'').replace(/^0+/,'')))
                 ].sort((a, b) => parseInt(a) - parseInt(b)).join('/'));
         getLinesForStation(code).forEach(line => {
-            platformsItem.innerHTML+=`<a href="lines_info.html?line=${line.id}" title="${line.name[lang]}" class="line-code" style="--current-color:${line.color}">${line.id}</a>`
+            platformsContent.innerHTML+=`<a href="lines_info.html?line=${line.id}" title="${line.name[lang]}" class="line-code" style="--current-color:${line.color}">${line.id}</a>`
         });
+        platformsItem.appendChild(platformsContent);
         if (data.floors.length > 0) { 
             data.floors.forEach(f => { 
                 const floorsInfo = document.createElement('div');
@@ -371,7 +377,9 @@ async function loadStationInfo(code, inDialog = true) {
                     const facilityText = document.createElement('span');
                     facilityText.textContent = strings.station_info[fd.type][lang] || fd.type;
                     if (fd.type === 'platforms') { 
-                        facilityText.innerHTML = 
+                        const facilityPlatforms = document.createElement('div');
+                        facilityPlatforms.classList.add('platforms-content');
+                        facilityPlatforms.innerHTML = 
                             facilityText.textContent.replace('{plat}', fd.desc);
                         if (fd.lines) {
                             // 并行获取所有线路的颜色和英文名称
@@ -388,9 +396,11 @@ async function loadStationInfo(code, inDialog = true) {
                                     const displayName = lang.startsWith('zh') ? line : englishName;
                                     return `<span class="line-mtr" style="background:${color+'30'};color:${color}">${displayName}</span>`;
                                 });
-                                facilityText.innerHTML += lineElements.join('');
+                                facilityPlatforms.innerHTML += lineElements.join('');
                             });
                         }
+                        facilityText.textContent = '';
+                        facilityText.appendChild(facilityPlatforms);
                     } else if (fd.dir) {
                         facilityText.textContent += 
                             strings.station_info._of_the_floor[lang]
