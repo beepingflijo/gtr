@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initResumeOnLoadingSwitch();
             initUseDialogSwitch();
             initOpenInContentSwitch();
+            initShowFareCalculationSwitch();
             initCollapseSwitch();
             initSwapFooterSwitch();
             initShowCursorSwitch();
@@ -116,6 +117,8 @@ function init() {
     useDialogPref.textContent = strings.preferences.use_system_dialog[lang];
     const openInContentPref = document.getElementById('openInContentPref');
     openInContentPref.textContent = strings.preferences.open_in_content[lang];
+    const showFareCalculation = document.getElementById('showFareCalculationPref');
+    showFareCalculation.textContent = strings.preferences.show_fare_calculation[lang];
     const collapsePref = document.getElementById('collapseSideBarPref');
     collapsePref.textContent = strings.preferences.collapse_sidebar[lang];
     const swapFooterPref = document.getElementById('swapFooterPref');
@@ -833,6 +836,24 @@ function initOpenInContentSwitch() {
         const isActive = this.classList.toggle('active');
         const prefs = getPreferences();
         prefs.openInContent = isActive;
+        savePreferences(prefs);
+    });
+}
+
+function initShowFareCalculationSwitch() { 
+    const sw = document.querySelector('.show-fare-calculation');
+    if (!sw) return;
+
+    const prefs = getPreferences();
+    if (prefs.showFareCalculation !== true) { 
+        sw.classList.remove('active');
+    } else { 
+        sw.classList.add('active');
+    }
+    sw.addEventListener('click', function() { 
+        const isActive = this.classList.toggle('active');
+        const prefs = getPreferences();
+        prefs.showFareCalculation = isActive;
         savePreferences(prefs);
     });
 }

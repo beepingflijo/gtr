@@ -423,7 +423,10 @@ footer .search-panel .selection .selection-item.active:hover {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 12px;
+}
+
+.fare-detail-title { 
+    padding-inline-end: 0.4em;
 }
 
 .fare-detail-value { 

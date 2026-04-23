@@ -21,7 +21,9 @@
         "time_years_ago":{"zh_hans":"{n}年前", "en": "{n} year(s) ago", "zh_hant":"{n}年前", "uk": "{n} р. тому"},
         "shortcut_keys":{"zh_hans":"快捷键", "en": "Shortcut keys", "zh_hant":"快捷鍵", "uk": "Гарячі клавіші"},
         "hold_key":{"zh_hans":"按住", "en": "Hold ", "zh_hant":"按住", "uk": "Натисніть "},
-        "toggle_compact_mode":{"zh_hans":"切换紧凑模式", "en": "Toggle compact mode", "zh_hant":"切換緊湊模式", "uk": "Перемкнути компактний режим"}
+        "toggle_compact_mode":{"zh_hans":"切换紧凑模式", "en": "Toggle compact mode", "zh_hant":"切換緊湊模式", "uk": "Перемкнути компактний режим"},
+        "colon":{"zh_hans":"：", "en": ": ", "zh_hant":"：", "uk": ": "},
+        "comma":{"zh_hans":"，", "en": ", ", "zh_hant":"，", "uk": ", "}
     },
     "404":{
         "page_not_found":{"zh_hans":"找不到页面", "en": "Page not found", "zh_hant":"找不到頁面", "uk": "Сторінка не знайдена"},
@@ -96,6 +98,7 @@
         "resume_on_loading":{"zh_hans":"从离开的位置继续", "en": "Continue from last query", "zh_hant":"從離開的位置繼續", "uk": "Продовжити з останнього запиту"},
         "use_system_dialog":{"zh_hans":"使用系统对话框", "en": "Use system dialog", "zh_hant":"使用系統對話框", "uk":"Використати системний діалог"},
         "open_in_content":{"zh_hans":"使用新页面展示详情", "en": "Show details in new page", "zh_hant":"使用新頁面展示詳情", "uk": "Відкрити в новий вміст"},
+        "show_fare_calculation":{"zh_hans":"显示票价计算过程", "en": "Show fare calculation", "zh_hant":"顯示票價計算過程", "uk": "Показувати обчислення ціни"},
         "collapse_sidebar":{"zh_hans":"宽屏模式下收起侧边栏", "en": "Collapse side bar in wide screen", "zh_hant":"寬屏模式下折疊側欄", "uk": "Згорнути бічну панель на широкому екрані"},
         "swap_footer_items":{"zh_hans":"交换底栏控件顺序", "en": "Swap footer items", "zh_hant":"交換底欄控件順序", "uk": "Поміняти місцями елементи нижнього колонтитула"},
         "hover_effects":{"zh_hans":"悬停光效", "en": "Hover effects", "zh_hant":"懸停光效", "uk": "Зворотній ефект"},
@@ -209,7 +212,30 @@
             "en": "Saved visited pages",
             "zh_hant": "存儲的訪問記錄",
             "uk": "Збережені переглянуті сторінки"
+        },
+        "pov_progress":{
+            "zh_hans": "保存的动态导览进度",
+            "en": "Saved POV Frame progress",
+            "zh_hant": "存儲的動態導覽進度",
+            "uk": "Збережені прогрес фрейму"
         }
+    },
+    "district_names":{
+        "A":{"zh_hans": "新屿都阿提米丝市{addr}", "en": "{addr}, Artemis Municipality, Xinyu Metropolis", "zh_hant": "新嶼都阿提米絲市{addr}", "uk": "{addr}, муніципалітет Артеміса, метрополія Сїньюй"},
+        "AF":{"zh_hans": "新屿都阿提米丝市船桥堂区{addr}", "en": "{addr}, Funabashi Parish, Artemis Municipality, Xinyu Metropolis", "zh_hant": "新嶼都阿提米絲市船橋堂區{addr}", "uk": "{addr}, Парафія Фунабаші, муніципалітет Артеміса, метрополія Сїньюй"},
+        "G":{"zh_hans":"广阳县{addr}","en": "{addr}, Guangyang County", "zh_hant": "廣陽縣{addr}", "uk": "{addr}, Округ Ґуанъян"},
+        "GB":{"zh_hans": "广阳县北安区{addr}", "en": "{addr}, Bei'an District, Guangyang County", "zh_hant": "廣陽縣北安區{addr}", "uk": "{addr}, район Бейань, Округ Ґуанъян"},
+        "J":{"zh_hans":"旧巷县{addr}","en": "{addr}, Jiuxiang County", "zh_hant": "舊巷縣{addr}", "uk": "{addr}, Округ Цзюсян"},
+        "JB":{"zh_hans": "旧巷县滨海区{addr}", "en": "{addr}, Binhai District, Jiuxiang County", "zh_hant": "舊巷縣濱海區{addr}", "uk": "{addr}, район Біньхай, Округ Цзюсян"},
+        "L":{"zh_hans":"龙门县{addr}","en": "{addr}, Longmen County", "zh_hant": "龍門縣{addr}", "uk": "{addr}, Округ Лунмень"},
+        "N":{"zh_hans":"莒南县{addr}","en": "{addr}, Junan County", "zh_hant": "莒南縣{addr}", "uk": "{addr}, Округ Цзюйнань"},
+        "Q":{"zh_hans":"沁京都{addr}","en": "{addr}, Qinjing Metropolis", "zh_hant": "沁京都{addr}", "uk": "{addr}, метрополія Цїньцзїн"},
+        "S":{"zh_hans":"静见都{addr}","en": "{addr}, Shizumi Metropolis", "zh_hant": "靜見都{addr}", "uk": "{addr}, метрополія Шідзумі"},
+        "SM":{"zh_hans":"静见都静见区{addr}","en": "{addr}, Shizumi District, Shizumi Metropolis", "zh_hant": "靜見都靜見區{addr}", "uk": "{addr}, район Шідзумі, метрополія Шідзумі"},
+        "SN":{"zh_hans":"静见都宁海川区{addr}","en": "{addr}, Ninghaichuan District, Shizumi Metropolis", "zh_hant": "靜見都寜海川區{addr}", "uk": "{addr}, район Нінхайчуань, метрополія Шідзумі"},
+        "W":{"zh_hans":"欧文州{addr}","en": "{addr}, Owen State", "zh_hant": "歐文州{addr}", "uk": "{addr}, Штат Оуен"},
+        "X":{"zh_hans": "新屿都{addr}", "en": "{addr}, Xinyu Metropolis", "zh_hant": "新嶼都{addr}", "uk": "{addr}, метрополія Сїньюй"},
+        "Y":{"zh_hans":"颐恒县{addr}","en": "{addr}, Yiheng County", "zh_hant": "頤恆縣{addr}", "uk": "{addr}, Округ Їхен"}
     },
     "station_names":{
         "AFN":{"original": "船橋", "zh_hans": "船桥", "en": "Funabashi", "zh_hant": "船橋", "uk": "Фунабаші"},
@@ -329,6 +355,7 @@
         "transfer_at": {"zh_hans": " 换乘", "en": "Transfer at ", "zh_hant": " 換乘", "uk": "Пересісти на "},
         "min": {"zh_hans":"分钟", "en": "min", "zh_hant":"分鐘", "uk": " хв."},
         "hours": {"zh_hans": "时", "en": "h", "zh_hant": "時", "uk": " год. "},
+        "km": {"zh_hans": "公里", "en": "km", "zh_hant": "公里", "uk": " км"},
         "depart_from": {"zh_hans": " 出发", "en": "Depart from ", "zh_hant": " 出發", "uk": "Відправлення з "},
         "arrive_at": {"zh_hans": "到达 ", "en": "Arrive at ", "zh_hant": "到達 ", "uk": "Прибуття в "},
         "type_and_search_to_display_results": {
@@ -380,7 +407,7 @@
         "train_not_found":{"zh_hans":"未找到该列车信息", "en": "Train info not found", "zh_hant":"未找到該列車資訊", "uk": "Інформація про потяг не знайдена"},
         "series_not_found":{"zh_hans":"未找到该车型信息", "en": "Series info not found", "zh_hant":"未找到該車型資訊", "uk": "Інформація про серія не знайдена"},
         "cars":{"zh_hans":"编", "en": "-car", "zh_hant":"輌", "uk": "-сіль"},
-        "km_to":{"zh_hans":"km后到达", "en": "km to ", "zh_hant":"km後到達", "uk": "km до "},
+        "km_to":{"zh_hans":"km后到达", "en": "km to ", "zh_hant":"km後到達", "uk": " км до "},
         "platform":{"zh_hans":"站台", "en": "Platform ", "zh_hant":"月臺", "uk": "Платформа "},
         "min_to_arrival":{"zh_hans":"分钟", "en": "min", "zh_hant":"分鐘", "uk": " хвилин"},
         "arriving":{"zh_hans":"即将到达", "en": "Arriving", "zh_hant":"即將到達", "uk": "Прибуває"},
