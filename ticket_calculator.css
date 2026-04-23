@@ -420,13 +420,19 @@ footer .search-panel .selection .selection-item.active:hover {
 }
 
 .fare-detail-item { 
-    display: flex;
+    display: inline;
     flex-direction: row;
     align-items: center;
 }
 
 .fare-detail-title { 
     padding-inline-end: 0.4em;
+}
+
+.fare-detail-item .fare-detail-title:not(:first-of-type) { 
+    opacity: 0.5;
+    font-weight: 300;
+    font-size: 0.8em;
 }
 
 .fare-detail-value { 

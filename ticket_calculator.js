@@ -243,20 +243,20 @@ function init() {
 > Fare less than 0.05 are rounded down to the nearest 0.05`,
         'uk': `
 > Місцеві/експрес-поїзди стягують базовий тариф:
-- Початковий тариф ¥3 за перші 3 км
-- ¥1 за кожні додаткові 2,5 км між 3–18 км
-- ¥1 за кожні додаткові 3,5 км між 18–32 км
-- ¥1 за кожні додаткові 5 км понад 32 км
+- Початковий тариф ￥3 за перші 3 км
+- ￥1 за кожні додаткові 2,5 км між 3–18 км
+- ￥1 за кожні додаткові 3,5 км між 18–32 км
+- ￥1 за кожні додаткові 5 км понад 32 км
 - Базовий тариф за однаковими пунктами початку/кінця обчислюється відповідно до найкоротшої відстані для місцевих поїздів
 - Частини кілометрів розраховуються відповідно до відповідної відстані
 
 > Експрес-поїзди стягують експрес-доплату залежно від фактичної відстані:
-- ¥0,65/км за частину понад 3 км
-- ¥0,45/км за частину понад 15 км
+- ￥0,65/км за частину понад 3 км
+- ￥0,45/км за частину понад 15 км
 - Відстані менше 1 км вважаються 1 км
 
 > Плата за квиток першого класу стягується додатково на половину ціни
-> Місця преміум-класу стягують вдвічі більше доплати за експрес, мінімальний тариф ¥29
+> Місця преміум-класу стягують вдвічі більше доплати за експрес, мінімальний тариф ￥29
 > Частини кілометрів заокругляються до найближчого 0,05`,
     };
     fareInfoBtns.forEach(fareInfoBtn => {
@@ -1471,7 +1471,7 @@ function renderSearchResults(routes, container) {
             <div class="route-header">
                 <div class="route-title"> 
                     <h3>${strings.ticket_calculator.route[lang] || '路线'} ${index + 1}: ${route.segments ? route.segments.map((segment, segIndex) => segment ? segment.line : '').join(' → ') : ''}</h3>
-                    <span class="fare">¥${(Math.floor(route.fare*20)/20).toFixed(2)}</span>
+                    <span class="fare">￥${(Math.floor(route.fare*20)/20).toFixed(2)}</span>
                 </div>
                 <div class="route-summary">
                     <span>${strings.ticket_calculator.total_distance[lang] || '总距离'}: ${(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]}</span>
@@ -1615,7 +1615,7 @@ function renderSearchResults(routes, container) {
             <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>${
                 (addition > 0 ? '￥'+basicFare.toFixed(2)+' + '+additionalDistanceText+' = ' : '')
             }</span>
-            <span class="fare-detail-value">¥${(Math.floor(secondClassFare*20)/20).toFixed(2)}</span>
+            <span class="fare-detail-value">￥${(Math.floor(secondClassFare*20)/20).toFixed(2)}</span>
         </div>
         <div class="fare-detail-item first">
             <span class="fare-detail-title">${
@@ -1626,7 +1626,7 @@ function renderSearchResults(routes, container) {
                 '￥'+secondClassFare.toFixed(2)+' × 150% = '+
                 ((firstClassFare*100).toFixed(0)%5!==0 ? '<s>￥'+firstClassFare.toFixed(2)+'</s>': '')
             }</span>
-            <span class="fare-detail-value">¥${(Math.floor(firstClassFare*20)/20).toFixed(2)}</span>
+            <span class="fare-detail-value">￥${(Math.floor(firstClassFare*20)/20).toFixed(2)}</span>
         </div>
         <div class="fare-detail-item premium"${route.segments.filter(segment => segment.line.startsWith('GX')).length > 0 ? '' : ' style="display: none;"'}>
             <span class="fare-detail-title">${
@@ -1639,7 +1639,7 @@ function renderSearchResults(routes, container) {
                     ((premiumClassFare*100).toFixed(0)%5!==0 ? '<s>￥'+premiumClassFare.toFixed(2)+'</s>': '')
                 ): ''
             }</span>
-            <span class="fare-detail-value">¥${(Math.floor(premiumClassFare*20)/20).toFixed(2)}</span>
+            <span class="fare-detail-value">￥${(Math.floor(premiumClassFare*20)/20).toFixed(2)}</span>
         </div>`
         fareDetails.innerHTML = fareDetailsHTML;
         routeElement.appendChild(fareDetails);
