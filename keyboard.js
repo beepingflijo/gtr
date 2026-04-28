@@ -301,7 +301,8 @@ function listenKeyboardShortcuts() {
                 </div>
             `;
             setTimeout(() => {
-                if (Date.now() - shortcutStartTime > 1000 && (shortcutEndTime < Date.now() - 1000 || !shortcutEndTime)) {
+                if (Date.now() - shortcutStartTime > 1000 && (shortcutEndTime < shortcutStartTime || !shortcutEndTime)) {
+                    console.log('show shortcut',shortcutStartTime,shortcutEndTime);
                     pushDialog(shortcutList, 'custom');
                     const appendedList = document.querySelector('.modal-overlay .shortcut-list');
                     const listParent = appendedList.parentElement;
@@ -341,6 +342,15 @@ function listenKeyboardShortcuts() {
             if (overlay.querySelector('.shortcut-list')) {
                 closeDialog(overlay);
             }
+        });
+    });
+    // 浏览器失去焦点时关闭窗口
+    window.addEventListener('blur', function() {
+        shortcutEndTime = Date.now();
+        console.log('blur',shortcutEndTime);
+        const modalOverlay = document.querySelectorAll('.modal-overlay');
+        modalOverlay.forEach(overlay => {
+            closeDialog(overlay);
         });
     });
 }

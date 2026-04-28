@@ -352,7 +352,7 @@ footer .search-panel .selection .selection-item.active:hover {
     height: 12px;
     min-width: 12px;
     min-height: 12px;
-    border: 4px solid var(--color-text-secondary);
+    border: 4px solid var(--color-text-secondary-solid);
     border-radius: 50%;
     z-index: 0;
     margin: 3px 0;
@@ -367,7 +367,7 @@ footer .search-panel .selection .selection-item.active:hover {
     height: -webkit-fill-available;
     max-height: 1em;
     margin-bottom: 24px;
-    background-color: var(--color-text-secondary);
+    background-color: var(--color-text-secondary-solid);
     position: relative;
     left: calc(-100% + 13px);
 }
@@ -414,21 +414,14 @@ footer .search-panel .selection .selection-item.active:hover {
 }
 
 .fare-details { 
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-flow: dense;
+    width: -webkit-fill-available;
     gap: 12px;
     color: var(--color-text-secondary);
-    justify-content: flex-start;
     padding: 6px;
     margin-bottom: 3px;
-    height: max-content;
-}
-
-@media (width < 540px) {
-    .fare-details { 
-        flex-direction: column;
-    }
 }
 
 .fare-detail-item { 
@@ -436,11 +429,12 @@ footer .search-panel .selection .selection-item.active:hover {
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    width: -webkit-fill-available;
+    min-width: min-content;
     background-color: var(--color-secondary-hover);
     padding: 12px;
     border-radius: 12px;
     gap: 4px;
+    grid-column: span 1;
 }
 
 .fare-detail-title { 
@@ -498,4 +492,26 @@ footer .search-panel .selection .selection-item.active:hover {
     font-variation-settings: 'wght' 500, 'opsz' 20;
     position: absolute;
     transform: translateX(-40%);
+}
+
+/* 响应式设计：小屏幕时允许fare-detail-item跨越多列 */
+@media (max-width: 768px) {
+    .fare-details {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .fare-detail-item {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 480px) {
+    .fare-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .fare-detail-item {
+        grid-column: span 1;
+        position: relative;
+    }
 }

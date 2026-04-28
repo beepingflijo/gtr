@@ -784,7 +784,7 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
                 if (title === '' && !content.classList?.contains('shortcut-list')) content.style.paddingTop = '24px';
             } else dialogContent.textContent = content;
             if (title === '' && !content.classList?.contains('shortcut-list')) {
-                dialogContent.style.paddingTop = '24px';
+                contentContainer.style.paddingTop = '24px';
             }
             contentContainer.appendChild(type==='custom'?content:dialogContent);
 

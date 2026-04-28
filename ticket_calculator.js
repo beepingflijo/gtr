@@ -1860,7 +1860,7 @@ function handleWindowResize() {
         activeTab.removeChild(activeTab.children[1]);
     }
 
-    const allPanels = document.querySelectorAll('.search-panel');
+    const allPanels = document.querySelectorAll('footer .search-panel');
     allPanels.forEach(panel => {
         const title = panel.querySelector('.search-title');
         const titleIcon = title.querySelector('.material-symbols-outlined');
@@ -1933,7 +1933,7 @@ function handleWindowResize() {
         main.style.paddingLeft = '24px';
         main.style.paddingBottom = `144px`;
         
-        const searchTitle = footerPanel.querySelector('.search-title');
+        const searchTitle = footerPanel.querySelector('footer .search-title');
         const searchTitleImg = searchTitle.querySelector('.material-symbols-outlined');
         const searchTitleText = searchTitle.querySelector('h4');
 

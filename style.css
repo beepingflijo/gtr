@@ -34,6 +34,7 @@
     --color-border: #00000044;
     --color-text: #000000ee;
     --color-text-secondary: #00000088;
+    --color-text-secondary-solid: #888;
     --color-text-on-primary: #fff;
     --mask-image-overflow-y: linear-gradient(transparent 1%, white 5%, white 95%, transparent 99%);
     --mask-image-overflow-y-top: linear-gradient(white 95%, transparent 99%);
