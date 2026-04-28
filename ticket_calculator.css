@@ -425,11 +425,17 @@ footer .search-panel .selection .selection-item.active:hover {
     height: max-content;
 }
 
+@media (width < 540px) {
+    .fare-details { 
+        flex-direction: column;
+    }
+}
+
 .fare-detail-item { 
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     width: -webkit-fill-available;
     background-color: var(--color-secondary-hover);
     padding: 12px;
@@ -441,6 +447,7 @@ footer .search-panel .selection .selection-item.active:hover {
     width: -webkit-fill-available;
     height: -webkit-fill-available;
     padding-block-end: 0.3em;
+    flex-wrap: wrap;
 }
 
 .fare-detail-item .fare-detail-title:not(:first-of-type) { 
@@ -453,12 +460,17 @@ footer .search-panel .selection .selection-item.active:hover {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    width: -webkit-fill-available;
+    position: relative;
+    padding-inline-end: 3.5em;
 }
 
 .fare-detail-item .fare-detail-title span:not(:first-of-type) { 
     white-space: nowrap;
-    min-width: 4em;
     text-align: end;
+    width: fit-content;
+    position: absolute;
+    right: 0;
 }
 
 .fare-detail-value { 
