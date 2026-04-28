@@ -395,6 +395,10 @@
             {
                 "type":"ticket","floor":"2F",
                 "dir":"east"
+            },
+            {
+                "type":"longue","floor":"2F",
+                "plat":"2","plat_side":"down"
             }
         ],
         "floors":[
@@ -906,11 +910,16 @@
             {
                 "type":"ticket","floor":"B1",
                 "dir":"west"
+            },
+            {
+                "type":"longue","floor":"MF",
+                "dir":"north"
             }
         ],
         "floors":[
             {"id":"2F","type":"platform"},
             {"id":"1F","type":"concourse"},
+            {"id":"MF","type":"concourse"},
             {"id":"B1","type":"concourse"},
             {"id":"B2","type":"transfer"}
         ],

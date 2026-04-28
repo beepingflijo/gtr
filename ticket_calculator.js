@@ -226,37 +226,37 @@ function init() {
 > 不足0.05元部分捨去`,
         'en': `
 > Local/Express trains charge a Basic fare:
-- Starting fare of ￥3 within 3 km
-- ￥1 for every additional 2.5 km between 3–18 km
-- ￥1 for every additional 3.5 km between 18–32 km
-- ￥1 for every additional 5 km beyond 32 km
+- Starting fare of ¥3 within 3 km
+- ¥1 for every additional 2.5 km between 3–18 km
+- ¥1 for every additional 3.5 km between 18–32 km
+- ¥1 for every additional 5 km beyond 32 km
 - The basic fare with same start/end points is calculated according to the shortest distance for local trains
 - Fractions are calculated according to the corresponding distance
 
 > Express trains charge an Express addition based on actual distance:
-- ￥0.65/km for the portion exceeding 3 km
-- ￥0.45/km for the portion exceeding 15 km
+- ¥0.65/km for the portion exceeding 3 km
+- ¥0.45/km for the portion exceeding 15 km
 - Distances less than 1 km are counted as 1 km
 
 > First-class seats charge an additional half of the fare
-> Premium-class seats charge twice the Express addition, minimum fare ￥29
+> Premium-class seats charge twice the Express addition, minimum fare ¥29
 > Fare less than 0.05 are rounded down to the nearest 0.05`,
         'uk': `
 > Місцеві/експрес-поїзди стягують базовий тариф:
-- Початковий тариф ￥3 за перші 3 км
-- ￥1 за кожні додаткові 2,5 км між 3–18 км
-- ￥1 за кожні додаткові 3,5 км між 18–32 км
-- ￥1 за кожні додаткові 5 км понад 32 км
+- Початковий тариф ¥3 за перші 3 км
+- ¥1 за кожні додаткові 2,5 км між 3–18 км
+- ¥1 за кожні додаткові 3,5 км між 18–32 км
+- ¥1 за кожні додаткові 5 км понад 32 км
 - Базовий тариф за однаковими пунктами початку/кінця обчислюється відповідно до найкоротшої відстані для місцевих поїздів
 - Частини кілометрів розраховуються відповідно до відповідної відстані
 
 > Експрес-поїзди стягують експрес-доплату залежно від фактичної відстані:
-- ￥0,65/км за частину понад 3 км
-- ￥0,45/км за частину понад 15 км
+- ¥0,65/км за частину понад 3 км
+- ¥0,45/км за частину понад 15 км
 - Відстані менше 1 км вважаються 1 км
 
 > Плата за квиток першого класу стягується додатково на половину ціни
-> Місця преміум-класу стягують вдвічі більше доплати за експрес, мінімальний тариф ￥29
+> Місця преміум-класу стягують вдвічі більше доплати за експрес, мінімальний тариф ¥29
 > Частини кілометрів заокругляються до найближчого 0,05`,
     };
     fareInfoBtns.forEach(fareInfoBtn => {
@@ -1471,7 +1471,7 @@ function renderSearchResults(routes, container) {
             <div class="route-header">
                 <div class="route-title"> 
                     <h3>${strings.ticket_calculator.route[lang] || '路线'} ${index + 1}: ${route.segments ? route.segments.map((segment, segIndex) => segment ? segment.line : '').join(' → ') : ''}</h3>
-                    <span class="fare">￥${(Math.floor(route.fare*20)/20).toFixed(2)}</span>
+                    <span class="fare">¥<b>${(Math.floor(route.fare*20)/20).toFixed(2)}</b></span>
                 </div>
                 <div class="route-summary">
                     <span>${strings.ticket_calculator.total_distance[lang] || '总距离'}: ${(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]}</span>
@@ -1599,9 +1599,9 @@ function renderSearchResults(routes, container) {
             .reduce((sum, distance) => sum + distance, 0);
         let additionalDistanceText = '';
         if (additionalDistance > 15000) {
-            additionalDistanceText = `￥0.65 × 12 + ￥0.45 × ${Math.ceil((additionalDistance/1000)-15)}`;
+            additionalDistanceText = `¥0.65 × 12 + ¥0.45 × ${Math.ceil((additionalDistance/1000)-15)}`;
         } else if (additionalDistance > 3000) {
-            additionalDistanceText = `￥0.65 × ${Math.ceil((additionalDistance/1000)-3)}`;
+            additionalDistanceText = `¥0.65 × ${Math.ceil((additionalDistance/1000)-3)}`;
         }
         const firstClassFare = route.fare * 1.5;
         const premiumClassAddition = addition * 2;
@@ -1612,34 +1612,57 @@ function renderSearchResults(routes, container) {
                 strings.ticket_calculator.second_class[lang] + ' / ' 
                 + strings.ticket_calculator.no_seat_class[lang]  || '二等座/无座'
             }</span>
-            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>${
-                (addition > 0 ? '￥'+basicFare.toFixed(2)+' + '+additionalDistanceText+' = ' : '')
-            }</span>
-            <span class="fare-detail-value">￥${(Math.floor(secondClassFare*20)/20).toFixed(2)}</span>
+            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
+                <span>¥${(basicFare.toFixed(2))}</span>
+            </span>
+            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
+                <span>${(addition > 0 ? '¥'+addition.toFixed(2) : '')}</span>
+            </span>
+            <span class="fare-detail-value">¥<b>${(Math.floor(secondClassFare*20)/20).toFixed(2)}</b></span>
         </div>
         <div class="fare-detail-item first">
             <span class="fare-detail-title">${
                 strings.ticket_calculator.first_class[lang] + ' (' 
                 + strings.ticket_calculator.if_available[lang]  + ') ' || '一等座（如有）'
             }</span>
-            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>${
-                '￥'+secondClassFare.toFixed(2)+' × 150% = '+
-                ((firstClassFare*100).toFixed(0)%5!==0 ? '<s>￥'+firstClassFare.toFixed(2)+'</s>': '')
-            }</span>
-            <span class="fare-detail-value">￥${(Math.floor(firstClassFare*20)/20).toFixed(2)}</span>
+            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
+                <span>¥${basicFare.toFixed(2)}</span>
+            </span>
+            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
+                <span>¥${addition.toFixed(2)}</span>
+            </span>
+            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.first_class_addition[lang]}</span>
+                <span>¥${((basicFare+addition)/2).toFixed(2)}</span>
+            </span>
+            <span class="fare-detail-title" ${showFareCalculation && (firstClassFare*100).toFixed(0)%5!==0 ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.price_rounding[lang]}</span>
+                <span>-¥${(firstClassFare-Math.floor(firstClassFare*20)/20).toFixed(2)}</span>
+            </span>
+            <span class="fare-detail-value">¥<b>${(Math.floor(firstClassFare*20)/20).toFixed(2)}</b></span>
         </div>
         <div class="fare-detail-item premium"${route.segments.filter(segment => segment.line.startsWith('GX')).length > 0 ? '' : ' style="display: none;"'}>
             <span class="fare-detail-title">${
                 strings.ticket_calculator.premium_class[lang] + ' (' 
                 + strings.ticket_calculator.if_available[lang] + ') ' || '商务座（如有）'
             }</span>
-            <span class="fare-detail-title" ${showFareCalculation && premiumClassFare > 29 ? '' : 'style="display: none;"'}>${
-                premiumClassFare > 29 ? (
-                    '￥'+secondClassFare.toFixed(2)+' + ('+additionalDistanceText+') × 200% = '+
-                    ((premiumClassFare*100).toFixed(0)%5!==0 ? '<s>￥'+premiumClassFare.toFixed(2)+'</s>': '')
-                ): ''
-            }</span>
-            <span class="fare-detail-value">￥${(Math.floor(premiumClassFare*20)/20).toFixed(2)}</span>
+            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
+                <span>${(addition > 0 ? '¥'+basicFare.toFixed(2) : '')}</span>
+            </span>
+            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
+                <span>${(addition > 0 ? '¥'+addition.toFixed(2) : '')}</span>
+            </span>
+            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>
+                <span>${strings.ticket_calculator.premium_class_addition[lang]}</span>
+                <span>¥${(premiumClassFare === 29 ? (29-secondClassFare) : (addition*2)).toFixed(2)}</span>
+            </span>
+            <span class="fare-detail-value">¥<b>${(Math.floor(premiumClassFare*20)/20).toFixed(2)}</b></span>
         </div>`
         fareDetails.innerHTML = fareDetailsHTML;
         routeElement.appendChild(fareDetails);

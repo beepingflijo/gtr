@@ -165,7 +165,7 @@
 }
 
 @media (prefers-color-scheme: dark) { 
-    :root { 
+    :root:not(.light) { 
         --color-primary-transparent: #a64e0680;
         --color-background: #111;
         --color-background-actions: #212121f0;

@@ -204,8 +204,13 @@ footer .search-panel .selection .selection-item.active:hover {
 
 .route-title .fare {
     color: var(--color-primary);
+    font-weight: 400;
+    font-size: 1.4em;
+}
+
+.route-title .fare b {
+    font-size: 1.2em;
     font-weight: 600;
-    font-size: 24px;
 }
 
 .route-summary {
@@ -411,33 +416,58 @@ footer .search-panel .selection .selection-item.active:hover {
 .fare-details { 
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px 24px;
+    flex-wrap: nowrap;
+    gap: 12px;
     color: var(--color-text-secondary);
     justify-content: flex-start;
     padding: 6px;
     margin-bottom: 3px;
+    height: max-content;
 }
 
 .fare-detail-item { 
-    display: inline;
-    flex-direction: row;
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: space-between;
+    width: -webkit-fill-available;
+    background-color: var(--color-secondary-hover);
+    padding: 12px;
+    border-radius: 12px;
+    gap: 4px;
 }
 
 .fare-detail-title { 
-    padding-inline-end: 0.4em;
+    width: -webkit-fill-available;
+    height: -webkit-fill-available;
+    padding-block-end: 0.3em;
 }
 
 .fare-detail-item .fare-detail-title:not(:first-of-type) { 
+    padding-block-end: 0;
+    height: fit-content;
     opacity: 0.5;
     font-weight: 300;
     font-size: 0.8em;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fare-detail-item .fare-detail-title span:not(:first-of-type) { 
+    white-space: nowrap;
+    min-width: 4em;
+    text-align: end;
 }
 
 .fare-detail-value { 
     color: var(--color-primary);
-    font-weight: bold;
+    width: -webkit-fill-available;
+    text-align: end;
+}
+
+.fare-detail-value b { 
     font-size: 1.2em;
 }
 

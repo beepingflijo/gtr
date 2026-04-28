@@ -86,9 +86,11 @@ function applySavedTheme() {
     if (savedTheme === 'light') {
         html.setAttribute('data-theme', 'light');
         html.classList.remove('dark');
+        html.classList.add('light');
     } else if (savedTheme === 'dark') {
         html.setAttribute('data-theme', 'dark');
         html.classList.add('dark');
+        html.classList.remove('light');
     } else {
         // 跟随系统
         html.removeAttribute('data-theme');

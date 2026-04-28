@@ -399,7 +399,12 @@
         "facility_no_seat": {"zh_hans": "可能需站立", "en": "Possibly need to stand", "zh_hant": "可能需站立", "uk": "Можливо потрібно стояти"},
         "_seats": {"zh_hans": "个座位", "en": " seats,", "zh_hant": "个座位", "uk": " місць,"},
         "fare_info": {"zh_hans":"计费规则","en": "Billing rules", "zh_hant":"計費規則", "uk":"Правила виставлення рахунків"},
-        "max_spd": {"zh_hans":"最高时速", "en": "Max speed", "zh_hant":"最高時速", "uk": "Максимальна швидкість"}
+        "max_spd": {"zh_hans":"最高时速", "en": "Max speed", "zh_hant":"最高時速", "uk": "Максимальна швидкість"},
+        "basic_fare": {"zh_hans":"基础票价","en":"Basic fare", "zh_hant":"基礎票價", "uk": "Основна ціна"},
+        "additional_fare": {"zh_hans":"加快费","en":"Additional fare", "zh_hant":"加快費", "uk": "Додаткова ціна"},
+        "first_class_addition": {"zh_hans":"一等座附加费", "en": "First class addition", "zh_hant": "一等座附加費", "uk": "Додаткова ціна для першого класу"},
+        "premium_class_addition": {"zh_hans":"商务座附加费", "en": "Premium class addition", "zh_hant": "商務座附加費", "uk": "Додаткова ціна для преміум класу"},
+        "price_rounding": {"zh_hans":"舍分", "en":"Round to nearest", "zh_hant":"捨分", "uk":"Округлення до найближчого"}
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},
