@@ -6956,6 +6956,22 @@
         "location":{"x":398.5,"y":67.0,"z":8498.5},"angle":0.0,"assembling":false
     },
     {
+        "name":"JBN01A",
+        "location":{"x":1074,"y":49,"z":11270},"angle":360.0
+    },
+    {
+        "name":"JBN02A",
+        "location":{"x":1082,"y":49,"z":11270},"angle":360.0
+    },
+    {
+        "name":"JBX01A",
+        "location":{"x":715,"y":49,"z":9295},"angle":180.0
+    },
+    {
+        "name":"JBX02B",
+        "location":{"x":741,"y":49,"z":9160},"angle":360.0
+    },
+    {
         "id":"c7fa3f45-6143-4882-9cbc-9950bf894fe7",
         "name":"JXB12B","dimension":"minecraft:overworld",
         "location":{"x":-1172.5,"y":66.0,"z":5472.5},"angle":180.0,"assembling":false
@@ -7014,6 +7030,10 @@
         "id":"8ceea138-1238-4796-8349-fe27cf5c5b35",
         "name":"JXX07B","dimension":"minecraft:overworld",
         "location":{"x":910.5,"y":67.0,"z":9987.5},"angle":270.0,"assembling":false
+    },
+    {
+        "name":"NZZ01A",
+        "location":{"x":6586,"y":65,"z":-1920},"angle":180.0
     },
     {
         "name":"NZZ02B",

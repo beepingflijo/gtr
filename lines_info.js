@@ -1125,7 +1125,7 @@ function updateLineInfoDisplay(activeLineId) {
         const lineLength = measureLineLengths(activeLineId);
         updateTime.innerHTML = `${
             strings.lines_info.total_length[lang] + 
-            Math.round(lineLength / 1000, 4) + strings.ticket_calculator.km[lang] +
+            (lineLength / 1000).toFixed(1) + strings.ticket_calculator.km[lang] +
             strings.lines_info.and_total_time[lang] +
             calculateLineTotalTime(activeLineId) +
             strings.ticket_calculator.min[lang]
@@ -1336,7 +1336,7 @@ function loadSegmentInfo() {
                 segmentLength.className = 'segment-length';
             }
             segmentLength.textContent = '↕ ' +
-                Math.round(measureSegmentLength(activeLineId, index) / 1000, 4) + strings.ticket_calculator.km[lang] + ' ' 
+                (measureSegmentLength(activeLineId, index) / 1000).toFixed(1) + strings.ticket_calculator.km[lang] + ' ' 
                 + findSegmentDuration(activeLineId, index);
             element.appendChild(segmentLength);
         });
@@ -1360,7 +1360,7 @@ function loadUpdateTime() {
         console.log('Adding update-time element');
     }
     const lineLength = measureLineLengths(activeLineId);
-    updateTime.innerHTML = `${strings.lines_info.total_length[lang] + Math.round(lineLength / 1000, 4) + strings.ticket_calculator.km[lang]}`;
+    updateTime.innerHTML = `${strings.lines_info.total_length[lang] + (lineLength / 1000).toFixed(1) + strings.ticket_calculator.km[lang]}`;
 }
 
 function getActiveLineId () {

@@ -639,6 +639,40 @@
         ],
         "cover":""
     },
+    "LMW":{
+        "exits":[
+            {
+                "id":"1","dir":"west","floor":"1F",
+                "desc":"road","desc_dir":"north",
+                "facilities":[]
+            },
+            {
+                "id":"2","dir":"east","floor":"2F",
+                "desc":"tracks","desc_dir":"north",
+                "facilities":["elevator","stairs"]
+            }
+        ],
+        "facilities":[
+            {
+                "type":"platforms","floor":"2F",
+                "desc":"1/2","lines":["中央线"]
+            },
+            {
+                "type":"services","floor":"3F",
+                "dir":"north"
+            },
+            {
+                "type":"ticket","floor":"3F",
+                "dir":"north"
+            }
+        ],
+        "floors":[
+            {"id":"4F","type":"platform"},
+            {"id":"3F","type":"concourse"},
+            {"id":"2F","type":"transfer"}
+        ],
+        "cover":"https://assets.wiki.hydcraft.cn/8/87/%E9%80%9A%E8%BF%90%E9%93%81%E8%B7%AF%E5%8D%83%E5%B9%B4%E5%A1%94%E8%A5%BF%E7%AB%99.png"
+    },
     "NZZ":{
         "exits":[
             {
