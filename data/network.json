@@ -7032,6 +7032,14 @@
         "location":{"x":910.5,"y":67.0,"z":9987.5},"angle":270.0,"assembling":false
     },
     {
+        "name":"LMW03A",
+        "location":{"x":-467,"y":89,"z":73},"angle":180.0
+    },
+    {
+        "name":"LMW04A",
+        "location":{"x":-454,"y":89,"z":73},"angle":180.0
+    },
+    {
         "name":"NZZ01A",
         "location":{"x":6586,"y":65,"z":-1920},"angle":180.0
     },

@@ -434,7 +434,7 @@
     },
     "station_info": {
         "info_not_found":{"zh_hans":"未找到此站信息", "en": "No station info found", "zh_hant":"未找到此站信息", "uk": "Не знайдено інформації про станцію"},
-        "check_train_info":{"zh_hans":"查看列车信息", "en": "Check train info", "zh_hant":"查看列车信息", "uk": "Переглянути інформація про потяги"},
+        "check_train_info":{"zh_hans":"查看列车信息", "en": "Check train info", "zh_hant":"查看列車信息", "uk": "Переглянути інформація про потяги"},
         "exits":{"zh_hans":"出口", "en": "Exits", "zh_hant":"出口", "uk": "Виходи"},
         "north":{"zh_hans":"北", "en": "N", "zh_hant":"北", "uk": "Півн."},
         "south":{"zh_hans":"南", "en": "S", "zh_hant":"南", "uk": "Півд."},
@@ -448,7 +448,7 @@
         "floors":{"zh_hans":"楼层", "en": "Floors", "zh_hant":"樓層", "uk": "Поверхи"},
         "toilet":{"zh_hans":"卫生间", "en": "Toilet", "zh_hant":"衛生間", "uk": "Туалет"},
         "longue":{"zh_hans":"休息室", "en": "Longue", "zh_hant":"休息室", "uk": "Лонгю"},
-        "services":{"zh_hans":"服务台", "en": "Services", "zh_hant":"服務台", "uk": "Сервіс"},
+        "services":{"zh_hans":"服务台", "en": "Services", "zh_hant":"問訊處", "uk": "Сервіс"},
         "ticket":{"zh_hans":"售票处", "en": "Tickets", "zh_hant":"售票處", "uk": "Білет"},
         "luggage":{"zh_hans":"行李托运", "en": "Luggage check-in", "zh_hant":"行李託運", "uk": "Вантажовий перевіз"},
         "claim":{"zh_hans":"行李提取", "en": "Luggage claim", "zh_hant":"行李提取", "uk": "Вантажний вивіз"},
@@ -458,9 +458,9 @@
         "accessible_toilet":{"zh_hans":"无障碍卫生间", "en": "Accessible toilet", "zh_hant":"無障礙衛生間", "uk": "Безпечний туалет"},
         "family_toilet":{"zh_hans":"第三卫生间", "en": "Family toilet", "zh_hant":"第三衛生間", "uk": "Дружній туалет"},
         "road":{"zh_hans":"道路", "en": "Road", "zh_hant":"道路", "uk": "Дорога"},
-        "square":{"zh_hans":"广场", "en": "Square", "zh_hant":"广场", "uk": "Квартал"},
-        "building":{"zh_hans":"建筑物", "en": "Building", "zh_hant":"建筑物", "uk": "Будинок"},
-        "tracks":{"zh_hans":"轨道", "en": "Tracks", "zh_hant":"轨道", "uk": "Треки"},
+        "square":{"zh_hans":"广场", "en": "Square", "zh_hant":"廣場", "uk": "Квартал"},
+        "building":{"zh_hans":"建筑物", "en": "Building", "zh_hant":"建築物", "uk": "Будинок"},
+        "tracks":{"zh_hans":"轨道", "en": "Tracks", "zh_hant":"軌道", "uk": "Треки"},
         "crossing":{"zh_hans":"路口", "en": "Crossing", "zh_hant":"路口", "uk": "Перехід"},
         "river":{"zh_hans":"河流", "en": "River", "zh_hant":"河流", "uk": "Річка"},
         "north_side":{"zh_hans":"北侧", "en": ", North side", "zh_hant":"北側", "uk": ", На північ"},
@@ -488,9 +488,9 @@
         "mid_part":{"zh_hans": "中部", "en":"middle part", "zh_hant":"中部", "uk": "середній"},
         "floor_concourse":{"zh_hans": "站厅层", "en":"Concourse", "zh_hant":"大堂", "uk": "Класичний"},
         "floor_transfer":{"zh_hans": "换乘层", "en":"Transfer", "zh_hant":"轉乘", "uk": "Перехід"},
-        "floor_platform":{"zh_hans": "站台层", "en":"Platform", "zh_hant":"站台", "uk": "Треки"},
+        "floor_platform":{"zh_hans": "站台层", "en":"Platform", "zh_hant":"月臺", "uk": "Треки"},
         "_of_the_floor":{"zh_hans": " 位于楼层{dir}", "en":", {dir} of this floor", "zh_hant":" 位於樓層{dir}", "uk":", {dir} від цього поверху"},
-        "_of_platform_no_":{"zh_hans": " 位于{plat}站台{side}", "en": ", {side} of platform {plat}", "zh_hant": " 位於{plat}月台{side}", "uk": ", {side} на треки {plat}"},
-        "platforms":{"zh_hans": "{plat}站台", "en": "Platforms {plat}", "zh_hant": "{plat}月台", "uk": "Треки {plat}"}
+        "_of_platform_no_":{"zh_hans": " 位于{plat}站台{side}", "en": ", {side} of platform {plat}", "zh_hant": " 位於{plat}月臺{side}", "uk": ", {side} на треки {plat}"},
+        "platforms":{"zh_hans": "{plat}站台", "en": "Platforms {plat}", "zh_hant": "{plat}月臺", "uk": "Треки {plat}"}
     }
 }
