@@ -244,6 +244,7 @@ function initLanguageSelector() {
 // 当页面宽度改变时更新语言选择器
 window.addEventListener('resize', () => {
     initLanguageSelector();
+    handleActions();
     //hideNonActiveSelectionItems();
 });
 
@@ -283,11 +284,12 @@ selectionElements.forEach(selectionElement => {
     });
 });
 
-// 调整actions样式
-document.querySelectorAll('header .actions').forEach(actions => { 
-    if (actions.classList.contains('tabs') || actions.classList.contains('search-bar') && actions.classList.contains('collapsed')) actions.style.padding = '2px 4px';
-    else if (actions.children.length >= 2 ) actions.style.padding = '2px 8px';
-});
+function handleActions() { 
+    // 调整actions样式
+    document.querySelectorAll('.actions:not(.search-bar,.tabs)').forEach(actions => {
+        if (Array.from(actions.children).filter(child => !child.classList.contains('cursor')).length >= 2) actions.style.padding = '2px 8px';
+    });
+}
 
 function initSearchBar() {
     // 获取所有的搜索栏
@@ -663,7 +665,7 @@ function initTabs() {
 
 function addCursor() { 
     if (prefs.showCursor !== true || prefs.reduceMotion === true) return;
-    const containers = document.querySelectorAll('.tabs,.side-bar,footer > *,.tooltip, main .selection');
+    const containers = document.querySelectorAll('.tabs,.side-bar,footer > *,.tooltip');
     containers.forEach(container => { 
         const cursor = document.createElement('div');
         cursor.classList.add('cursor');

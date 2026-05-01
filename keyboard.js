@@ -350,7 +350,9 @@ function listenKeyboardShortcuts() {
         console.log('blur',shortcutEndTime);
         const modalOverlay = document.querySelectorAll('.modal-overlay');
         modalOverlay.forEach(overlay => {
-            closeDialog(overlay);
+            if (overlay.querySelector('.shortcut-list')) {
+                closeDialog(overlay);
+            }
         });
     });
 }

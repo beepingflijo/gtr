@@ -304,11 +304,13 @@ async function loadStationInfo(code, inDialog = true) {
                 exitInfo.innerHTML = `
                     <div class="exit-id ${exit.oneway!==undefined?exit.oneway:''}">${exitMain}<small ${exitSub===''?'style="display:none"':''}>${exitSub}</small></div>
                     <div class="exit-dir">${exit.floor+' <small>'+(exit.dir?strings.station_info[exit.dir][lang]:'')+'</small>'}</div>
-                    <div class="exit-desc">${(strings.station_info[exit.desc]?
+                    <div class="exit-desc">
+                        <span>${(strings.station_info[exit.desc]?
                         strings.station_info[exit.desc][lang]:exit.desc)+
                         (exit.desc_dir?strings.station_info[exit.desc_dir+'_side'][lang]:'')+' '+
-                        (exit.oneway!==undefined?(' ('+strings.station_info['way_'+exit.oneway][lang]+')'):'')}</div>
-                    <div class="exit-facilities material-symbols-outlined">${Array.isArray(exit.facilities) ? exit.facilities.join('') : ''}</div>
+                        (exit.oneway!==undefined?(' ('+strings.station_info['way_'+exit.oneway][lang]+')'):'')}</span>
+                        <div class="exit-facilities material-symbols-outlined">${Array.isArray(exit.facilities) ? exit.facilities.join('') : ''}</div>
+                    </div>
                 `;
                 exitsInfo.appendChild(exitInfo);
             });

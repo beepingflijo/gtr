@@ -571,6 +571,10 @@ footer > * {
     overflow: hidden;
 }
 
+footer > .actions {
+    min-width: unset;
+}
+
 footer.swapped {
     flex-direction: row-reverse;
 }
@@ -613,6 +617,12 @@ footer.swapped {
 
     .tabs.collapsed .tab-item.active .material-symbols-outlined { 
         transform: none !important;
+    }
+
+    footer .search-bar:not(.collapsed) input { 
+        width: -webkit-fill-available;
+        max-width: calc(100dvw - 165px);
+        height: 40px;
     }
 }
 
@@ -1400,7 +1410,6 @@ datalist {
 .search-bar.collapsed {
     width: fit-content;
     min-width: 34px;
-    padding: 0;
     overflow: hidden;
     background-color: var(--color-background-actions);
 }
@@ -1424,8 +1433,8 @@ header .search-bar:not(.collapsed) input {
 }
 
 footer .search-bar:not(.collapsed) input { 
-    width: -webkit-fill-available;
-    max-width: calc(100dvw - 165px);
+    width: calc(100dvw - 165px);
+    max-width: unset;
     height: 40px;
 }
 

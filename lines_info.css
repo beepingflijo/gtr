@@ -217,8 +217,11 @@
     margin-right: 6px;
 }
 
-.segment-length {
-    margin-left: 18px;
+.segment-length, .segment-length span {
+    margin-left: 0.5em;
+    font-size: 0.8em;
+    display: flex;
+    align-items: center;
 }
 
 .train-tooltip, .player-tooltip { 

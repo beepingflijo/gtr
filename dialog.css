@@ -195,6 +195,12 @@
 
 .exit-info .exit-desc { 
     width: -webkit-fill-available;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 0.3em;
 }
 
 .floors-info { 

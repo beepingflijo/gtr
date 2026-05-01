@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(handleFooterItemCollapse, 150);
         listenKeyboardShortcuts();
         addCursor();
+        handleActions();
         const tabs = document.querySelectorAll('footer .tabs');
         
         // 暴露 lang 到全局供其他模块使用

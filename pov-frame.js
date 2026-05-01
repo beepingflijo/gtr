@@ -173,6 +173,7 @@ function applyBackgroundMode(mode) {
     customBackground.parentElement.style.opacity = 0;
     customBackground.style.overflow = 'hidden';
     customBackground.parentElement.style.padding = '0 12px';
+    customBackground.parentElement.classList.add('collapsed');
     const colorInput = document.getElementById('backgroundColorInput');
     const videoInput = document.getElementById('backgroundVideoInput');
     videoInput.value = ''; // 重置视频输入
@@ -195,6 +196,7 @@ function applyBackgroundMode(mode) {
                 const color = e.target.value;
                 previewBackground.style.backgroundColor = color;
             });
+            customBackground.parentElement.classList.remove('collapsed');
             break;
         case 'video':
             customBackground.parentElement.style.height = '30px';
@@ -223,6 +225,7 @@ function applyBackgroundMode(mode) {
                     previewBackground.appendChild(videoElement);
                 }
             });
+            customBackground.parentElement.classList.remove('collapsed');
             break;
         case 'capture':
             customBackground.parentElement.style.height = '30px';
@@ -249,6 +252,7 @@ function applyBackgroundMode(mode) {
                     console.error('Error accessing display media:', err);
                 }
             });
+            customBackground.parentElement.classList.remove('collapsed');
             break;
         default:
             console.error('Invalid background mode:', mode);    
@@ -959,8 +963,8 @@ function handleWindowResize() {
             item.style.flexDirection = 'row';
             item.style.alignItems = 'center';
             item.style.justifyContent = 'space-between';
-            item.style.height = '30px';
-            initBackgroundModeSelector();
+            //if (!item.classList.contains('collapsed')) item.style.height = '2em';
+            //initBackgroundModeSelector();
             initLineNameInputs();
 
             // 修复：添加空值检查

@@ -31,9 +31,13 @@ button {
     justify-content: flex-start;
     gap: 6px;
     padding: 4px 12px;
-    height: 30px;
+    height: 2em;
     border-radius: 8px;
     transition: all 0.2s ease-in-out;
+}
+
+.pref-item.collapsed {
+    height: 0;
 }
 
 .pref-item:has(textarea) {

@@ -1335,7 +1335,8 @@ function loadSegmentInfo() {
                 segmentLength = document.createElement('div');
                 segmentLength.className = 'segment-length';
             }
-            segmentLength.textContent = '↕ ' +
+            segmentLength.innerHTML = '<span class="material-symbols-outlined">height</span>'
+            segmentLength.innerHTML +=
                 (measureSegmentLength(activeLineId, index) / 1000).toFixed(1) + strings.ticket_calculator.km[lang] + ' ' 
                 + findSegmentDuration(activeLineId, index);
             element.appendChild(segmentLength);
