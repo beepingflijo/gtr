@@ -1147,7 +1147,7 @@ header * {
     width: fit-content;
 }
 
-.selection.segment .icon-btn.selection-item:not(.active) span:not(.material-symbols-outlined) {
+.selection.segment .selection-item:not(.active) span:not(.material-symbols-outlined) {
     width: 0;
     opacity: 0;
 }

@@ -1484,6 +1484,11 @@ function renderSearchResults(routes, container) {
         
         route.segments.forEach((segment, segIndex) => {
             const line = window.lines.find(l => l.id === segment.line);
+            const onStationIndex = line.route.findIndex(step => step.type === 'station' && step.code === route.segments[segIndex].stations[0]);
+            const offStationIndex = line.route.findIndex(step => step.type === 'station' && step.code === route.segments[segIndex].stations[route.segments[segIndex].stations.length - 1]);
+            const isUpwards = onStationIndex < offStationIndex;
+            const terminal = isUpwards ? line.route[0].code : line.route[line.route.length - 1].code;
+            console.log(line,onStationIndex,offStationIndex);
             if (line) {
                 // 如果是第一段，添加上车站信息
                 if (segIndex === 0) {
@@ -1503,8 +1508,13 @@ function renderSearchResults(routes, container) {
                             <a class="line-name" 
                                 href="lines_info.html?line=${line.id.replace('-R', '')}"
                                 >${line.name[lang]}</a>
-                            <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]}</span>
-                            <span>${(segment.distance/1000).toFixed(1)}${strings.ticket_calculator.km[lang]}</span>
+                            <span>${strings.ticket_calculator.to_[lang].replace(
+                                '{dir}',
+                                getStationName(terminal,lang)
+                            )}</span>
+                            <br />
+                            <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]},</span>
+                            <span>${(segment.distance/1000).toFixed(1)}${strings.ticket_calculator.km[lang]},</span>
                             <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
                             <span class="material-symbols-outlined">keyboard_arrow_down</span>
                         </div>
