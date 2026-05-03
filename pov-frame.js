@@ -2,10 +2,20 @@ let activeLineId;
 let activeLine = [];
 let actionList = [];
 let widthList = [];
+let playList = [];
+let currentBgType = 'transparent';
 let actionListAssembled = false;
 let activeStepIndex = 0;
 let isUpwards = false;
+let playAnnouncement = false;
 let newStationCount = 2;
+const backgroundTypeNames = {
+    'transparent': '透明',
+    'color': '纯色',
+    'image': '图片',
+    'video': '视频',
+    'capture': '屏幕捕获'
+};
 
 document.addEventListener('DOMContentLoaded', function () { 
     fetch('./data/lines.json')
@@ -18,7 +28,9 @@ document.addEventListener('DOMContentLoaded', function () {
             initLineSelector();
             initLineNameInputs();
             initUpwardsSwitch();
+            initAnnounceSwitch();
             initStationList();
+            initPlayList();
             handleWindowResize();
             window.addEventListener('resize', handleWindowResize);
         })
@@ -112,10 +124,10 @@ function initBackgroundModeSelector() {
     selector.innerHTML = ''; // 清空现有选项
     // 为每个背景模式创建选项
     const modes = [
-        { id: 'transparent', name: '透明（直接叠加）' },
-        { id: 'color', name: '纯色（抠像）' },
-        { id: 'video', name: '导入视频' },
-        { id: 'capture', name: '屏幕捕获（电脑）' },
+        { id: 'transparent', name: '透明' },
+        { id: 'color', name: '纯色' },
+        { id: 'video', name: '视频' },
+        { id: 'capture', name: '屏幕捕获' },
     ];
     modes.forEach(mode => {
         const item = document.createElement('div');
@@ -143,11 +155,12 @@ function initBackgroundModeSelector() {
     selector.querySelectorAll('.selection-item')[0].click(); // 默认选择第一个选项
 }
 
-function applyBackgroundMode(mode) {
+function applyBackgroundMode(mode,inputContainer=document) {
     const previewBackground = document.querySelector('.preview-background');
-    const customBackground = document.querySelector('.custom-background');
+    const customBackground = inputContainer.querySelector('.custom-background');
+    console.log(previewBackground, inputContainer, customBackground);
     if (!previewBackground || !customBackground) return;
-    previewBackground.innerHTML = ''; // 清空现有背景
+    if (mode!==currentBgType||currentBgType==='transparent') previewBackground.innerHTML = ''; // 清空现有背景
     // 停止所有的屏幕共享
     const existingVideos = previewBackground.querySelectorAll('video');
     existingVideos.forEach(video => {
@@ -167,46 +180,58 @@ function applyBackgroundMode(mode) {
         child.style.margin = 0;
         child.style.padding = 0;
         child.style.opacity = 0;
+        child.style.filter = 'blur(36px)'
         child.style.whiteSpace = 'nowrap';
     });
-    customBackground.parentElement.style.height = 0;
-    customBackground.parentElement.style.opacity = 0;
+    const elementToHide = inputContainer===document?customBackground.parentElement:customBackground;
+    elementToHide.style.height = 0;
+    elementToHide.style.opacity = 0;
     customBackground.style.overflow = 'hidden';
-    customBackground.parentElement.style.padding = '0 12px';
-    customBackground.parentElement.classList.add('collapsed');
-    const colorInput = document.getElementById('backgroundColorInput');
-    const videoInput = document.getElementById('backgroundVideoInput');
-    videoInput.value = ''; // 重置视频输入
-    const videoControls = document.querySelector('.video-controls');
+    elementToHide.style.padding = '0 12px';
+    elementToHide.classList.add('collapsed');
+    const colorInput = inputContainer.querySelector('#backgroundColorInput');
+    const videoInput = inputContainer.querySelector('#backgroundVideoInput');
+    const imageInput = inputContainer.querySelector('#backgroundImageInput');
+    const allColorInputs = document.querySelectorAll('#backgroundColorInput');
+    const allVideoInputs = document.querySelectorAll('#backgroundVideoInput');
+    const allImageInputs = document.querySelectorAll('#backgroundImageInput');
+    console.log(inputContainer,colorInput,videoInput);
+    allVideoInputs.forEach(input => { input.value = ''; }); // 重置视频输入
+    const videoControls = inputContainer.querySelector('.video-controls');
 
     switch (mode) {
         case 'transparent':
             previewBackground.style.backgroundColor = 'transparent';
+            currentBgType = 'transparent';
             break;
         case 'color':
-            customBackground.parentElement.style.height = '30px';
-            customBackground.parentElement.style.opacity = 1;
-            customBackground.parentElement.style.padding = '4px 12px';
+            elementToHide.style.height = '30px';
+            elementToHide.style.opacity = 1;
+            elementToHide.style.padding = '4px 12px';
             colorInput.style.width = '24px';
             colorInput.style.opacity = 1;
             colorInput.style.margin = 'unset';
             colorInput.style.padding = '';
+            colorInput.style.filter = '';
             previewBackground.style.backgroundColor = colorInput.value;
             colorInput.addEventListener('input', (e) => {
                 const color = e.target.value;
                 previewBackground.style.backgroundColor = color;
+                allColorInputs.forEach(input => { input.value = color; });
             });
-            customBackground.parentElement.classList.remove('collapsed');
+            elementToHide.classList.remove('collapsed');
+            customBackground.style.overflow = 'color';
             break;
         case 'video':
-            customBackground.parentElement.style.height = '30px';
-            customBackground.parentElement.style.opacity = 1;
-            customBackground.parentElement.style.padding = '4px 12px';            
+            elementToHide.style.height = '30px';
+            elementToHide.style.opacity = 1;
+            elementToHide.style.padding = '4px 12px';
             // 添加视频背景
             videoInput.style.width = '240px';
             videoInput.style.opacity = 1;
             videoInput.style.margin = 'unset';
             videoInput.style.padding = '';
+            videoInput.style.filter = '';
             //videoControls.style.width = '120px';
             //videoControls.style.opacity = 1; 视频控制暂不支持
             videoInput.addEventListener('change', (e) => { 
@@ -218,25 +243,56 @@ function applyBackgroundMode(mode) {
                     videoElement.src = videoURL;
                     videoElement.autoplay = true;
                     videoElement.loop = true;
-                    videoElement.muted = true;
                     videoElement.style.width = '100%';
                     videoElement.style.height = '100%';
                     videoElement.style.objectFit = 'cover';
                     previewBackground.appendChild(videoElement);
                 }
             });
-            customBackground.parentElement.classList.remove('collapsed');
+            elementToHide.classList.remove('collapsed');
+            currentBgType = 'video';
+            break;
+        case 'image': 
+            elementToHide.style.height = '30px';
+            elementToHide.style.opacity = 1;
+            elementToHide.style.padding = '4px 12px';
+            // 添加视频背景
+            imageInput.style.width = '240px';
+            imageInput.style.opacity = 1;
+            imageInput.style.margin = 'unset';
+            imageInput.style.padding = '';
+            imageInput.style.filter = '';
+            //videoControls.style.width = '120px';
+            //videoControls.style.opacity = 1; 视频控制暂不支持
+            imageInput.addEventListener('change', (e) => { 
+                const img = e.target.files[0];
+                if (img) { 
+                    const imgURL = URL.createObjectURL(img);
+                    previewBackground.innerHTML = ''; // 清空现有背景
+                    const imgElement = document.createElement('img');
+                    imgElement.src = imgURL;
+                    imgElement.autoplay = true;
+                    imgElement.loop = true;
+                    imgElement.style.width = '100%';
+                    imgElement.style.height = '100%';
+                    imgElement.style.objectFit = 'cover';
+                    previewBackground.appendChild(imgElement);
+                }
+            });
+            elementToHide.classList.remove('collapsed');
+            currentBgType = 'image';
             break;
         case 'capture':
-            customBackground.parentElement.style.height = '30px';
-            customBackground.parentElement.style.opacity = 1;
-            customBackground.parentElement.style.padding = '4px 12px';  
+            elementToHide.style.height = '30px';
+            elementToHide.style.opacity = 1;
+            elementToHide.style.padding = '4px 12px';
             // 添加屏幕捕获背景
-            const captureButton = document.querySelector('.capture-screen-btn');
+            const captureButton = inputContainer.querySelector('.capture-screen-btn');
             captureButton.style.width = '120px';
             captureButton.style.opacity = 1;
             customBackground.style.overflow = 'visible';
             captureButton.style.padding = 'unset';
+            captureButton.style.filter = '';
             captureButton.addEventListener('click', async () => {
                 try {
                     const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -252,7 +308,8 @@ function applyBackgroundMode(mode) {
                     console.error('Error accessing display media:', err);
                 }
             });
-            customBackground.parentElement.classList.remove('collapsed');
+            elementToHide.classList.remove('collapsed');
+            currentBgType = 'capture';
             break;
         default:
             console.error('Invalid background mode:', mode);    
@@ -632,6 +689,143 @@ function refreshFrame() {
     });
 
     recordProgress();
+
+    const announceTimeout = setTimeout(() => { 
+        console.log('refreshStationList',actionList[activeStepIndex]);
+        synthesizeAnnouncement(actionList[activeStepIndex]);
+    }, 1000);
+}
+
+function synthesizeAnnouncement(step) { 
+    if (!step || playAnnouncement!==true) return;
+    const announcementTypo = {
+        'zh-CN':{
+            'nextStation_first':'欢迎乘坐通运铁路，祝您出行愉快。本次列车终点站：{dest}。下一站：{sta}。请下车的乘客做好准备。',
+            'nextStation':'列车启动，请扶好坐稳，本次列车终点站：{dest}。下一站：{sta}。请下车的乘客做好准备。',
+            'nextStation_last':'列车启动，请扶好坐稳。下一站为本次列车的终点站：{sta}。请全体乘客做好下车准备。',
+            'arrive':'{sta}，到了。',
+            'arrive_last':'终点站{sta}，到了。欢迎再次乘坐通运铁路。',
+            'transfer':'换乘{lines}的乘客请从该站下车，请您注意换乘时间，合理安排行程。'
+        },
+        'zh-CN-liaoning':{
+            'nextStation_first':'欢迎乘坐通运铁路，这趟车的终点站是：{dest}。下一站搁{sta}。请下车的乘客做好准备。',
+            'nextStation':'这趟车的终点站是：{dest}。下一站搁{sta}。请下车的乘客做好准备。',
+            'nextStation_last':'下一站是咱这趟车的终点站：{sta}。所有乘客都得搁这站下车。',
+            'arrive':'{sta}到了。',
+            'arrive_last':'终点站{sta}，到了。欢迎再次乘坐通运铁路。',
+            'transfer':'导{lines}的乘客得搁这站下车，请您注意换乘时间，合理安排行程。'
+        },
+        'en-US':{
+            'nextStation_first':'Welcome to take GT Railways. The destination of the train is {dest}. The next station is {sta}. ',
+            'nextStation':'The next station is {sta}.',
+            'nextStation_last':'The next station is {sta}, the destination of the train. All the passengers, please get ready to get off.',
+            'arrive':'We are arriving at {sta}.',
+            'arrive_last':'We are arriving at {sta}, the destination of the train. All the passengers, please get off at this station. Welcome to take GT Railways again.',
+            'transfer':'Passengers for {lines} please prepare to get off. Please pay attention to transfer time and arrange your travel properly.'
+        },
+        'zh-HK':{
+            'nextStation_first':'歡迎乘搭通運鐵路，本次列车嘅终点站係{dest}。下一站：{sta}。',
+            'nextStation':'下一站：{sta}。',
+            'nextStation_last':'下一站係本次列车嘅终点站：{sta}。',
+            'arrive':'列車已經到達：{sta}。',
+            'arrive_last':'列車已經到達終點站：{sta}。歡迎再次乘搭通運鐵路。',
+            'transfer':'轉乘{lines}嘅乘客請喺呢一站落車。'
+        },
+        'uk-UA':{
+            'nextStation_first':'Наступна станцiя: {sta}.',
+            'nextStation':'Наступна станцiя: {sta}.',
+            'nextStation_last':'Наступна станцiя: {sta}.',
+            'arrive':'',
+            'arrive_last':'',
+            'transfer':''
+        },
+    }
+    let languages = [
+        {text:'zh_hans',voice:'zh-CN'},
+        {text:'en',voice:'en-US'}
+    ];
+    switch (step.station.slice(0,1)) { 
+        case 'A':
+            languages.push(
+                {text:'zh_hant',voice:'zh-HK'},
+                {text:'uk',voice:'uk-UA'}
+            );
+            break;
+        case 'N':
+            languages.push(
+                {text:'zh_hans',voice:'zh-CN-liaoning'}
+            );
+    }
+    //console.log('synthesizeAnnouncement',languages,step.station,activeLine);
+    const destSta = activeLine.route[activeLine.route.length-1].code;
+    const secondSta = activeLine.route[1].code;
+    let announcement;
+    switch (step.station) { 
+        case destSta: 
+            (async () => {
+                for (const lang of languages) { 
+                    const newAnnouncement = 
+                        announcementTypo[lang.voice][step.type+'_last']
+                        .replace('{sta}',getStationName(step.station,lang.text))
+                        .replace('{dest}',getStationName(destSta,lang.text));
+                    showToast(newAnnouncement);
+                    
+                    // 语音播报
+                    await speakText(newAnnouncement, lang.voice);
+                }
+            })();
+            break;
+        case secondSta: 
+            (async () => {
+                for (const lang of languages) { 
+                    const newAnnouncement = 
+                        announcementTypo[lang.voice][step.type+'_first']
+                        .replace('{sta}',getStationName(step.station,lang.text))
+                        .replace('{dest}',getStationName(destSta,lang.text));
+                    showToast(newAnnouncement);
+                    
+                    // 语音播报
+                    await speakText(newAnnouncement, lang.voice);
+                }
+            })();
+            break;
+        default: 
+            (async () => {
+                for (const lang of languages) { 
+                    const newAnnouncement = 
+                        announcementTypo[lang.voice][step.type]
+                        .replace('{sta}',getStationName(step.station,lang.text))
+                        .replace('{dest}',getStationName(destSta,lang.text));
+                    showToast(newAnnouncement);
+                    
+                    // 语音播报
+                    await speakText(newAnnouncement, lang.voice);
+                }
+            })();
+    }
+}
+
+// 语音播报函数
+async function speakText(text, lang) {
+    // 如果浏览器不支持语音合成，则直接返回
+    if (!('speechSynthesis' in window)) {
+        console.warn('浏览器不支持语音合成功能');
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        // 如果没有要朗读的文本，直接返回
+        if (!text.trim()) {
+            resolve();
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.onend = () => resolve(); // 语音播报结束后解决Promise
+        utterance.onerror = () => resolve(); // 发生错误也解决Promise，避免阻塞
+        speechSynthesis.speak(utterance);
+    });
 }
 
 function recordProgress() { 
@@ -665,6 +859,7 @@ function resumeProgress() {
         isUpwards = progress.isUpwards;
         activeStepIndex = progress.index;
         actionList = progress.steps;
+        playList = progress.playList;
         if (progress.manualLine) { 
             window.lines.push(progress.manualLine);
         }
@@ -734,6 +929,22 @@ function initUpwardsSwitch() {
         actionListAssembled = false;
         initStationList();
         refreshStationList();
+    });
+}
+
+function initAnnounceSwitch() {
+    const switchElement = document.querySelector('.announce');
+    if (!switchElement) return;
+    if (playAnnouncement) {
+        switchElement.classList.add('active');
+    } else { 
+        switchElement.classList.remove('active');
+    }
+
+    switchElement.addEventListener('click', () => {
+        playAnnouncement = !playAnnouncement;
+        switchElement.classList.toggle('active');
+        refreshFrame();
     });
 }
 
@@ -838,8 +1049,9 @@ function initStationList() {
 
         if (activeLineId === 'manual') {
             const deleteButton = document.createElement('button');
-            deleteButton.className = 'delete-button';
-            deleteButton.textContent = '×';
+            deleteButton.classList.add('delete-button');
+            deleteButton.classList.add('material-symbols-outlined');
+            deleteButton.textContent = 'close';
             deleteButton.addEventListener('mouseover', (e) => {
                 deleteButton.style.color = '#ff4d4d';
                 deleteButton.style.fontWeight = 'bold';
@@ -872,7 +1084,7 @@ function initStationList() {
     if (activeLineId === 'manual') { 
         const addStationItem = document.createElement('div');
         addStationItem.className = 'pref-item station-item add-station-item';
-        addStationItem.textContent = '+ 添加车站';
+        addStationItem.innerHTML = '<span class="material-symbols-outlined">add</span> 添加车站';
         addStationItem.addEventListener('click', () => { 
             newStationCount++;
             const newStationCode = 'M' + newStationCount.toString().padStart(3, '0');
@@ -918,6 +1130,136 @@ function refreshStationList() {
     if (activeLineId === 'manual') initLineNameInputs();
 }
 
+function initPlayList() { 
+    const list = document.querySelector('.play-list');
+    list.innerHTML = '';
+    if (playList!==undefined) playList.forEach(playItem => { 
+        const item = document.createElement('div');
+        item.className = 'play-item';
+        item.textContent = backgroundTypeNames[playItem.type]+' '+playItem.name;
+        item.addEventListener('click', () => { 
+            playBackground(playItem);
+        });
+        const inTimeInput = document.createElement('input');
+        inTimeInput.type = 'number';
+        inTimeInput.className = 'play-item-time-input';
+        inTimeInput.value = playItem.inTime;
+        inTimeInput.addEventListener('input', (e) => { 
+            playItem.inTime = e.target.value;
+        });
+        item.appendChild(inTimeInput);
+        const outTimeInput = document.createElement('input');
+        outTimeInput.type = 'number';
+        outTimeInput.className = 'play-item-time-input';
+        outTimeInput.value = playItem.outTime;
+        outTimeInput.addEventListener('input', (e) => { 
+            playItem.outTime = e.target.value;
+        });
+        item.appendChild(outTimeInput);
+        const deleteButton = document.createElement('button');
+        deleteButton.classList.add('delete-button');
+        deleteButton.classList.add('material-symbols-outlined');
+        deleteButton.textContent = 'close';
+        item.appendChild(deleteButton);
+        list.appendChild(item);
+    });
+    const addItem = document.createElement('div');
+    addItem.className = 'play-item';
+    addItem.classList.add('icon-btn');
+    addItem.classList.add('add-background-item');
+    addItem.innerHTML = '<span class="material-symbols-outlined">edit</span> 编辑背景';
+    addItem.addEventListener('click', () => { 
+        const bgSelector = document.createElement('div');
+        bgSelector.className = 'background-selector';
+        const modeSelector = document.createElement('div');
+        modeSelector.className = 'background-mode-selector';
+        modeSelector.classList.add('selection');
+        modeSelector.classList.add('segment');
+        modeSelector.classList.add('no-collapse');
+
+        const customBackground = document.createElement('div');
+        customBackground.className = 'custom-background';
+        customBackground.innerHTML = 
+`
+                <input type="color" class="pref-value" id="backgroundColorInput"></input>
+                <input type="file" accept="image/*" class="pref-value" id="backgroundImageInput"></input>
+                <input type="file" accept="video/*" class="pref-value" id="backgroundVideoInput"></input>
+                <button class="icon-btn capture-screen-btn">开始屏幕捕获</button>`;
+        
+        // 根据 backgroundTypeNames 的键名动态生成选项
+        Object.keys(backgroundTypeNames).forEach((type,index) => { 
+            const selectorItem = document.createElement('div');
+            selectorItem.className = 'selection-item';
+            selectorItem.setAttribute('data-background', type);
+            
+            const selectionItemIcon = document.createElement('span');
+            selectionItemIcon.className = 'material-symbols-outlined';
+            
+            // 根据类型设置对应的图标
+            const iconMap = {
+                'transparent': 'gradient',
+                'color': 'palette',
+                'video': 'movie',
+                'image': 'photo',
+                'capture': 'screen_share'
+            };
+            selectionItemIcon.textContent = iconMap[type] || 'help';
+            
+            const selectorItemText = document.createElement('span');
+            selectorItemText.textContent = backgroundTypeNames[type];
+            selectorItem.title = backgroundTypeNames[type];
+
+            selectorItem.dataset.background = type;
+            
+            selectorItem.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // 移除之前的激活状态
+                const previousActive = modeSelector.querySelector('.selection-item.active');
+                if (previousActive) {
+                    previousActive.classList.remove('active');
+                }
+                // 添加当前项的激活状态
+                this.classList.add('active');
+                // 获取当前激活的选项的data-background属性
+                const background = this.dataset.background;
+                applyBackgroundMode(background, bgSelector);
+            });
+            
+            selectorItem.appendChild(selectionItemIcon);
+            selectorItem.appendChild(selectorItemText);
+            modeSelector.appendChild(selectorItem);
+        });
+        
+        bgSelector.appendChild(modeSelector);
+        bgSelector.appendChild(customBackground);
+        bgSelector.style.display = 'flex';
+        bgSelector.style.flexDirection = 'column';
+        bgSelector.style.gap = '0.5rem';
+        pushDialog(bgSelector,'custom','添加背景');
+
+        modeSelector.querySelectorAll('.selection-item').forEach(item => { 
+            if (item.dataset.background === currentBgType) item.click();
+        });
+
+        // 获取active的选项索引
+        let activeIndex = [...modeSelector.querySelectorAll('.selection-item')].findIndex(item => item.classList.contains('active'));
+        const dialog = document.querySelector('.dialog-container:has(.background-selector)')
+        dialog.addEventListener('wheel', function(e) { 
+            e.preventDefault();
+            if (e.deltaY > 0) { 
+                const nextIndex = Math.min((activeIndex + 1),(modeSelector.querySelectorAll('.selection-item').length-1));
+                modeSelector.querySelectorAll('.selection-item')[nextIndex].click();
+                activeIndex = nextIndex;
+            } else { 
+                const prevIndex = Math.max((activeIndex - 1),0);
+                modeSelector.querySelectorAll('.selection-item')[prevIndex].click();
+                activeIndex = prevIndex;
+            }
+        });
+    });
+    list.appendChild(addItem);
+}
+
 // 获取偏好设置
 function getPreferences() {
     const prefs = localStorage.getItem('preferences');
@@ -959,7 +1301,7 @@ function handleWindowResize() {
 
     const prefItems = document.querySelectorAll('.pref-item');
     prefItems.forEach(item => { 
-        if (!item.classList.contains('station-list')) {
+        if (!item.classList.contains('station-list')&&!item.classList.contains('add-station-item')) {
             item.style.flexDirection = 'row';
             item.style.alignItems = 'center';
             item.style.justifyContent = 'space-between';

@@ -181,7 +181,7 @@ main {
     width: 0px;
 }
 
-.station-list {
+.station-list, .play-llist {
     height: fit-content;
     min-height: 30px;
     width: -webkit-fill-available;
