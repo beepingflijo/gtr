@@ -23,6 +23,12 @@
                 "facilities":["escalator"]
             }
         ],
+        "platforms":[
+            {"id":"6","plat_side":"up","door_side":"left"},
+            {"id":"5","plat_side":"up","door_side":"right"},
+            {"id":"7","plat_side":"down","door_side":"left"},
+            {"id":"8","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"platforms","floor":"2F",
@@ -78,6 +84,10 @@
                 "facilities":["stairs"]
             }
         ],
+        "platforms":[
+            {"id":"2","plat_side":"up","door_side":"right"},
+            {"id":"3","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"platforms","floor":"1F",
@@ -115,6 +125,10 @@
                 "desc":"building","desc_dir":"south",
                 "facilities":[]
             }
+        ],
+        "platforms":[
+            {"id":"1","plat_side":"up","door_side":"right"},
+            {"id":"2","plat_side":"down","door_side":"right"}
         ],
         "facilities":[
             {
@@ -180,6 +194,10 @@
                 "desc":"tracks","desc_dir":"south",
                 "facilities":["stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"14","plat_side":"up","door_side":"left"},
+            {"id":"15","plat_side":"up","door_side":"right"}
         ],
         "facilities":[
             {
@@ -259,6 +277,10 @@
                 "facilities":["stairs"]
             }
         ],
+        "platforms":[
+            {"id":"1","plat_side":"down","door_side":"right"},
+            {"id":"2","plat_side":"up","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"ticket","floor":"1F",
@@ -288,6 +310,10 @@
                 "desc":"广夏西路","desc_dir":"east",
                 "facilities":["escalator","stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"3","plat_side":"up","door_side":"right"},
+            {"id":"4","plat_side":"down","door_side":"right"}
         ],
         "facilities":[
             {
@@ -340,6 +366,10 @@
                 "facilities":["escalator","stairs"],"oneway":"out"
             }
         ],
+        "platforms":[
+            {"id":"8","plat_side":"up","door_side":"right"},
+            {"id":"9","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"platforms","floor":"2F",
@@ -383,6 +413,12 @@
                 "facilities":["elevator","escalator"]
             }
         ],
+        "platforms":[
+            {"id":"3","plat_side":"up","door_side":"left"},
+            {"id":"4","plat_side":"up","door_side":"right"},
+            {"id":"2","plat_side":"down","door_side":"left"},
+            {"id":"1","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"services","floor":"2F",
@@ -419,6 +455,10 @@
                 "desc":"building","desc_dir":"west",
                 "facilities":["escalator","stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"1","plat_side":"down","door_side":"left"},
+            {"id":"2","plat_side":"down","door_side":"right"}
         ],
         "facilities":[
             {
@@ -461,6 +501,10 @@
                 "desc":"road","desc_dir":"east",
                 "facilities":["elevator","escalator","stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"1","plat_side":"up","door_side":"left"},
+            {"id":"2","plat_side":"down","door_side":"left"}
         ],
         "facilities":[
             {
@@ -520,6 +564,10 @@
                 "facilities":[]
             }
         ],
+        "platforms":[
+            {"id":"11","plat_side":"down","door_side":"left"},
+            {"id":"12","plat_side":"up","door_side":"left"}
+        ],
         "facilities":[
             {
                 "type":"platforms","floor":"1F",
@@ -564,6 +612,14 @@
                 "desc":"building","desc_dir":"east",
                 "facilities":["escalator","stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"9","plat_side":"up","door_side":"right"},
+            {"id":"8","plat_side":"up","door_side":"left"},
+            {"id":"10","plat_side":"up","door_side":"right"},
+            {"id":"7","plat_side":"down","door_side":"left"},
+            {"id":"6","plat_side":"down","door_side":"right"},
+            {"id":"5","plat_side":"down","door_side":"right"}
         ],
         "facilities":[
             {
@@ -617,6 +673,10 @@
                 "facilities":["stairs"]
             }
         ],
+        "platforms":[
+            {"id":"7","plat_side":"down","door_side":"left"},
+            {"id":"8","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"platforms","floor":"2F",
@@ -652,6 +712,10 @@
                 "facilities":["elevator","stairs"]
             }
         ],
+        "platforms":[
+            {"id":"3","plat_side":"up","door_side":"left"},
+            {"id":"4","plat_side":"up","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"platforms","floor":"2F",
@@ -685,6 +749,14 @@
                 "desc":"building","desc_dir":"east",
                 "facilities":["escalator","stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"1","plat_side":"down","door_side":"left"},
+            {"id":"2","plat_side":"up","door_side":"left"},
+            {"id":"3","plat_side":"up","door_side":"left"},
+            {"id":"4","plat_side":"up","door_side":"right"},
+            {"id":"5","plat_side":"up","door_side":"left"},
+            {"id":"6","plat_side":"up","door_side":"right"}
         ],
         "facilities":[
             {
@@ -725,6 +797,10 @@
                 "desc":" ",
                 "facilities":["escalator","stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"2","plat_side":"up","door_side":"right"},
+            {"id":"1","plat_side":"down","door_side":"right"}
         ],
         "facilities":[
             {
@@ -771,6 +847,10 @@
                 "facilities":["escalator","stairs"]
             }
         ],
+        "platforms":[
+            {"id":"4","plat_side":"down","door_side":"left"},
+            {"id":"3","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"platforms","floor":"1F",
@@ -809,6 +889,10 @@
                 "facilities":["stairs"]
             }
         ],
+        "platforms":[
+            {"id":"6","plat_side":"up","door_side":"right"},
+            {"id":"7","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"platforms","floor":"5F",
@@ -839,6 +923,12 @@
                 "desc":"静港大街","desc_dir":"east",
                 "facilities":["stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"2","plat_side":"up","door_side":"left"},
+            {"id":"1","plat_side":"up","door_side":"right"},
+            {"id":"3","plat_side":"down","door_side":"left"},
+            {"id":"4","plat_side":"down","door_side":"right"}
         ],
         "facilities":[
             {
@@ -878,6 +968,10 @@
                 "facilities":["escalator","stairs"]
             }
         ],
+        "platforms":[
+            {"id":"2","plat_side":"down","door_side":"right"},
+            {"id":"1","plat_side":"up","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"ticket","floor":"B1",
@@ -911,6 +1005,10 @@
                 "desc":"road","desc_dir":"east",
                 "facilities":["escalator","stairs"]
             }
+        ],
+        "platforms":[
+            {"id":"1","plat_side":"up","door_side":"left"},
+            {"id":"2","plat_side":"down","door_side":"left"}
         ],
         "facilities":[
             {
@@ -967,6 +1065,10 @@
                 "facilities":["stairs"]
             }
         ],
+        "platforms":[
+            {"id":"2","plat_side":"up","door_side":"right"},
+            {"id":"1","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[
             {
                 "type":"ticket","floor":"1F",
@@ -982,6 +1084,12 @@
     },
     "YBK":{
         "exits":[],
+        "platforms":[
+            {"id":"2","plat_side":"up","door_side":"left"},
+            {"id":"1","plat_side":"up","door_side":"right"},
+            {"id":"3","plat_side":"down","door_side":"left"},
+            {"id":"4","plat_side":"down","door_side":"right"}
+        ],
         "facilities":[],
         "floors":[
             {"id":"?","type":"platform"}

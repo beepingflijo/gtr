@@ -690,54 +690,73 @@ function refreshFrame() {
 
     recordProgress();
 
-    const announceTimeout = setTimeout(() => { 
+    const announceTimeout = setTimeout(async () => { 
         console.log('refreshStationList',actionList[activeStepIndex]);
-        synthesizeAnnouncement(actionList[activeStepIndex]);
+        await synthesizeAnnouncement(actionList[activeStepIndex]);
     }, 1000);
 }
 
-function synthesizeAnnouncement(step) { 
+async function synthesizeAnnouncement(step) { 
     if (!step || playAnnouncement!==true) return;
     const announcementTypo = {
         'zh-CN':{
-            'nextStation_first':'欢迎乘坐通运铁路，祝您出行愉快。本次列车终点站：{dest}。下一站：{sta}。请下车的乘客做好准备。',
-            'nextStation':'列车启动，请扶好坐稳，本次列车终点站：{dest}。下一站：{sta}。请下车的乘客做好准备。',
-            'nextStation_last':'列车启动，请扶好坐稳。下一站为本次列车的终点站：{sta}。请全体乘客做好下车准备。',
+            'nextStation_first':'欢迎乘坐通运铁路，祝您出行愉快。本次列车终点站：{dest}。下一站：{sta}。',
+            'nextStation':'列车启动，请扶好坐稳，本次列车终点站：{dest}。下一站：{sta}。',
+            'nextStation_last':'列车启动，请扶好坐稳。下一站为本次列车的终点站：{sta}。',
+            'nextPlat_first':'列车开启前进方向{door}车门，请下车的乘客做好准备。',
+            'nextPlat':'列车开启前进方向{door}车门，请下车的乘客做好准备。',
+            'nextPlat_last':'列车开启前进方向{door}车门，请全体乘客做好下车准备。',
             'arrive':'{sta}，到了。',
             'arrive_last':'终点站{sta}，到了。欢迎再次乘坐通运铁路。',
-            'transfer':'换乘{lines}的乘客请从该站下车，请您注意换乘时间，合理安排行程。'
+            'transfer':'换乘{lines}的乘客请从该站下车，请您注意换乘时间，合理安排行程。',
+            'left':'左侧','right':'右侧','both':'两侧'
         },
         'zh-CN-liaoning':{
-            'nextStation_first':'欢迎乘坐通运铁路，这趟车的终点站是：{dest}。下一站搁{sta}。请下车的乘客做好准备。',
-            'nextStation':'这趟车的终点站是：{dest}。下一站搁{sta}。请下车的乘客做好准备。',
-            'nextStation_last':'下一站是咱这趟车的终点站：{sta}。所有乘客都得搁这站下车。',
+            'nextStation_first':'欢迎乘坐通运铁路，这趟车的终点站是：{dest}。下一站搁{sta}。',
+            'nextStation':'这趟车的终点站是：{dest}。下一站搁{sta}。',
+            'nextStation_last':'下一站是咱这趟车的终点站：{sta}。',
+            'nextPlat_first':'列车将会开{door}的车门儿，请下车的乘客做好准备。',
+            'nextPlat':'列车将会开{door}的车门儿，请下车的乘客做好准备。',
+            'nextPlat_last':'列车将会开{door}的车门儿，所有乘客都得搁这站下车。',
             'arrive':'{sta}到了。',
             'arrive_last':'终点站{sta}，到了。欢迎再次乘坐通运铁路。',
-            'transfer':'导{lines}的乘客得搁这站下车，请您注意换乘时间，合理安排行程。'
+            'transfer':'导{lines}的乘客得搁这站下车，请您注意换乘时间，合理安排行程。',
+            'left':'左半拉儿','right':'右半拉儿','both':'两边儿'
         },
         'en-US':{
-            'nextStation_first':'Welcome to take GT Railways. The destination of the train is {dest}. The next station is {sta}. ',
+            'nextStation_first':'Welcome to take GT Railways. The destination of the train is {dest}. The next station is {sta}.',
             'nextStation':'The next station is {sta}.',
-            'nextStation_last':'The next station is {sta}, the destination of the train. All the passengers, please get ready to get off.',
+            'nextStation_last':'The next station is {sta}, the destination of the train.',
+            'nextPlat_first':'{door} doors will be used.',
+            'nextPlat':'{door} doors will be used.',
+            'nextPlat_last':'{door} doors will be used. All the passengers, please get ready to get off.',
             'arrive':'We are arriving at {sta}.',
             'arrive_last':'We are arriving at {sta}, the destination of the train. All the passengers, please get off at this station. Welcome to take GT Railways again.',
-            'transfer':'Passengers for {lines} please prepare to get off. Please pay attention to transfer time and arrange your travel properly.'
+            'transfer':'Passengers for {lines} please prepare to get off. Please pay attention to transfer time and arrange your travel properly.',
+            'left':'The left','right':'The right','both':'Both'
         },
         'zh-HK':{
             'nextStation_first':'歡迎乘搭通運鐵路，本次列车嘅终点站係{dest}。下一站：{sta}。',
             'nextStation':'下一站：{sta}。',
             'nextStation_last':'下一站係本次列车嘅终点站：{sta}。',
+            'nextPlat_first':'{door}嘅車門將會打開。',
+            'nextPlat':'{door}嘅車門將會打開。',
+            'nextPlat_last':'{door}嘅車門將會打開。',
             'arrive':'列車已經到達：{sta}。',
             'arrive_last':'列車已經到達終點站：{sta}。歡迎再次乘搭通運鐵路。',
-            'transfer':'轉乘{lines}嘅乘客請喺呢一站落車。'
+            'transfer':'轉乘{lines}嘅乘客請喺呢一站落車。',
+            'left':'左邊','right':'右邊','both':'两邊'
         },
         'uk-UA':{
             'nextStation_first':'Наступна станцiя: {sta}.',
             'nextStation':'Наступна станцiя: {sta}.',
             'nextStation_last':'Наступна станцiя: {sta}.',
-            'arrive':'',
-            'arrive_last':'',
-            'transfer':''
+            'nextPlat_first':'...',
+            'nextPlat':'...',
+            'nextPlat_last':'...',
+            'arrive':'...',
+            'arrive_last':'...',
+            'transfer':'...'
         },
     }
     let languages = [
@@ -757,10 +776,18 @@ function synthesizeAnnouncement(step) {
             );
     }
     //console.log('synthesizeAnnouncement',languages,step.station,activeLine);
-    const destSta = activeLine.route[activeLine.route.length-1].code;
-    const secondSta = activeLine.route[1].code;
+    const firstSta = isUpwards?activeLine.route[activeLine.route.length-1].code:activeLine.route[0].code;
+    const destSta = isUpwards?activeLine.route[0].code:activeLine.route[activeLine.route.length-1].code;
+    const secondSta = isUpwards?activeLine.route[activeLine.route.length-2].code:activeLine.route[1].code;
+    
+    // 异步获取doorSide
+    const doorSide = await getDoorSide(step.station, step.platform, isUpwards?'up':'down');
+    console.log(step.station, step.platform, isUpwards?'up':'down');
+    console.log(firstSta, destSta, secondSta, doorSide);
     let announcement;
     switch (step.station) { 
+        case firstSta:
+            break;
         case destSta: 
             (async () => {
                 for (const lang of languages) { 
@@ -768,10 +795,17 @@ function synthesizeAnnouncement(step) {
                         announcementTypo[lang.voice][step.type+'_last']
                         .replace('{sta}',getStationName(step.station,lang.text))
                         .replace('{dest}',getStationName(destSta,lang.text));
-                    showToast(newAnnouncement);
-                    
-                    // 语音播报
+                    showToast(newAnnouncement, 10000);
                     await speakText(newAnnouncement, lang.voice);
+                    removeToast(newAnnouncement);
+                    if (step.type === 'nextStation') { 
+                        const platAnnouncement = 
+                            announcementTypo[lang.voice].nextPlat_last
+                            .replace('{door}',announcementTypo[lang.voice][doorSide]);
+                        showToast(platAnnouncement, 10000);
+                        await speakText(platAnnouncement, lang.voice);
+                        removeToast(platAnnouncement);
+                    }
                 }
             })();
             break;
@@ -782,10 +816,17 @@ function synthesizeAnnouncement(step) {
                         announcementTypo[lang.voice][step.type+'_first']
                         .replace('{sta}',getStationName(step.station,lang.text))
                         .replace('{dest}',getStationName(destSta,lang.text));
-                    showToast(newAnnouncement);
-                    
-                    // 语音播报
+                    showToast(newAnnouncement, 10000);
                     await speakText(newAnnouncement, lang.voice);
+                    removeToast(newAnnouncement);
+                    if (step.type === 'nextStation') { 
+                        const platAnnouncement = 
+                            announcementTypo[lang.voice].nextPlat_first
+                            .replace('{door}',announcementTypo[lang.voice][doorSide]);
+                        showToast(platAnnouncement, 10000);
+                        await speakText(platAnnouncement, lang.voice);
+                        removeToast(platAnnouncement);
+                    }
                 }
             })();
             break;
@@ -796,10 +837,17 @@ function synthesizeAnnouncement(step) {
                         announcementTypo[lang.voice][step.type]
                         .replace('{sta}',getStationName(step.station,lang.text))
                         .replace('{dest}',getStationName(destSta,lang.text));
-                    showToast(newAnnouncement);
-                    
-                    // 语音播报
+                    showToast(newAnnouncement, 10000);
                     await speakText(newAnnouncement, lang.voice);
+                    removeToast(newAnnouncement);
+                    if (step.type === 'nextStation') { 
+                        const platAnnouncement = 
+                            announcementTypo[lang.voice].nextPlat
+                            .replace('{door}',announcementTypo[lang.voice][doorSide]);
+                        showToast(platAnnouncement, 10000);
+                        await speakText(platAnnouncement, lang.voice);
+                        removeToast(platAnnouncement);
+                    }
                 }
             })();
     }
@@ -1033,16 +1081,40 @@ function initStationList() {
         platformInput.style.minWidth = 0;
         platformInput.style.width = '24px';
         platformInput.id = 'platform-input-' + station.code;
+        
+        // 异步获取平台信息并设置到输入框中
+        getPossiblePlatform(station.code, isUpwards ? 'up' : 'down')
+            .then(platform => {
+                if (platform) {
+                    platformInput.value = platform.id;
+                    // 更新actionList中所有匹配车站代码的条目的平台信息
+                    actionList.forEach(step => {
+                        if (step.station === station.code) {
+                            step.platform = platform.id;
+                        }
+                    });
+                    refreshFrame();
+                } else {
+                    console.info(`No platform found for ${station.code}, direction: ${isUpwards ? 'up' : 'down'}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error getting platform:', error);
+            });
+
+        // 删除之前的console.log，因为它是异步的，会产生Promise {<pending>}输出
+        // console.log(getPossiblePlatform(station.code,isUpwards?'up':'down'))
         platformInput.addEventListener('click', (e) => {
             e.stopPropagation();
         });
         platformInput.addEventListener('input', (e) => { 
             const value = e.target.value;
             // 更新actionList中的对应平台信息
-            const actionIndex = actionList.findIndex(action => action.type === 'arrive' && action.station === station.code);
-            if (actionIndex !== -1) {
-                actionList[actionIndex].platform = value;
-            }
+            actionList.forEach(step => {
+                if (step.station === station.code) {
+                    step.platform = platform.id;
+                }
+            });
             refreshFrame();
         });
         stationInputContainer.appendChild(platformInput);
@@ -1128,6 +1200,73 @@ function refreshStationList() {
         deleteButtons.forEach(button => button.style.display = 'inline');
     }
     if (activeLineId === 'manual') initLineNameInputs();
+}
+
+function getStationInfo(code) {
+    return new Promise((resolve, reject) => {
+        fetch('./data/stations_info.json')
+            .then(response => response.json())
+            .then(data => {
+                resolve(data[code]);
+            })
+            .catch(error => {
+                console.error('Error fetching station data:', error);
+                reject(error);
+            });
+    });
+}
+
+function getPossiblePlatform(code,dir='down') {
+    return new Promise((resolve, reject) => { 
+        getStationInfo(code)
+            .then(stationData => {
+                if (!stationData || !stationData.platforms) {
+                    console.warn(`Station ${code} does not have platform data`);
+                    resolve(null); // 返回 null 而不是抛出错误
+                    return;
+                }
+                
+                let platform = stationData.platforms.find(pl => pl.plat_side === dir);
+                if (!platform) {
+                    platform = stationData.platforms.find(pl => pl.id);
+                    console.warn(`No platform found for direction ${dir} at station ${code}`);
+                }
+                resolve(platform);
+            })
+            .catch(error => { 
+                console.error('Error fetching station data:', error); 
+                reject(error); 
+            })
+    });
+}
+
+function getDoorSide(code,plat,dir='down') {
+    return new Promise((resolve, reject) => { 
+        getStationInfo(code)
+            .then(stationData => {
+                if (!stationData || !stationData.platforms) {
+                    console.warn(`Station ${code} does not have platform data`);
+                    resolve(null); // 返回 null 而不是抛出错误
+                    return;
+                }
+                
+                const rawDoorDirection = stationData.platforms.find(pl => pl.id === plat).door_side;
+                const rawPlatDirection = stationData.platforms.find(pl => pl.id === plat).plat_side;
+                let output = '';
+                if (rawDoorDirection && rawPlatDirection) {
+                    if (rawDoorDirection === 'both') output = 'both';
+                    else if (rawPlatDirection === dir) output = rawDoorDirection;
+                    else output = rawDoorDirection==='left'? 'right':'left';
+                } else {
+                    console.warn(`No side found for platform ${plat} at station ${code}`,rawDoorDirection,rawPlatDirection);
+                }
+                resolve(output);
+            })
+            .catch(error => { 
+                console.error('Error fetching station data:', error); 
+                reject(error); 
+            })
+    });
 }
 
 function initPlayList() { 
