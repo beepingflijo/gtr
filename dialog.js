@@ -1,4 +1,4 @@
-function loadHistory(inDialog = true) { 
+function loadHistory(inDialog = true,lang=window.lang) { 
     const history = localStorage.getItem('visitedPages');
     if (history) {
         const historyList = document.createElement('div');
@@ -92,7 +92,7 @@ function loadHistory(inDialog = true) {
     }
 }
 
-async function loadSeriesInfo(seriesName,inDialog = true) { 
+async function loadSeriesInfo(seriesName,inDialog = true,lang=window.lang) { 
     console.log('loadSeriesInfo', seriesName);
     const trainInfo = document.createElement('div');
     trainInfo.classList.add('series-info-container');
@@ -256,11 +256,19 @@ async function loadSeriesInfo(seriesName,inDialog = true) {
     }
 }
 
-async function loadStationInfo(code, inDialog = true) { 
+async function loadStationInfo(code, inDialog = true, lang=window.lang) { 
     try { 
         const data = await getStationData(code);
         console.log('Station info:', data);
         if (!data) throw showToast(strings.station_info.info_not_found[lang]);
+
+        // 检查window.stationsNetwork是否存在，如果不存在则尝试获取
+        if (!window.stationsNetwork) {
+            // 尝试从network.json加载数据
+            const networkResponse = await fetch('./data/network.json');
+            const networkData = await networkResponse.json();
+            window.stationsNetwork = networkData.stations;
+        }
 
         const platforms = window.stationsNetwork.filter(station => station.name.startsWith(code));
 
@@ -271,6 +279,7 @@ async function loadStationInfo(code, inDialog = true) {
         stationInfo.classList.add('station-info');
 
         const trainInfoTitle = document.createElement('h4');
+        trainInfoTitle.classList.add('train-info-title');
         trainInfoTitle.textContent = strings.trains_info.page_title[lang];
         stationInfo.appendChild(trainInfoTitle);
 
@@ -286,6 +295,7 @@ async function loadStationInfo(code, inDialog = true) {
         stationInfo.appendChild(trainInfoBtn);
 
         const exitsTitle = document.createElement('h4');
+        exitsTitle.classList.add('exits-title');
         exitsTitle.textContent = strings.station_info.exits[lang];
         stationInfo.appendChild(exitsTitle);
         const exitsInfo = document.createElement('div');
@@ -324,6 +334,7 @@ async function loadStationInfo(code, inDialog = true) {
         stationInfo.appendChild(exitsInfo);
 
         const facilitiesTitle = document.createElement('h4');
+        facilitiesTitle.classList.add('floors-title');
         facilitiesTitle.textContent = strings.station_info.floors[lang];
         stationInfo.appendChild(facilitiesTitle);
         const platformsItem = document.createElement('div');

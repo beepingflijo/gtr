@@ -50,7 +50,7 @@ main {
     position: absolute;
 }
 
-.frame-container * { 
+.preview-container > * * { 
     transition: all 0.3s ease-in-out;
     text-wrap: nowrap;
     width: fit-content;

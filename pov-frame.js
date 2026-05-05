@@ -246,6 +246,11 @@ function applyBackgroundMode(mode,inputContainer=document) {
                 if (file) {
                     const url = URL.createObjectURL(file);
                     previewBackground.innerHTML = `<video src="${url}" autoplay muted loop style="width:100%;height:100%;object-fit:fill;"></video>`;
+                    // 播放一段时间之后设置音量为5%
+                    setTimeout(() => {
+                        previewBackground.querySelector('video').volume = 0.05;
+                        previewBackground.querySelector('video').muted = false;
+                    }, 100);
                 }
             };
             elementToHide.classList.remove('collapsed');
@@ -308,6 +313,11 @@ function applyBackgroundMode(mode,inputContainer=document) {
                             // 普通视频格式
                             previewBackground.innerHTML = `<video src="${url}" autoplay loop muted style="width:100%;height:100%;object-fit:fill;"></video>`;
                         }
+                        // 播放一段时间之后设置音量为5%
+                        setTimeout(() => {
+                            previewBackground.querySelector('video').volume = 0.05;
+                            previewBackground.querySelector('video').muted = false;
+                        }, 100);
                     } else {
                         // 如果不能确定类型，尝试作为图片处理
                         previewBackground.style.backgroundImage = `url(${url})`;
@@ -842,6 +852,80 @@ async function synthesizeAnnouncement(step) {
             'uk':' i '
         }
     };
+
+    const stationInfo = document.createElement('div');
+    let stationInfoContent = await loadStationInfo(step.station,false,'zh_hans');
+    if (stationInfoContent && stationInfoContent.innerHTML) {
+        stationInfo.innerHTML = stationInfoContent.innerHTML;
+    } else {
+        // 如果loadStationInfo返回无效内容，可以考虑添加错误提示或跳过
+        console.error(`Failed to load station info for: ${step.station}`);
+        return; // 如果内容加载失败，提前退出
+    }
+    stationInfo.classList.add('item');
+    stationInfo.style.backgroundColor = 'var(--color-background-card)';
+    stationInfo.style.backdropFilter = 'var(--background-filter-transparent)';
+    stationInfo.style.width = 'fit-content';
+    stationInfo.style.height = 'fit-content';
+    stationInfo.style.position = 'absolute';
+    stationInfo.style.top = '540px';
+    stationInfo.style.left = '960px';
+    stationInfo.style.transform = 'translate(-50%, -50%) scale(2.5)';
+    stationInfo.classList.add('station-info');
+    stationInfo.style.opacity = 0;
+    stationInfo.querySelector('.train-info-title').style.display = 'none';
+    stationInfo.querySelector('.train-info-link').style.display = 'none';
+    stationInfo.querySelector('.floors-title').style.display = 'none';
+    stationInfo.querySelectorAll('.floors-info').forEach(item => { 
+        item.style.display = 'none';
+    });
+    const previewBackground = document.querySelector('.preview-background');
+    previewBackground.appendChild(stationInfo);
+    setTimeout(() => { 
+        stationInfo.style.opacity = 1;
+        console.log('stationInfo height',stationInfo.getBoundingClientRect().height)
+        if (stationInfo.getBoundingClientRect().height > previewBackground.getBoundingClientRect().height) { 
+            stationInfo.style.transition = 'none';
+            stationInfo.style.transform = 'translate(-50%, 0%) scale(2.5)';
+            setTimeout(() => { 
+                stationInfo.style.transition = 'all 4s ease-in-out';
+                stationInfo.style.transform = 'translate(-50%, -100%) scale(2.5)';
+            }, 100);
+        } else { 
+            stationInfo.style.transition = '';
+            stationInfo.style.transform = 'translate(-50%, -50%) scale(2.5)';
+        }
+        setTimeout(() => { 
+            stationInfo.querySelector('.floors-title').style.display = '';
+            stationInfo.querySelectorAll('.floors-info').forEach(item => { 
+                item.style.display = '';
+            });
+            stationInfo.querySelector('.exits-title').style.display = 'none';
+            stationInfo.querySelectorAll('.exits-info').forEach(item => { 
+                item.style.display = 'none';
+            });
+            console.log('stationInfo height',stationInfo.getBoundingClientRect().height)
+            if (stationInfo.getBoundingClientRect().height > previewBackground.getBoundingClientRect().height) { 
+                stationInfo.style.transition = 'none';
+                stationInfo.style.transform = 'translate(-50%, 0%) scale(2.5)';
+                setTimeout(() => { 
+                    stationInfo.style.transition = 'all 4s ease-in-out';
+                    stationInfo.style.transform = 'translate(-50%, -100%) scale(2.5)';
+                }, 100);
+            } else { 
+                stationInfo.style.transition = '';
+                stationInfo.style.transform = 'translate(-50%, -50%) scale(2.5)';
+            }
+        }, 5000);
+        setTimeout(() => { 
+            stationInfo.style.transition = '';
+            stationInfo.style.opacity = 0;
+            setTimeout(() => { 
+                stationInfo.remove();
+            }, 500);
+        }, 9500);
+    }, 1000);
+
     //console.log('synthesizeAnnouncement',languages,step.station,activeLine);
     const firstSta = isUpwards?activeLine.route[activeLine.route.length-1].code:activeLine.route[0].code;
     const destSta = isUpwards?activeLine.route[0].code:activeLine.route[activeLine.route.length-1].code;
@@ -849,9 +933,6 @@ async function synthesizeAnnouncement(step) {
     
     // 异步获取doorSide
     const doorSide = await getDoorSide(step.station, step.platform, isUpwards?'up':'down');
-    console.log(step.station, step.platform, isUpwards?'up':'down');
-    console.log(firstSta, destSta, secondSta, doorSide);
-
     const lines = getLinesForStation(step.station).filter(line => line.id !== activeLineId);
     let announcement;
     switch (step.station) { 
@@ -998,7 +1079,7 @@ async function speakText(text, lang) {
         // 如果有视频元素，保存原始音量并降低它
         if (videoElement) {
             originalVolume = videoElement.volume;
-            videoElement.volume = Math.min(originalVolume, 0.03); // 将音量降至最大3%
+            videoElement.volume = Math.min(originalVolume, 0.01); // 将音量降至最大1%
         }
         
         // 如果没有要朗读的文本，直接返回
