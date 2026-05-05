@@ -14,6 +14,7 @@ const backgroundTypeNames = {
     'color': '纯色',
     'image': '图片',
     'video': '视频',
+    'link': '链接',
     'capture': '屏幕捕获'
 };
 
@@ -24,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function () {
             window.lines = data.lines;
             resumeProgress();
             init();
-            initBackgroundModeSelector();
             initLineSelector();
             initLineNameInputs();
             initUpwardsSwitch();
@@ -117,48 +117,19 @@ function toggleFullscreen() {
     });
 }
 
-function initBackgroundModeSelector() { 
-    const selector = document.querySelector('.background-mode-selector');
-    if (!selector) return;
+// 添加辅助函数来检测URL类型
+function isImageUrl(url) {
+    return /\.(jpeg|jpg|gif|png|webp|bmp|svg)$/.test(url.toLowerCase());
+}
 
-    selector.innerHTML = ''; // 清空现有选项
-    // 为每个背景模式创建选项
-    const modes = [
-        { id: 'transparent', name: '透明' },
-        { id: 'color', name: '纯色' },
-        { id: 'video', name: '视频' },
-        { id: 'capture', name: '屏幕捕获' },
-    ];
-    modes.forEach(mode => {
-        const item = document.createElement('div');
-        item.className = 'selection-item';
-        item.textContent = mode.name;
-        item.dataset.background = mode.id;
-        selector.appendChild(item);
-    });
-    // 添加点击事件
-    selector.querySelectorAll('.selection-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.stopPropagation();
-            // 移除之前的激活状态
-            const previousActive = selector.querySelector('.selection-item.active');
-            if (previousActive) {
-                previousActive.classList.remove('active');
-            }
-            // 添加当前项的激活状态
-            this.classList.add('active');
-            // 获取当前激活的选项的data-background属性
-            const background = this.dataset.background;
-            applyBackgroundMode(background);
-        });
-    });
-    selector.querySelectorAll('.selection-item')[0].click(); // 默认选择第一个选项
+function isVideoUrl(url) {
+    return /\.(mp4|webm|ogg|avi|mov|wmv|flv|mkv|m3u8)$/.test(url.toLowerCase());
 }
 
 function applyBackgroundMode(mode,inputContainer=document) {
     const previewBackground = document.querySelector('.preview-background');
     const customBackground = inputContainer.querySelector('.custom-background');
-    console.log(previewBackground, inputContainer, customBackground);
+    //console.log(previewBackground, inputContainer, customBackground);
     if (!previewBackground || !customBackground) return;
     if (mode!==currentBgType||currentBgType==='transparent') previewBackground.innerHTML = ''; // 清空现有背景
     // 停止所有的屏幕共享
@@ -180,7 +151,7 @@ function applyBackgroundMode(mode,inputContainer=document) {
         child.style.margin = 0;
         child.style.padding = 0;
         child.style.opacity = 0;
-        child.style.filter = 'blur(36px)'
+        child.style.filter = 'blur(8px)'
         child.style.whiteSpace = 'nowrap';
     });
     const elementToHide = inputContainer===document?customBackground.parentElement:customBackground;
@@ -192,10 +163,12 @@ function applyBackgroundMode(mode,inputContainer=document) {
     const colorInput = inputContainer.querySelector('#backgroundColorInput');
     const videoInput = inputContainer.querySelector('#backgroundVideoInput');
     const imageInput = inputContainer.querySelector('#backgroundImageInput');
+    const linkInput = inputContainer.querySelector('#backgroundLinkInput');
     const allColorInputs = document.querySelectorAll('#backgroundColorInput');
     const allVideoInputs = document.querySelectorAll('#backgroundVideoInput');
     const allImageInputs = document.querySelectorAll('#backgroundImageInput');
-    console.log(inputContainer,colorInput,videoInput);
+    const allLinkInputs = document.querySelectorAll('#backgroundLinkInput');
+    //console.log(inputContainer,colorInput,videoInput);
     allVideoInputs.forEach(input => { input.value = ''; }); // 重置视频输入
     const videoControls = inputContainer.querySelector('.video-controls');
 
@@ -214,105 +187,175 @@ function applyBackgroundMode(mode,inputContainer=document) {
             colorInput.style.padding = '';
             colorInput.style.filter = '';
             previewBackground.style.backgroundColor = colorInput.value;
+            previewBackground.style.backgroundImage = '';
             colorInput.addEventListener('input', (e) => {
                 const color = e.target.value;
                 previewBackground.style.backgroundColor = color;
                 allColorInputs.forEach(input => { input.value = color; });
             });
             elementToHide.classList.remove('collapsed');
-            customBackground.style.overflow = 'color';
+            currentBgType = 'color';
             break;
-        case 'video':
+        case 'image':
             elementToHide.style.height = '30px';
             elementToHide.style.opacity = 1;
             elementToHide.style.padding = '4px 12px';
-            // 添加视频背景
-            videoInput.style.width = '240px';
-            videoInput.style.opacity = 1;
-            videoInput.style.margin = 'unset';
-            videoInput.style.padding = '';
-            videoInput.style.filter = '';
-            //videoControls.style.width = '120px';
-            //videoControls.style.opacity = 1; 视频控制暂不支持
-            videoInput.addEventListener('change', (e) => { 
-                const video = e.target.files[0];
-                if (video) { 
-                    const videoURL = URL.createObjectURL(video);
-                    previewBackground.innerHTML = ''; // 清空现有背景
-                    const videoElement = document.createElement('video');
-                    videoElement.src = videoURL;
-                    videoElement.autoplay = true;
-                    videoElement.loop = true;
-                    videoElement.style.width = '100%';
-                    videoElement.style.height = '100%';
-                    videoElement.style.objectFit = 'cover';
-                    previewBackground.appendChild(videoElement);
-                }
-            });
-            elementToHide.classList.remove('collapsed');
-            currentBgType = 'video';
-            break;
-        case 'image': 
-            elementToHide.style.height = '30px';
-            elementToHide.style.opacity = 1;
-            elementToHide.style.padding = '4px 12px';
-            // 添加视频背景
             imageInput.style.width = '240px';
             imageInput.style.opacity = 1;
             imageInput.style.margin = 'unset';
             imageInput.style.padding = '';
             imageInput.style.filter = '';
-            //videoControls.style.width = '120px';
-            //videoControls.style.opacity = 1; 视频控制暂不支持
-            imageInput.addEventListener('change', (e) => { 
-                const img = e.target.files[0];
-                if (img) { 
-                    const imgURL = URL.createObjectURL(img);
-                    previewBackground.innerHTML = ''; // 清空现有背景
-                    const imgElement = document.createElement('img');
-                    imgElement.src = imgURL;
-                    imgElement.autoplay = true;
-                    imgElement.loop = true;
-                    imgElement.style.width = '100%';
-                    imgElement.style.height = '100%';
-                    imgElement.style.objectFit = 'cover';
-                    previewBackground.appendChild(imgElement);
+            const file = imageInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    previewBackground.style.backgroundImage = `url(${event.target.result})`;
+                    previewBackground.style.backgroundSize = 'cover';
+                    previewBackground.style.backgroundPosition = 'center';
+                };
+                reader.readAsDataURL(file);
+            }
+            // 监听文件选择事件
+            imageInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        previewBackground.style.backgroundImage = `url(${event.target.result})`;
+                        previewBackground.style.backgroundSize = 'cover';
+                        previewBackground.style.backgroundPosition = 'center';
+                    };
+                    reader.readAsDataURL(file);
                 }
-            });
+            };
             elementToHide.classList.remove('collapsed');
             currentBgType = 'image';
+            break;
+        case 'video':
+            elementToHide.style.height = '30px';
+            elementToHide.style.opacity = 1;
+            elementToHide.style.padding = '4px 12px';
+            videoInput.style.width = '240px';
+            videoInput.style.opacity = 1;
+            videoInput.style.margin = 'unset';
+            videoInput.style.padding = '';
+            videoInput.style.filter = '';
+            // 监听文件选择事件
+            videoInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const url = URL.createObjectURL(file);
+                    previewBackground.innerHTML = `<video src="${url}" autoplay muted loop style="width:100%;height:100%;object-fit:fill;"></video>`;
+                }
+            };
+            elementToHide.classList.remove('collapsed');
+            currentBgType = 'video';
+            break;
+        case 'link':
+            elementToHide.style.height = '30px';
+            elementToHide.style.opacity = 1;
+            elementToHide.style.padding = '4px 12px';
+            linkInput.style.width = '240px';
+            linkInput.style.opacity = 1;
+            linkInput.style.margin = 'unset';
+            linkInput.style.padding = '';
+            linkInput.style.filter = '';
+            // 监听URL输入事件
+            linkInput.oninput = (e) => {
+                const url = e.target.value;
+                if (url) {
+                    // 检测URL类型（图片或视频）
+                    if (isImageUrl(url)) {
+                        previewBackground.style.backgroundImage = `url(${url})`;
+                        previewBackground.style.backgroundSize = 'cover';
+                        previewBackground.style.backgroundPosition = 'center';
+                        previewBackground.innerHTML = ''; // 清空之前的内容
+                    } else if (isVideoUrl(url)) {
+                        if (url.toLowerCase().endsWith('.m3u8')) {
+                            // 创建视频元素
+                            const video = document.createElement('video');
+                            video.style.width = '100%';
+                            video.style.height = '100%';
+                            video.style.objectFit = 'fill';
+                            video.autoplay = true;
+                            video.loop = true;
+                            video.muted = true; // 初始静音，因为直播流通常不允许自动播放有声内容
+                            
+                            previewBackground.innerHTML = '';
+                            previewBackground.appendChild(video);
+                            
+                            // 检查是否支持HLS
+                            if (video.canPlayType('application/vnd.apple.mpegurl') || 
+                                video.canPlayType('application/x-mpegURL')) {
+                                // 原生支持HLS
+                                video.src = url;
+                            } else if (window.Hls && window.Hls.isSupported()) {
+                                // 使用HLS.js库
+                                const hls = new window.Hls();
+                                hls.loadSource(url);
+                                hls.attachMedia(video);
+                                
+                                // 错误处理
+                                hls.on(window.Hls.Events.ERROR, function (event, data) {
+                                    console.error('HLS error:', data);
+                                });
+                            } else {
+                                // 浏览器不支持HLS
+                                console.warn('HLS is not supported in this browser.');
+                                previewBackground.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;color:white;font-size:16px;">浏览器不支持HLS播放</div>';
+                            }
+                        } else {
+                            // 普通视频格式
+                            previewBackground.innerHTML = `<video src="${url}" autoplay loop muted style="width:100%;height:100%;object-fit:fill;"></video>`;
+                        }
+                    } else {
+                        // 如果不能确定类型，尝试作为图片处理
+                        previewBackground.style.backgroundImage = `url(${url})`;
+                        previewBackground.style.backgroundSize = 'cover';
+                        previewBackground.style.backgroundPosition = 'center';
+                        previewBackground.innerHTML = '';
+                    }
+                } else {
+                    previewBackground.style.backgroundImage = 'none';
+                    previewBackground.innerHTML = '';
+                }
+            };
+            elementToHide.classList.remove('collapsed');
+            currentBgType = 'link';
             break;
         case 'capture':
             elementToHide.style.height = '30px';
             elementToHide.style.opacity = 1;
             elementToHide.style.padding = '4px 12px';
-            // 添加屏幕捕获背景
-            const captureButton = inputContainer.querySelector('.capture-screen-btn');
-            captureButton.style.width = '120px';
-            captureButton.style.opacity = 1;
-            customBackground.style.overflow = 'visible';
-            captureButton.style.padding = 'unset';
-            captureButton.style.filter = '';
-            captureButton.addEventListener('click', async () => {
+            const captureScreenBtn = inputContainer.querySelector('.capture-screen-btn');
+            captureScreenBtn.style.width = '240px';
+            captureScreenBtn.style.opacity = 1;
+            captureScreenBtn.style.margin = 'unset';
+            captureScreenBtn.style.padding = '';
+            captureScreenBtn.style.filter = '';
+            captureScreenBtn.onclick = async () => {
                 try {
                     const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                    previewBackground.innerHTML = ''; // 清空现有背景
-                    const videoElement = document.createElement('video');
+                    previewBackground.innerHTML = `<video src="" autoplay muted loop style="width:100%;height:100%;object-fit:fill;"></video>`;
+                    const videoElement = previewBackground.querySelector('video');
                     videoElement.srcObject = stream;
-                    videoElement.autoplay = true;
-                    videoElement.style.width = '100%';
-                    videoElement.style.height = '100%';
-                    videoElement.style.objectFit = 'cover';
-                    previewBackground.appendChild(videoElement);
+                    
+                    // 监听流结束事件，重置为透明背景
+                    stream.getTracks()[0].onended = () => {
+                        const activeItem = document.querySelector('.background-mode-selector .selection-item.active');
+                        if(activeItem && activeItem.dataset.background === 'capture') {
+                            // 如果当前还是capture模式，则切换到透明
+                            document.querySelector('[data-background="transparent"]').click();
+                        }
+                    };
                 } catch (err) {
-                    console.error('Error accessing display media:', err);
+                    console.error('Error capturing screen:', err);
+                    alert('屏幕捕获失败，请确保浏览器有相应权限');
                 }
-            });
+            };
             elementToHide.classList.remove('collapsed');
             currentBgType = 'capture';
             break;
-        default:
-            console.error('Invalid background mode:', mode);    
     }
 }
 
@@ -691,7 +734,7 @@ function refreshFrame() {
     recordProgress();
 
     const announceTimeout = setTimeout(async () => { 
-        console.log('refreshStationList',actionList[activeStepIndex]);
+        //console.log('refreshStationList',actionList[activeStepIndex]);
         await synthesizeAnnouncement(actionList[activeStepIndex]);
     }, 1000);
 }
@@ -703,23 +746,27 @@ async function synthesizeAnnouncement(step) {
             'nextStation_first':'欢迎乘坐通运铁路，祝您出行愉快。本次列车终点站：{dest}。下一站：{sta}。',
             'nextStation':'列车启动，请扶好坐稳，本次列车终点站：{dest}。下一站：{sta}。',
             'nextStation_last':'列车启动，请扶好坐稳。下一站为本次列车的终点站：{sta}。',
-            'nextPlat_first':'列车开启前进方向{door}车门，请下车的乘客做好准备。',
-            'nextPlat':'列车开启前进方向{door}车门，请下车的乘客做好准备。',
-            'nextPlat_last':'列车开启前进方向{door}车门，请全体乘客做好下车准备。',
+            'nextStationPlat_first':'列车开启前进方向{door}车门，请下车的乘客做好准备。',
+            'nextStationPlat':'列车开启前进方向{door}车门，请下车的乘客做好准备。',
+            'nextStationPlat_last':'列车开启前进方向{door}车门，请全体乘客做好下车准备。',
             'arrive':'{sta}，到了。',
-            'arrive_last':'终点站{sta}，到了。欢迎再次乘坐通运铁路。',
-            'transfer':'换乘{lines}的乘客请从该站下车，请您注意换乘时间，合理安排行程。',
+            'arrive_last':'终点站{sta}，到了。',
+            'arrivePlat':'请从列车前进方向的{door}车门下车。',
+            'arrivePlat_last':'请从列车前进方向的{door}车门下车，欢迎再次乘坐通运铁路。',
+            'transfer':'换乘{lines}的乘客，请从该站下车。请您注意换乘时间，合理安排行程。',
             'left':'左侧','right':'右侧','both':'两侧'
         },
         'zh-CN-liaoning':{
             'nextStation_first':'欢迎乘坐通运铁路，这趟车的终点站是：{dest}。下一站搁{sta}。',
             'nextStation':'这趟车的终点站是：{dest}。下一站搁{sta}。',
             'nextStation_last':'下一站是咱这趟车的终点站：{sta}。',
-            'nextPlat_first':'列车将会开{door}的车门儿，请下车的乘客做好准备。',
-            'nextPlat':'列车将会开{door}的车门儿，请下车的乘客做好准备。',
-            'nextPlat_last':'列车将会开{door}的车门儿，所有乘客都得搁这站下车。',
+            'nextStationPlat_first':'列车将会开{door}的车门儿，请下车的乘客做好准备。',
+            'nextStationPlat':'列车将会开{door}的车门儿，请下车的乘客做好准备。',
+            'nextStationPlat_last':'列车将会开{door}的车门儿，所有乘客都得搁这站下车。',
             'arrive':'{sta}到了。',
-            'arrive_last':'终点站{sta}，到了。欢迎再次乘坐通运铁路。',
+            'arrive_last':'终点站{sta}，到了。',
+            'arrivePlat':'请从列车前进方向的{door}车门儿下车。',
+            'arrivePlat_last':'请从列车前进方向的{door}车门儿下车，欢迎再次乘坐通运铁路。',
             'transfer':'导{lines}的乘客得搁这站下车，请您注意换乘时间，合理安排行程。',
             'left':'左半拉儿','right':'右半拉儿','both':'两边儿'
         },
@@ -727,23 +774,27 @@ async function synthesizeAnnouncement(step) {
             'nextStation_first':'Welcome to take GT Railways. The destination of the train is {dest}. The next station is {sta}.',
             'nextStation':'The next station is {sta}.',
             'nextStation_last':'The next station is {sta}, the destination of the train.',
-            'nextPlat_first':'{door} doors will be used.',
-            'nextPlat':'{door} doors will be used.',
-            'nextPlat_last':'{door} doors will be used. All the passengers, please get ready to get off.',
+            'nextStationPlat_first':'{door} doors will be used.',
+            'nextStationPlat':'{door} doors will be used.',
+            'nextStationPlat_last':'{door} doors will be used. All the passengers, please get ready to get off.',
             'arrive':'We are arriving at {sta}.',
             'arrive_last':'We are arriving at {sta}, the destination of the train. All the passengers, please get off at this station. Welcome to take GT Railways again.',
-            'transfer':'Passengers for {lines} please prepare to get off. Please pay attention to transfer time and arrange your travel properly.',
+            'arrivePlat':'...',
+            'arrivePlat_last':'...',
+            'transfer':'Passengers for {lines}, please prepare to get off. Please pay attention to transfer time, and arrange your travel properly.',
             'left':'The left','right':'The right','both':'Both'
         },
         'zh-HK':{
             'nextStation_first':'歡迎乘搭通運鐵路，本次列车嘅终点站係{dest}。下一站：{sta}。',
             'nextStation':'下一站：{sta}。',
             'nextStation_last':'下一站係本次列车嘅终点站：{sta}。',
-            'nextPlat_first':'{door}嘅車門將會打開。',
-            'nextPlat':'{door}嘅車門將會打開。',
-            'nextPlat_last':'{door}嘅車門將會打開。',
+            'nextStationPlat_first':'{door}嘅車門將會打開。',
+            'nextStationPlat':'{door}嘅車門將會打開。',
+            'nextStationPlat_last':'{door}嘅車門將會打開。',
             'arrive':'列車已經到達：{sta}。',
             'arrive_last':'列車已經到達終點站：{sta}。歡迎再次乘搭通運鐵路。',
+            'arrivePlat':'...',
+            'arrivePlat_last':'...',
             'transfer':'轉乘{lines}嘅乘客請喺呢一站落車。',
             'left':'左邊','right':'右邊','both':'两邊'
         },
@@ -751,11 +802,13 @@ async function synthesizeAnnouncement(step) {
             'nextStation_first':'Наступна станцiя: {sta}.',
             'nextStation':'Наступна станцiя: {sta}.',
             'nextStation_last':'Наступна станцiя: {sta}.',
-            'nextPlat_first':'...',
-            'nextPlat':'...',
-            'nextPlat_last':'...',
+            'nextStationPlat_first':'...',
+            'nextStationPlat':'...',
+            'nextStationPlat_last':'...',
             'arrive':'...',
             'arrive_last':'...',
+            'arrivePlat':'...',
+            'arrivePlat_last':'...',
             'transfer':'...'
         },
     }
@@ -775,6 +828,20 @@ async function synthesizeAnnouncement(step) {
                 {text:'zh_hans',voice:'zh-CN-liaoning'}
             );
     }
+    const punctuationMap = {
+        '、':{
+            'zh_hans':'、',
+            'zh_hant':'、',
+            'en':', ',
+            'uk':', '
+        },
+        'and':{
+            'zh_hans':'和',
+            'zh_hant':'和',
+            'en':' and ',
+            'uk':' i '
+        }
+    };
     //console.log('synthesizeAnnouncement',languages,step.station,activeLine);
     const firstSta = isUpwards?activeLine.route[activeLine.route.length-1].code:activeLine.route[0].code;
     const destSta = isUpwards?activeLine.route[0].code:activeLine.route[activeLine.route.length-1].code;
@@ -784,6 +851,8 @@ async function synthesizeAnnouncement(step) {
     const doorSide = await getDoorSide(step.station, step.platform, isUpwards?'up':'down');
     console.log(step.station, step.platform, isUpwards?'up':'down');
     console.log(firstSta, destSta, secondSta, doorSide);
+
+    const lines = getLinesForStation(step.station).filter(line => line.id !== activeLineId);
     let announcement;
     switch (step.station) { 
         case firstSta:
@@ -798,13 +867,31 @@ async function synthesizeAnnouncement(step) {
                     showToast(newAnnouncement, 10000);
                     await speakText(newAnnouncement, lang.voice);
                     removeToast(newAnnouncement);
-                    if (step.type === 'nextStation') { 
+                    if (doorSide) { 
                         const platAnnouncement = 
-                            announcementTypo[lang.voice].nextPlat_last
+                            announcementTypo[lang.voice][step.type+'Plat_last']
                             .replace('{door}',announcementTypo[lang.voice][doorSide]);
                         showToast(platAnnouncement, 10000);
                         await speakText(platAnnouncement, lang.voice);
                         removeToast(platAnnouncement);
+                    }
+                    if (lines.length>0 && step.type==='nextStation'){
+                        const lastDelimiter = punctuationMap['、'][lang.text];
+                        const transferAnnouncement = 
+                            announcementTypo[lang.voice].transfer
+                            .replace(
+                                '{lines}',
+                                lines.map(line => line.name[lang.text])
+                                .join(lastDelimiter)
+                            )
+                            .replace(
+                                // 匹配最后一个分隔符
+                                new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
+                                punctuationMap['and'][lang.text] + '$2'
+                            );
+                        showToast(transferAnnouncement, 10000);
+                        await speakText(transferAnnouncement, lang.voice);
+                        removeToast(transferAnnouncement);
                     }
                 }
             })();
@@ -819,13 +906,31 @@ async function synthesizeAnnouncement(step) {
                     showToast(newAnnouncement, 10000);
                     await speakText(newAnnouncement, lang.voice);
                     removeToast(newAnnouncement);
-                    if (step.type === 'nextStation') { 
+                    if (doorSide) { 
                         const platAnnouncement = 
-                            announcementTypo[lang.voice].nextPlat_first
+                            announcementTypo[lang.voice][step.type+'Plat']
                             .replace('{door}',announcementTypo[lang.voice][doorSide]);
                         showToast(platAnnouncement, 10000);
                         await speakText(platAnnouncement, lang.voice);
                         removeToast(platAnnouncement);
+                    }
+                    if (lines.length>0 && step.type==='nextStation'){
+                        const lastDelimiter = punctuationMap['、'][lang.text];
+                        const transferAnnouncement = 
+                            announcementTypo[lang.voice].transfer
+                            .replace(
+                                '{lines}',
+                                lines.map(line => line.name[lang.text])
+                                .join(lastDelimiter)
+                            )
+                            .replace(
+                                // 匹配最后一个分隔符
+                                new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
+                                punctuationMap['and'][lang.text] + '$2'
+                            );
+                        showToast(transferAnnouncement, 10000);
+                        await speakText(transferAnnouncement, lang.voice);
+                        removeToast(transferAnnouncement);
                     }
                 }
             })();
@@ -840,13 +945,31 @@ async function synthesizeAnnouncement(step) {
                     showToast(newAnnouncement, 10000);
                     await speakText(newAnnouncement, lang.voice);
                     removeToast(newAnnouncement);
-                    if (step.type === 'nextStation') { 
+                    if (doorSide) { 
                         const platAnnouncement = 
-                            announcementTypo[lang.voice].nextPlat
+                            announcementTypo[lang.voice][step.type+'Plat']
                             .replace('{door}',announcementTypo[lang.voice][doorSide]);
                         showToast(platAnnouncement, 10000);
                         await speakText(platAnnouncement, lang.voice);
                         removeToast(platAnnouncement);
+                    }
+                    if (lines.length>0 && step.type==='nextStation'){
+                        const lastDelimiter = punctuationMap['、'][lang.text];
+                        const transferAnnouncement = 
+                            announcementTypo[lang.voice].transfer
+                            .replace(
+                                '{lines}',
+                                lines.map(line => line.name[lang.text])
+                                .join(lastDelimiter)
+                            )
+                            .replace(
+                                // 匹配最后一个分隔符
+                                new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
+                                punctuationMap['and'][lang.text] + '$2'
+                            );
+                        showToast(transferAnnouncement, 10000);
+                        await speakText(transferAnnouncement, lang.voice);
+                        removeToast(transferAnnouncement);
                     }
                 }
             })();
@@ -855,6 +978,16 @@ async function synthesizeAnnouncement(step) {
 
 // 语音播报函数
 async function speakText(text, lang) {
+    const preferredVoices = {
+        'zh-CN':[
+            'Microsoft Xiaoxiao Online (Natural)- Chinese (Mainland) (zh-CN)'
+        ],
+    }
+
+    // 获取视频元素以备调整音量
+    const videoElement = document.querySelector('.preview-background video');
+    let originalVolume = 1; // 默认音量
+    
     // 如果浏览器不支持语音合成，则直接返回
     if (!('speechSynthesis' in window)) {
         console.warn('浏览器不支持语音合成功能');
@@ -862,16 +995,37 @@ async function speakText(text, lang) {
     }
 
     return new Promise((resolve) => {
+        // 如果有视频元素，保存原始音量并降低它
+        if (videoElement) {
+            originalVolume = videoElement.volume;
+            videoElement.volume = Math.min(originalVolume, 0.03); // 将音量降至最大3%
+        }
+        
         // 如果没有要朗读的文本，直接返回
         if (!text.trim()) {
+            if (videoElement) {
+                videoElement.volume = originalVolume; // 恢复原始音量
+            }
             resolve();
             return;
         }
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
-        utterance.onend = () => resolve(); // 语音播报结束后解决Promise
-        utterance.onerror = () => resolve(); // 发生错误也解决Promise，避免阻塞
+        utterance.onend = () => {
+            // 语音播报结束后恢复视频原始音量
+            if (videoElement) {
+                videoElement.volume = originalVolume;
+            }
+            resolve();
+        };
+        utterance.onerror = () => {
+            // 发生错误也恢复视频原始音量并解决Promise，避免阻塞
+            if (videoElement) {
+                videoElement.volume = originalVolume;
+            }
+            resolve();
+        };
         speechSynthesis.speak(utterance);
     });
 }
@@ -1323,6 +1477,7 @@ function initPlayList() {
                 <input type="color" class="pref-value" id="backgroundColorInput"></input>
                 <input type="file" accept="image/*" class="pref-value" id="backgroundImageInput"></input>
                 <input type="file" accept="video/*" class="pref-value" id="backgroundVideoInput"></input>
+                <input type="url" placeholder="输入图片或视频链接" class="pref-value" id="backgroundLinkInput"></input>
                 <button class="icon-btn capture-screen-btn">开始屏幕捕获</button>`;
         
         // 根据 backgroundTypeNames 的键名动态生成选项
@@ -1340,7 +1495,8 @@ function initPlayList() {
                 'color': 'palette',
                 'video': 'movie',
                 'image': 'photo',
-                'capture': 'screen_share'
+                'capture': 'screen_share',
+                'link': 'link'
             };
             selectionItemIcon.textContent = iconMap[type] || 'help';
             
@@ -1444,8 +1600,6 @@ function handleWindowResize() {
             item.style.flexDirection = 'row';
             item.style.alignItems = 'center';
             item.style.justifyContent = 'space-between';
-            //if (!item.classList.contains('collapsed')) item.style.height = '2em';
-            //initBackgroundModeSelector();
             initLineNameInputs();
 
             // 修复：添加空值检查
