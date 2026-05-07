@@ -415,7 +415,7 @@ footer .search-panel .selection .selection-item.active:hover {
 
 .fare-details { 
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(8em, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(9em, 1fr));
     grid-auto-flow: dense;
     width: -webkit-fill-available;
     gap: 12px;
@@ -432,16 +432,24 @@ footer .search-panel .selection .selection-item.active:hover {
     min-width: min-content;
     background-color: var(--color-secondary-hover);
     padding: 12px;
+    padding-block-start: 3em;
     border-radius: 12px;
     gap: 4px;
     grid-column: span 1;
+    position: relative;
 }
 
 .fare-detail-title { 
     width: -webkit-fill-available;
-    height: -webkit-fill-available;
     padding-block-end: 0.3em;
     flex-wrap: wrap;
+}
+
+.fare-detail-item .fare-detail-title:first-of-type { 
+    position: absolute;
+    padding-block-end: 0.3em;
+    top: 12px;
+    left: 12px;
 }
 
 .fare-detail-item .fare-detail-title:not(:first-of-type) { 
