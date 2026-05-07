@@ -27,6 +27,9 @@ main {
     aspect-ratio: 16/9;
     filter: drop-shadow(0 8px 24px rgba(0,0,0,0.3));
     overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
 }
 
 .preview-container > * {
@@ -271,6 +274,9 @@ input[type="color"]::-webkit-color-swatch-wrapper {
         justify-content: space-between;
         gap: 0;
         width: 100svw;
+        position: fixed;
+        top: 100%;
+        transform: translateY(-100%);
     }    
     footer.swapped { 
         flex-direction: row-reverse;

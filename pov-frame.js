@@ -145,6 +145,7 @@ function toggleFullscreen() {
         (fullscreenBtn.classList.contains('active') &&
         window.innerHeight < window.innerWidth * 0.8) ? 1 : 0;
     main.style.marginLeft = fullscreenBtn.classList.contains('active') ? '0' : window.innerWidth * 0.6 + 16 + 'px';
+    main.style.marginTop = fullscreenBtn.classList.contains('active') ? window.innerWidth * 0.5625 + 16 + 'px' : '0';
     appContainer.style.flexDirection = fullscreenBtn.classList.contains('active') ? 'column' : 'row';
     appContainer.style.alignItems = fullscreenBtn.classList.contains('active') ? 'center' : 'flex-start';
     const previewContainer = document.querySelector('.preview-container');
@@ -801,6 +802,8 @@ function refreshFrame() {
     });
 
     recordProgress();
+    window.activeLine = activeLine;
+    window.activeLineId = activeLineId;
 
     const announceTimeout = setTimeout(async () => { 
         //console.log('refreshStationList',actionList[activeStepIndex]);
@@ -1033,22 +1036,23 @@ async function synthesizeAnnouncement(step) {
     //console.log('synthesizeAnnouncement',languages,step.station,activeLine);
     const firstSta = isUpwards?activeLine.route[activeLine.route.length-1].code:activeLine.route[0].code;
     const destSta = isUpwards?activeLine.route[0].code:activeLine.route[activeLine.route.length-1].code;
-    const secondSta = isUpwards?activeLine.route[activeLine.route.length-2].code:activeLine.route[1].code;
+    const secondSta = isUpwards?activeLine.route[activeLine.route.length-3].code:activeLine.route[2].code;
     
     // 异步获取doorSide
     const doorSide = await getDoorSide(step.station, step.platform, isUpwards?'up':'down');
     const lines = getLinesForStation(step.station).filter(line => line.id !== activeLineId);
+    console.log(activeLine);
     
     // 定义单个语言的播报函数
-    async function announceInLanguage(lang) {
+    async function announceInLanguage(lang,index) {
         switch (step.station) { 
             case firstSta:
                 break;
             case destSta: 
                 const newAnnouncementLast = 
                     announcementTypo[lang.voice][step.type+'_last']
-                    .replace('{sta}',getStationName(step.station,lang.text))
-                    .replace('{dest}',getStationName(destSta,lang.text));
+                    .replace('{sta}',getStationName(step.station,activeLineId==='manual'?index:lang.text))
+                    .replace('{dest}',getStationName(destSta,activeLineId==='manual'?index:lang.text));
                 showToast(newAnnouncementLast, 10000);
                 await speakText(newAnnouncementLast, lang.voice);
                 removeToast(newAnnouncementLast);
@@ -1080,10 +1084,11 @@ async function synthesizeAnnouncement(step) {
                 }
                 break;
             case secondSta: 
+                if (activeLineId === 'manual') break; // 如果是自定义线路，就不区分首站和末站，全部按常规播报
                 const newAnnouncementFirst = 
                     announcementTypo[lang.voice][step.type+'_first']
-                    .replace('{sta}',getStationName(step.station,lang.text))
-                    .replace('{dest}',getStationName(destSta,lang.text));
+                    .replace('{sta}',getStationName(step.station,activeLineId==='manual'?index:lang.text))
+                    .replace('{dest}',getStationName(destSta,activeLineId==='manual'?index:lang.text));
                 showToast(newAnnouncementFirst, 10000);
                 await speakText(newAnnouncementFirst, lang.voice);
                 removeToast(newAnnouncementFirst);
@@ -1117,8 +1122,8 @@ async function synthesizeAnnouncement(step) {
             default: 
                 const newAnnouncement = 
                     announcementTypo[lang.voice][step.type]
-                    .replace('{sta}',getStationName(step.station,lang.text))
-                    .replace('{dest}',getStationName(destSta,lang.text));
+                    .replace('{sta}',getStationName(step.station,activeLineId==='manual'?index:lang.text))
+                    .replace('{dest}',getStationName(destSta,activeLineId==='manual'?index:lang.text));
                 showToast(newAnnouncement, 10000);
                 await speakText(newAnnouncement, lang.voice);
                 removeToast(newAnnouncement);
@@ -1152,10 +1157,12 @@ async function synthesizeAnnouncement(step) {
     }
     
     // 按语言顺序串行播报：先播完一种语言的所有内容，再播下一种语言
+    let langIndex = 0;
     for (const lang of languages) {
         console.log(`开始播报${lang.voice}语言`);
-        await announceInLanguage(lang);
+        await announceInLanguage(lang,langIndex);
         console.log(`${lang.voice}语言播报完成`);
+        langIndex++;
     }
     console.log('所有语言播报完成');
     
