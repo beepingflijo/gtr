@@ -953,8 +953,10 @@ async function synthesizeAnnouncement(step) {
         infoElement.style.top = '540px';
         infoElement.style.left = '960px';
         infoElement.style.transform = 'translate(-50%, -50%) scale(2.5)';
+        infoElement.style.maxWidth = '480px';
         infoElement.classList.add('station-info');
         infoElement.style.opacity = 0;
+        if (currentBgType === 'transparent') infoElement.style.background = 'var(--color-background-card-solid)';
         infoElement.querySelectorAll('.train-info-title,.train-info-link,.floors-title,.floors-info').forEach(item => { 
             item.style.display = 'none';
         });
@@ -1016,27 +1018,26 @@ async function synthesizeAnnouncement(step) {
         });
     }
     
-    // 先显示中文信息，并等待完成
-    const stationInfoPromise = (async () => {
-    await showStationInfo(stationInfoContent, 'zh_hans');
-        console.log('中文车站信息显示完成');
+    // 先显示中文信息（不等待完成）
+    showStationInfo(stationInfoContent, 'zh_hans');
+    console.log('中文车站信息开始显示');
     
-        // 延迟后显示英文信息，并等待完成
-        await new Promise(async (resolve) => {
+    // 9.5秒后显示英文信息，并等待完成
+    const stationInfoPromise = new Promise(async (resolve) => {
         setTimeout(async () => {
             await showStationInfo(stationInfoContentEn, 'en');
-                console.log('英文车站信息显示完成');
+            console.log('英文车站信息显示完成');
             resolve();
-            }, 10); // 减少延迟，让英文信息紧接着中文信息显示
+        }, 9500);
     });
-        
-        console.log('所有车站信息显示完毕');
-    })();
+    
+    console.log('所有车站信息显示完毕');
 
     //console.log('synthesizeAnnouncement',languages,step.station,activeLine);
     const firstSta = isUpwards?activeLine.route[activeLine.route.length-1].code:activeLine.route[0].code;
     const destSta = isUpwards?activeLine.route[0].code:activeLine.route[activeLine.route.length-1].code;
     const secondSta = isUpwards?activeLine.route[activeLine.route.length-3].code:activeLine.route[2].code;
+    console.log(secondSta);
     
     // 异步获取doorSide
     const doorSide = await getDoorSide(step.station, step.platform, isUpwards?'up':'down');
@@ -1086,7 +1087,7 @@ async function synthesizeAnnouncement(step) {
         case secondSta: 
                 if (activeLineId === 'manual') break; // 如果是自定义线路，就不区分首站和末站，全部按常规播报
                 const newAnnouncementFirst = 
-                        announcementTypo[lang.voice][step.type+'_first']
+                        announcementTypo[lang.voice][step.type==='arrive'?'arrive':'nextStation_first']
                     .replace('{sta}',getStationName(step.station,activeLineId==='manual'?index:lang.text))
                     .replace('{dest}',getStationName(destSta,activeLineId==='manual'?index:lang.text));
                 showToast(newAnnouncementFirst, 10000);
