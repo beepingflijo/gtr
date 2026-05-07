@@ -55,11 +55,43 @@
         "page_title":{"zh_hans":"偏好设置", "en": "Preferences", "zh_hant":"偏好設定", "uk": "Налаштування"},
         "search_placeholder":{"zh_hans":"搜索设置项…", "en": "Search preferences…", "zh_hant":"搜索設定…", "uk": "Пошук налаштувань…"},
         "role_and_notifications":{"zh_hans":"角色与通知", "en": "Role and notifications", "zh_hant":"角色與通知", "uk": "Роль та повідомлення"},
-        "logged_in":{"zh_hans":"已登录", "en": "Logged in", "zh_hant":"已登錄", "uk": "Ввійшов"},
+        "logged_in":{"zh_hans":"已登录为", "en": "Logged as ", "zh_hant":"已登錄為", "uk": "Ввійшов как "},
         "not_logged_in":{"zh_hans":"未登录", "en": "Not logged in", "zh_hant":"未登錄", "uk": "Не ввійшов"},
         "logout":{"zh_hans":"登出", "en": "Log out", "zh_hant":"登出", "uk": "Вийти"},
         "login":{"zh_hans":"登录", "en": "Log in", "zh_hant":"登錄", "uk": "Увійти"},
-        "following_players":{"zh_hans":"关注的玩家", "en": "Following players", "zh_hant":"關注的玩家", "uk": "Відстежувані гравці"},
+        "username":{"zh_hans":"用户名", "en": "Username", "zh_hant":"用戶名", "uk": "Ім'я користувача"},
+        "username_placeholder":{"zh_hans":"输入用户名", "en": "Enter username", "zh_hant":"輸入用戶名", "uk": "Введіть ім'я користувача"},
+        "password":{"zh_hans":"密码", "en": "Password", "zh_hant":"密碼", "uk": "Пароль"},
+        "password_placeholder":{"zh_hans":"输入密码", "en": "Enter password", "zh_hant":"輸入密碼", "uk": "Введіть пароль"},
+        "password_placeholder_register":{"zh_hans":"输入密码（至少6个字符）", "en": "Enter password (at least 6 characters)", "zh_hant":"輸入密碼（至少6個字元）", "uk": "Введіть пароль (щонайменше 6 символів)"},
+        "confirm_password":{"zh_hans":"确认密码", "en": "Confirm password", "zh_hant":"確認密碼", "uk": "Підтвердіть пароль"},
+        "confirm_password_placeholder":{"zh_hans":"再次输入密码", "en": "Re-enter password", "zh_hant":"再次輸入密碼", "uk": "Введіть пароль ще раз"},
+        "email":{"zh_hans":"邮箱（可选）", "en": "Email (optional)", "zh_hant":"郵箱（可選）", "uk": "Електронна пошта (необов'язково)"},
+        "email_placeholder":{"zh_hans":"输入邮箱地址", "en": "Enter email address", "zh_hant":"輸入郵箱地址", "uk": "Введіть адресу електронної пошти"},
+        "register":{"zh_hans":"注册", "en": "Register", "zh_hant":"註冊", "uk": "Реєстрація"},
+        "logging_in":{"zh_hans":"登录中...", "en": "Logging in...", "zh_hant":"登錄中...", "uk": "Вхід..."},
+        "registering":{"zh_hans":"注册中...", "en": "Registering...", "zh_hant":"註冊中...", "uk": "Реєстрація..."},
+        "login_success":{"zh_hans":"登录成功", "en": "Login successful", "zh_hant":"登錄成功", "uk": "Вхід успішний"},
+        "register_success":{"zh_hans":"注册成功", "en": "Registration successful", "zh_hant":"註冊成功", "uk": "Реєстрація успішна"},
+        "logout_confirm":{"zh_hans":"确定要登出吗？", "en": "Are you sure you want to log out?", "zh_hant":"確定要登出嗎？", "uk": "Ви впевнені, що хочете вийти?"},
+        "logout_success":{"zh_hans":"已登出", "en": "Logged out", "zh_hant":"已登出", "uk": "Вийшов"},
+        "login_error_empty":{"zh_hans":"请输入用户名和密码", "en": "Please enter username and password", "zh_hant":"請輸入用戶名和密碼", "uk": "Будь ласка, введіть ім'я користувача та пароль"},
+        "register_error_empty":{"zh_hans":"请填写所有必填字段", "en": "Please fill in all required fields", "zh_hant":"請填寫所有必填欄位", "uk": "Будь ласка, заповніть усі обов'язкові поля"},
+        "register_error_username":{"zh_hans":"用户名长度必须在3-20个字符之间", "en": "Username must be between 3 and 20 characters", "zh_hant":"用戶名長度必須在3-20個字元之间", "uk": "Ім'я користувача має містити від 3 до 20 символів"},
+        "register_error_password":{"zh_hans":"密码长度至少为6个字符", "en": "Password must be at least 6 characters", "zh_hant":"密碼長度至少為6個字元", "uk": "Пароль має містити щонайменше 6 символів"},
+        "register_error_password_mismatch":{"zh_hans":"两次输入的密码不一致", "en": "Passwords do not match", "zh_hant":"兩次輸入的密碼不一致", "uk": "Паролі не співпадають"},
+        "authme_username":{"zh_hans":"服务器账号用户名", "en": "Server Username", "zh_hant":"服务器账戶用戶名", "uk": "Ім'я користувача сервера"},
+        "authme_username_placeholder":{"zh_hans":"输入服务器账号用户名", "en": "Enter Server username", "zh_hant":"輸入服务器账号用戶名", "uk": "Введіть ім'я користувача сервера"},
+        "authme_password":{"zh_hans":"服务器账号密码", "en": "Server Password", "zh_hant":"服务器账号密碼", "uk": "Пароль сервера"},
+        "authme_password_placeholder":{"zh_hans":"输入服务器账号密码", "en": "Enter Server password", "zh_hant":"輸入服务器账号密碼", "uk": "Введіть пароль сервера"},
+        "verify_authme":{"zh_hans":"验证服务器账号账户", "en": "Verify Server Account", "zh_hant":"驗證服务器账号賬戶", "uk": "Перевірити обліковий запис сервера"},
+        "verifying_authme":{"zh_hans":"验证中...", "en": "Verifying...", "zh_hant":"驗證中...", "uk": "Перевірка..."},
+        "authme_verification_success":{"zh_hans":"服务器账号验证成功", "en": "Server verification successful", "zh_hant":"服务器账号驗證成功", "uk": "Перевірка сервера успішна"},
+        "authme_verification_failed":{"zh_hans":"服务器账号验证失败", "en": "Server verification failed", "zh_hant":"服务器账号驗證失敗", "uk": "Перевірка сервера не вдалася"},
+        "authme_account_not_found":{"zh_hans":"服务器账号账号不存在，请确认后再试", "en": "Server account not found, please verify and try again", "zh_hant":"服务器账号賬號不存在，請確認後再試", "uk": "Обліковий запис сервера не знайдено, будь ласка, перевірте та спробуйте знову"},
+        "authme_already_bound":{"zh_hans":"该AuthMe账户已被其他用户绑定", "en": "This AuthMe account is already bound to another user", "zh_hant":"該AuthMe賬戶已被其他用戶綁定", "uk": "Цей обліковий запис AuthMe вже прив'язаний до іншого користувача"},
+        "authme_required":{"zh_hans":"必须验证服务器账户才能注册", "en": "Server account verification is required for registration", "zh_hant":"必須驗證服务器账户才能註冊", "uk": "Для реєстрації потрібна перевірка облікового запису сервера"},
+        "following_players":{"zh_hans":"关注的其他玩家", "en": "Other following players", "zh_hant":"關注的其他玩家", "uk": "Відстежувані гравці"},
         "following_players_placeholder":{
             "zh_hans":"输入玩家ID，用“,”隔开",
             "en": "Player IDs here...",
@@ -138,7 +170,17 @@
             "zh_hans": "确定要重置设置项吗？", 
             "en": "Are you sure you want to reset preferences?", 
             "zh_hant": "確定要重置設置項嗎？", 
-            "uk": "Ви впевнені, що хочете скинути налаштування?"}
+            "uk": "Ви впевнені, що хочете скинути налаштування?"},
+        "auto_sync_success": {
+            "zh_hans": "自动同步成功", 
+            "en": "Auto-sync successful", 
+            "zh_hant": "自動同步成功", 
+            "uk": "Автоматическая синхронизация успешна"},
+        "auto_sync": {
+            "zh_hans": "同步中…", 
+            "en": "Auto-syncing...", 
+            "zh_hant": "同步中…",
+            "uk": "Синхронізація..."}
     },
     "storage_descriptions": {
         "preferences":{
@@ -218,6 +260,12 @@
             "en": "Saved POV Frame progress",
             "zh_hant": "存儲的動態導覽進度",
             "uk": "Збережені прогрес фрейму"
+        },
+        "userSession":{
+            "zh_hans": "保存的用户会话信息",
+            "en": "Saved user session information",
+            "zh_hant": "存儲的用戶會話信息",
+            "uk": "Збереженная информация о сеансе пользователя"
         }
     },
     "district_names":{

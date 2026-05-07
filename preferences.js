@@ -24,6 +24,11 @@ document.addEventListener('DOMContentLoaded', function () {
             initReduceMotionSwitch();
             initStorageList();
             handleWindowResize();
+            
+            // 初始化认证系统
+            if (window.auth && window.auth.init) {
+                window.auth.init();
+            }
         })
     .catch(error => console.error('Error loading Language data:', error));
 });
@@ -81,10 +86,13 @@ function init() {
     const rolePref = document.getElementById('rolePref');
     rolePref.textContent = strings.preferences.role_and_notifications[lang];
     const loginStatus = document.getElementById('loginStatus');
-    loginStatus.textContent = strings.preferences.not_logged_in[lang];
     const toggleLogin = document.getElementById('toggleLogin');
-    toggleLogin.textContent = strings.preferences.login[lang];
     toggleLogin.style.color = 'var(--color-primary)';
+    
+    // 初始化登录状态（后续由auth模块更新）
+    loginStatus.textContent = strings.preferences.not_logged_in[lang];
+    toggleLogin.textContent = strings.preferences.login[lang];
+    
     const followPlayersPref = document.getElementById('followPlayersPref');
     followPlayersPref.textContent = strings.preferences.following_players[lang];
     const showPlayersPref = document.getElementById('showPlayersPref');
@@ -234,17 +242,19 @@ function init() {
     })
 }
 
-function initFollowPlayersPref() { 
+async function initFollowPlayersPref() { 
     const prefs = getPreferences();
+    let authmeUserName = ' ';
+    authmeUserName = await window.getAuthmeUsernameByUsername();
 
     const followPlayers = document.getElementById('followPlayers');
     followPlayers.placeholder = strings.preferences.following_players_placeholder[lang];
     if (prefs.followPlayers) { 
-        followPlayers.value = prefs.followPlayers
+        followPlayers.value = prefs.followPlayers.replace(authmeUserName,'').replace(/(^,)|(,$)/g,'');
     }
     followPlayers.addEventListener('change', () => { 
         console.log(followPlayers.value);
-        prefs.followPlayers = followPlayers.value;
+        prefs.followPlayers = authmeUserName+','+followPlayers.value;
         savePreferences(prefs);
     });
 }

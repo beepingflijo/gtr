@@ -38,7 +38,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         checkForceRefresh(); // 检查是否需要强制刷新
         initHistoryBtn();
         setInterval(handleFooterItemCollapse, 150);
-        listenKeyboardShortcuts();
+        if (window.listenKeyboardShortcuts) {
+            window.listenKeyboardShortcuts();
+        }
         addCursor();
         handleActions();
         const tabs = document.querySelectorAll('footer .tabs');
@@ -310,12 +312,14 @@ function getTrainData() {
     });
 }
 
-function getStationData(code) { 
+window.getTrainData = getTrainData;
+
+function getStationData(code = '') { 
     return new Promise((resolve, reject) => { 
         fetch(`./data/stations_info.json`) 
             .then(response => response.json()) 
             .then(data => { 
-                resolve(data[code]); 
+                resolve(code==='' ? data : data[code]); 
             }) 
             .catch(error => { 
                 console.error('Error fetching station data:', error); 

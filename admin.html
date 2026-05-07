@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>用户管理 - 通运铁路信息</title>
+    <link rel="icon" href="./res/gtr.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="preferences.css">
+    <link rel="stylesheet" href="dialog.css"></link>
+    <style>
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            padding-top: 6em;
+        }
+
+        #adminContent {
+            width: -webkit-fill-available;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--color-border);
+        }
+        
+        .admin-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-text);
+        }
+        
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(6em, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+            padding: 0 30px;
+        }
+        
+        .user-table-container {
+            overflow: hidden;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-border) transparent;
+        }
+        
+        .user-table {
+            width: -webkit-fill-available;
+            border-collapse: collapse;
+            border-bottom: 2px solid var(--color-border);
+            margin-bottom: 1em;
+        }
+        
+        .user-table th {
+            background: var(--color-bg-tertiary);
+            padding: 16px;
+            padding-block-start: 8px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--color-text);
+            border-bottom: 2px solid var(--color-border);
+        }
+        
+        .user-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text);
+        }
+        
+        .user-table tr:hover {
+            background: var(--color-bg-hover);
+        }
+        
+        .user-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .action-btn { 
+            margin: 4px;
+            text-wrap: nowrap;
+            display: inline-flex;
+            flex-direction: row;
+            padding: 0.2em 0.4em;
+            background-color: var(--color-secondary-hover);
+        }
+
+        .action-btn:hover { 
+            background-color: var(--color-secondary-hover);
+        }
+        
+        .btn-delete {
+            color: crimson;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-secondary);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--color-text-secondary);
+        }
+        
+        .error-message {
+            background: rgba(220, 20, 60, 0.1);
+            border: 1px solid crimson;
+            color: crimson;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-primary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .back-link:hover {
+            background: var(--color-bg-hover);
+        }
+        
+        @media (max-width: 768px) {
+            .user-table {
+                font-size: 14px;
+            }
+            
+            .user-table th,
+            .user-table td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="actions"> 
+                <a href="preferences.html" class="icon-btn back-link" title="返回偏好设置">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+            <div class="title">
+                <img src="./res/gtr.png" alt="logo">
+                <h1>用户管理</h1>
+            </div>
+            <div class="actions"></div>
+            <div class="gradient-blur"></div>
+        </header>
+        
+        <main class="admin-container">
+            <div id="adminContent">
+                <div class="loading">加载中...</div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="layout.js"></script>
+    <script>
+        /*const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3000/api' 
+            : '/api';*/
+        
+        // 等待strings和lang初始化完成
+        async function waitForInitialization() {
+            return new Promise((resolve) => {
+                // 检查是否已经初始化
+                if (window.strings && window.lang) {
+                    resolve();
+                    return;
+                }
+                
+                // 监听DOMContentLoaded事件（如果还没触发）
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        // 再等待一小段时间确保script.js完成初始化
+                        setTimeout(resolve, 200);
+                    });
+                } else {
+                    // DOM已加载，等待script.js的异步操作完成
+                    setTimeout(resolve, 300);
+                }
+            });
+        }
+        
+        // 检查管理员权限
+        async function checkAdminAccess() {
+            // 等待初始化完成
+            await waitForInitialization();
+            
+            const user = window.auth.getCurrentUser();
+            
+            if (!user) {
+                showErrorMessage('请先登录');
+                setTimeout(() => {
+                    window.location.href = 'preferences.html';
+                }, 2000);
+                return false;
+            }
+            
+            if (user.username !== 'admin') {
+                showErrorMessage('需要管理员权限才能访问此页面');
+                setTimeout(() => {
+                    window.location.href = 'preferences.html';
+                }, 2000);
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // 显示错误消息
+        function showErrorMessage(message) {
+            const content = document.getElementById('adminContent');
+            content.innerHTML = `
+                <div class="error-message">
+                    <strong>错误：</strong>${message}
+                </div>
+            `;
+        }
+        
+        // 加载用户列表
+        async function loadUsers() {
+            const session = window.auth.getUserSession ? window.auth.getUserSession() : null;
+            
+            if (!session || !session.token) {
+                showErrorMessage('未登录或会话已过期');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${session.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load users');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderUserList(data.data.users);
+                } else {
+                    showErrorMessage(data.message || '加载失败');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showErrorMessage('加载用户列表失败，请检查网络连接');
+            }
+        }
+        
+        // 渲染用户列表
+        function renderUserList(users) {
+            const content = document.getElementById('adminContent');
+            
+            if (!users || users.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined" style="font-size: 64px; margin-bottom: 16px;">people_outline</span>
+                        <h3>暂无用户</h3>
+                        <p>系统中还没有注册用户</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 计算统计数据
+            const totalUsers = users.length;
+            const adminCount = users.filter(u => u.username === 'admin').length;
+            const withEmail = users.filter(u => u.email).length;
+            
+            // 调试：打印第一个用户的AuthMe信息
+            if (users.length > 0) {
+                console.log('用户列表调试信息:', users.map(u => ({
+                    username: u.username,
+                    authmeBound: u.authmeBound,
+                    authmeUsername: u.authmeUsername,
+                    hasAuthmeField: 'authmeBound' in u
+                })));
+            }
+            
+            content.innerHTML = `
+                <div class="stats-container user-stats">
+                    <div class="stat-card">
+                        <div class="stats-num">${totalUsers}</div>
+                        <div class="stats-desc">总用户数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stats-num">${adminCount}</div>
+                        <div class="stats-desc">管理员账户</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stats-num">${withEmail}</div>
+                        <div class="stats-desc">已绑定邮箱</div>
+                    </div>
+                </div>
+                
+                <div class="item user-table-container">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>服务器账户</th>
+                                <th>邮箱</th>
+                                <th>注册时间</th>
+                                <th>最后登录</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => `
+                                <tr data-user-id="${user.id}">
+                                    <td><strong>${escapeHtml(user.username)}</strong></td>
+                                    <td>${user.authmeBound ? `<span style="color: var(--color-primary);">${escapeHtml(user.authmeUsername || 'N/A')}</span>` : '<em style="color: #999;">未绑定</em>'}</td>
+                                    <td>${user.email ? escapeHtml(user.email) : '<em>未设置</em>'}</td>
+                                    <td>${formatDate(user.createdAt)}</td>
+                                    <td>${user.lastLogin ? formatDate(user.lastLogin) : '<em>从未登录</em>'}</td>
+                                    <td>
+                                            <div class="icon-btn action-btn btn-reset" onclick="resetPassword('${user.id}', '${escapeHtml(user.username)}')" title="重置密码"><span class="material-symbols-outlined">refresh</span>重置</div>
+                                        ${user.username !== 'admin' ? `
+                                            <div class="icon-btn action-btn btn-delete" onclick="deleteUser('${user.id}', '${escapeHtml(user.username)}')" title="注销账户"><span class="material-symbols-outlined">delete</span></div>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 格式化日期
+        function formatDate(dateString) {
+            if (!dateString) return '未知';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // 删除用户
+        async function deleteUser(userId, username) {
+            if (!confirm(`确定要删除用户 "${username}" 吗？此操作不可恢复！`)) {
+                return;
+            }
+            
+            const session = window.auth.getUserSession ? window.auth.getUserSession() : null;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${session.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('用户删除成功');
+                    loadUsers(); // 重新加载列表
+                } else {
+                    alert('删除失败：' + data.message);
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('删除失败，请检查网络连接');
+            }
+        }
+        
+        // 重置密码
+        async function resetPassword(userId, username) {
+            const newPassword = prompt(`请输入用户 "${username}" 的新密码（至少6个字符）：`);
+            
+            if (!newPassword) {
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                alert('密码长度至少为6个字符');
+                return;
+            }
+            
+            const session = window.auth.getUserSession ? window.auth.getUserSession() : null;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/reset-password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${session.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ newPassword })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('密码重置成功');
+                } else {
+                    alert('重置失败：' + data.message);
+                }
+            } catch (error) {
+                console.error('Error resetting password:', error);
+                alert('重置失败，请检查网络连接');
+            }
+        }
+        
+        // 页面加载时执行
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasAccess = await checkAdminAccess();
+            if (hasAccess) {
+                loadUsers();
+            }
+        });
+    </script>
+</body>
+</html>

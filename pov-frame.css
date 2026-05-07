@@ -4,6 +4,7 @@ body {
 
 .app-container {
     padding: 0;
+    overflow: hidden;
 }
 
 .title { 
@@ -51,7 +52,11 @@ main {
 }
 
 .preview-container > * * { 
-    transition: all 0.3s ease-in-out;
+    transition: 
+        opacity 0.3s ease-in-out, 
+        background-color 0.3s ease-in-out, 
+        border-radius 0.3s ease-in-out, 
+        transform 0.3s ease-in-out;
     text-wrap: nowrap;
     width: fit-content;
 }
@@ -153,6 +158,11 @@ main {
     justify-content: flex-end;
 }
 
+.station-name-container .next-arrow span {
+    font-size: 72px;
+    font-weight: bold;
+}
+
 .station-name-container .hidden { 
     width: 0px;
     opacity: 0;
@@ -202,6 +212,7 @@ main {
     padding: 0 12px;
     border-radius: 1em;
     transition: all 0.3s ease-in-out;
+    cursor: pointer;
 }
 
 .station-item.active { 
@@ -259,6 +270,7 @@ input[type="color"]::-webkit-color-swatch-wrapper {
         flex-direction: row;
         justify-content: space-between;
         gap: 0;
+        width: 100svw;
     }    
     footer.swapped { 
         flex-direction: row-reverse;
@@ -279,4 +291,9 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 .add-station-item { 
     justify-content: flex-start;
+}
+
+.wait, *.wait { 
+    opacity: 0.1;
+    cursor: wait;
 }

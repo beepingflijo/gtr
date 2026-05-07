@@ -437,7 +437,7 @@ function handleFooterItemCollapse() {
             });
         }
     });
-    window.handleWindowResize();
+    window.handleWindowResize?.();
 }
 
 function initBlurLayers() {
@@ -541,10 +541,38 @@ function initSidebar() {
             <div class="side-bar-list side-bar-pref">
                 <a href="preferences.html" class="side-bar-item"> 
                     <div class="icon-btn preferences-btn">
-                        <span class="material-symbols-outlined filled">
-                        account_circle 
-                        </span>
-                        <span>${window.strings?.preferences?.page_title[lang] || '偏好设置'}</span>
+                        ${(() => {
+                            try {
+                                // 安全检查：确保getCurrentUser函数存在且已初始化
+                                if (typeof getCurrentUser === 'function') {
+                                    const user = getCurrentUser();
+                                    console.log('Sidebar auth check - User:', user);
+                                    if (user && user.username) {
+                                        // 已登录：显示用户头像和用户名
+                                        const authmeUsername = user.authmeUsername || 'MHF_Steve';
+                                        const avatarUrl = `https://mc-heads.hydcraft.cn/avatar/${authmeUsername}/24.png`;
+                                        console.log('显示用户信息:', { username: user.username, avatar: avatarUrl });
+                                        return `
+                                            <img src="${avatarUrl}" alt="${user.username}" style="width: 24px; height: 24px; border-radius: 4px;">
+                                            <span>${user.username}</span>
+                                        `;
+                                    } else {
+                                        console.log('用户未登录或无用户名');
+                                    }
+                                } else {
+                                    console.log('getCurrentUser函数不可用');
+                                }
+                            } catch (error) {
+                                console.error('检查用户状态时出错:', error);
+                            }
+                            // 未登录或函数不可用：显示默认图标和偏好设置文本
+                            return `
+                                <span class="material-symbols-outlined filled">
+                                    account_circle
+                                </span>
+                                <span>${window.strings?.preferences?.page_title[lang] || '偏好设置'}</span>
+                            `;
+                        })()}
                     </div>
                 </a>
                 <div class="side-bar-item"> 
@@ -557,7 +585,7 @@ function initSidebar() {
             </div>
         `;
     });
-    window.handleWindowResize();
+    window.handleWindowResize?.();
 }
 
 function initSearchPanel() {
@@ -617,10 +645,29 @@ function initPrefActions() {
                 history
                 </span>
             </div>
-            <div class="icon-btn preferences-btn" title="${window.strings?.preferences.page_title[lang] || 'Preferences'}"></a>
-                <span class="material-symbols-outlined filled">
-                account_circle
-                </span>
+            <div class="icon-btn preferences-btn" title="${window.strings?.preferences.page_title[lang] || 'Preferences'}">
+                ${(() => {
+                    try {
+                        // 安全检查：确保getCurrentUser函数存在且已初始化
+                        if (typeof getCurrentUser === 'function') {
+                            const user = getCurrentUser();
+                            if (user && user.username) {
+                                // 已登录：显示用户头像
+                                const authmeUsername = user.authmeUsername || 'MHF_Steve';
+                                const avatarUrl = `https://mc-heads.hydcraft.cn/avatar/${authmeUsername}/24.png`;
+                                return `<img src="${avatarUrl}" alt="${user.username}" style="width: 24px; height: 24px; border-radius: 4px;">`;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('检查用户状态时出错:', error);
+                    }
+                    // 未登录或函数不可用：显示默认图标
+                    return `
+                        <span class="material-symbols-outlined filled">
+                        account_circle
+                        </span>
+                    `;
+                })()}
             </div>
         `;
     });
@@ -734,7 +781,7 @@ function initHistoryBtn() {
     });
 }
 
-function pushDialog(content, type = 'confirm', title = '', defaultValue = '', coverSrc = '') {
+function pushDialog(content, type = 'confirm', title = '', defaultValue = '', coverSrc = '', customButtons = null) {
     if (compactParam === 'true') return;
     // 返回Promise以支持异步等待
     return new Promise(async (resolve) => {
@@ -841,7 +888,8 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
                 closeDialog(modalOverlay);
                 resolve(type === 'prompt' ? null : false); // 用户取消，prompt返回null，其他类型返回false
             });
-            if (type !== 'alert') dialogButtons.appendChild(cancelButton);
+            if (customButtons!==null) dialogButtons.appendChild(customButtons);
+            else if (type !== 'alert') dialogButtons.appendChild(cancelButton);
             
             // 确认按钮
             const confirmButton = document.createElement('button');

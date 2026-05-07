@@ -859,6 +859,7 @@ header * {
 .side-bar .side-bar-list.side-bar-pref .preferences-btn { 
     width: -webkit-fill-available;
     justify-content: flex-start;
+    gap: 6px;
 }
 
 .side-bar:not(.collapsed) .side-bar-navigation { 
@@ -1689,4 +1690,11 @@ footer .search-bar.collapsed {
     border-radius: 6px;
     padding: 0.1em 0.4em;
     font-size: 0.8em;
+}
+
+.form-group, .form-error { 
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+    transform: translateY(-2em);
 }
