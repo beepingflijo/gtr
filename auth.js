@@ -1,17 +1,24 @@
 // ==================== 用户认证模块 ====================
 
 // API基础URL（开发环境使用本地服务器，生产环境可配置）
+// 注意：如果要测试本地服务器，确保浏览器访问的是 http://localhost:3000
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:3000/api' 
-    : '/api';
+    : '/gtr/api'; // 生产环境使用相对路径，由Nginx反向代理处理
 
 // 获取当前会话
 function getUserSession() {
     try {
         const session = localStorage.getItem('userSession');
-        console.log('获取当前会话:', session);
+        console.log('🔍 获取当前会话:', session ? '存在' : '不存在');
         if (session) {
             const parsedSession = JSON.parse(session);
+            console.log('📄 会话内容:', {
+                username: parsedSession.user?.username,
+                userId: parsedSession.user?.id,
+                hasToken: !!parsedSession.token,
+                loginTime: parsedSession.loginTime
+            });
             
             // 会话数据版本迁移：检查是否包含AuthMe字段
             if (parsedSession && parsedSession.user) {
@@ -46,7 +53,30 @@ function getUserSession() {
 // 保存会话
 function saveUserSession(sessionData) {
     try {
+        console.log('💾 保存会话数据:', {
+            username: sessionData.user?.username,
+            userId: sessionData.user?.id,
+            token: sessionData.token ? '***' : null,
+            timestamp: new Date().toISOString()
+        });
         localStorage.setItem('userSession', JSON.stringify(sessionData));
+        
+        // 验证保存是否成功
+        const saved = localStorage.getItem('userSession');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            console.log('✅ 验证保存结果:', {
+                savedUsername: parsed.user?.username,
+                matchesExpected: parsed.user?.username === sessionData.user?.username
+            });
+            
+            if (parsed.user?.username !== sessionData.user?.username) {
+                console.error('❌ 严重错误：保存的会话用户名与预期不符！', {
+                    expected: sessionData.user?.username,
+                    actual: parsed.user?.username
+                });
+            }
+        }
     } catch (error) {
         console.error('Error saving user session:', error);
     }
@@ -107,8 +137,11 @@ window.getAuthmeUsernameByUsername = getAuthmeUsernameByUsername;
 async function validateToken() {
     const session = getUserSession();
     if (!session || !session.token) {
+        console.log('⚠️ 没有有效的会话或token');
         return false;
     }
+
+    console.log('🔐 开始验证Token，当前用户:', session.user?.username);
 
     try {
         const response = await fetch(`${API_BASE_URL}/auth/me`, {
@@ -119,24 +152,67 @@ async function validateToken() {
             }
         });
 
+        console.log('📡 Token验证响应状态:', response.status);
+
         if (!response.ok) {
+            console.warn('❌ Token验证失败，清除会话');
             clearUserSession();
             return false;
         }
 
         const data = await response.json();
-        if (data.success) {
-            // 更新会话中的用户信息（合并字段，避免覆盖AuthMe字段）
-            session.user = {
-                ...session.user,  // 保留原有字段
-                ...data.data.user  // 用后端返回的字段更新
-            };
-            saveUserSession(session);
-            return true;
+        const apiUser = data.data.user;
+        const localUser = session.user;
+        
+        console.log('📥 Token验证返回数据:', {
+            success: data.success,
+            apiUsername: apiUser.username,
+            apiUserId: apiUser.id,
+            localUsername: localUser.username,
+            localUserId: localUser.id
+        });
+        
+        // 关键检查：验证API返回的用户ID与token中的用户ID是否一致
+        try {
+            const tokenPayload = JSON.parse(atob(session.token.split('.')[1]));
+            console.log('🔍 Token中的用户ID:', tokenPayload.id);
+            
+            if (apiUser.id !== tokenPayload.id) {
+                console.error('❌ 严重错误：API返回的用户ID与Token中的ID不一致！');
+                console.error('   - Token中的ID:', tokenPayload.id);
+                console.error('   - API返回的ID:', apiUser.id);
+                console.error('   - 这可能是JWT_SECRET配置错误或安全问题');
+                console.error('   - 为了保护用户会话，将清除当前session并强制重新登录');
+                
+                // 清除会话，强制重新登录
+                clearUserSession();
+                
+                // 显示错误提示
+                if (typeof showToast === 'function') {
+                    showToast('会话验证失败，请重新登录', 3000);
+                }
+                
+                return false;
+            }
+        } catch(e) {
+            console.error('Token解码失败:', e);
         }
         
-        clearUserSession();
-        return false;
+        // 验证通过，更新会话中的用户信息（合并字段，避免覆盖AuthMe字段）
+        const oldUsername = session.user?.username;
+        session.user = {
+            ...session.user,  // 保留原有字段
+            ...data.data.user  // 用后端返回的字段更新
+        };
+        
+        console.log('🔄 更新会话用户信息:', {
+            oldUsername: oldUsername,
+            newUsername: session.user.username,
+            changed: oldUsername !== session.user.username
+        });
+        
+        saveUserSession(session);
+        return true;
     } catch (error) {
         console.error('Token validation error:', error);
         // 网络错误时不立即清除会话，允许离线使用
@@ -621,12 +697,16 @@ async function showRegisterDialog() {
             const result = await registerUser(username, password, email || null, authmeUsername, authmePassword);
 
             if (result.success) {
-                // 注册成功，关闭对话框
+                // 注册成功，关闭对话框并刷新页面以更新UI
                 showToast(strings.preferences.register_success[lang] || '注册成功', 2000);
                 const dialogElement = dialogContent.closest('.modal-overlay');
                 if (dialogElement) {
                     closeDialog(dialogElement);
                 }
+                // 延迟刷新页面，确保toast显示
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
                 resolve(true);
             } else {
                 // 注册失败，显示错误
@@ -725,16 +805,23 @@ async function handleLogoutClick() {
 
 // 初始化认证系统
 async function initAuth() {
+    console.log('🚀 初始化认证系统...');
+    
     // 检查是否有保存的会话
     const session = getUserSession();
     
     if (session && session.token) {
+        console.log('📋 发现已保存的会话，用户:', session.user?.username);
         // 验证token有效性
         const isValid = await validateToken();
         
         if (!isValid) {
-            console.log('Token invalid or expired');
+            console.log('❌ Token无效或已过期');
+        } else {
+            console.log('✅ Token验证成功');
         }
+    } else {
+        console.log('ℹ️ 没有已保存的会话');
     }
 
     // 更新UI

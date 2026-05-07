@@ -320,7 +320,7 @@
     --mask-image-overflow-y-bottom: unset;
 }
 
-.effect-reduced.dark {
+.effect-reduced.dark, .dark .effect-reduced {
     --color-background-card-solid: #212121;
     --color-background-actions: #212121;
     --color-secondary: #282828;
@@ -458,7 +458,7 @@ a:not(.side-bar-item,.tab-item):hover :not(.material-symbols-outlined) {
 }
 
 body.compact { 
-    background: transparent;
+    background: var(--color-background);
 }
 
 body.compact header, body.compact .side-bar, 

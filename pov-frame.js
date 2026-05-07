@@ -151,7 +151,7 @@ function toggleFullscreen() {
     const previewContainer = document.querySelector('.preview-container');
     previewContainer.style.width = fullscreenBtn.classList.contains('active') ? '' : '60svw';
     previewContainer.style.minWidth = fullscreenBtn.classList.contains('active') ? '' : '60svw';
-    previewContainer.style.position = fullscreenBtn.classList.contains('active') ? '' : 'fixed';
+    previewContainer.style.left = fullscreenBtn.classList.contains('active') ? '50%' : '30% ';
     previewContainer.style.minHeight = window.innerWidth * (fullscreenBtn.classList.contains('active') ? 0.5625 : 0.3375) + 'px';
     previewContainer.style.margin = fullscreenBtn.classList.contains('active') ? '' : '64px 24px';
     previewContainer.style.borderRadius = fullscreenBtn.classList.contains('active') ? '' : '16px';
@@ -936,38 +936,60 @@ async function synthesizeAnnouncement(step) {
     // 定义显示车站信息的通用函数，返回Promise以便追踪完成时间
     async function showStationInfo(content, language) {
         return new Promise((resolve) => {
-            if (!content || !content.innerHTML) {
-                console.error(`Failed to load station info for: ${step.station} (${language})`);
+        if (!content || !content.innerHTML) {
+            console.error(`Failed to load station info for: ${step.station} (${language})`);
                 resolve();
-                return;
+            return;
+        }
+        
+        const infoElement = document.createElement('div');
+        infoElement.innerHTML = content.innerHTML;
+        infoElement.classList.add('item');
+        infoElement.style.backgroundColor = 'var(--color-background-card)';
+        infoElement.style.backdropFilter = 'var(--background-filter-transparent)';
+        infoElement.style.width = 'max-content';
+        infoElement.style.height = 'fit-content';
+        infoElement.style.position = 'absolute';
+        infoElement.style.top = '540px';
+        infoElement.style.left = '960px';
+        infoElement.style.transform = 'translate(-50%, -50%) scale(2.5)';
+        infoElement.classList.add('station-info');
+        infoElement.style.opacity = 0;
+        infoElement.querySelectorAll('.train-info-title,.train-info-link,.floors-title,.floors-info').forEach(item => { 
+            item.style.display = 'none';
+        });
+        infoElement.querySelectorAll('.floors-info,.facilities-container').forEach(item => { 
+            item.style.width = '-webkit-fill-available';
+        });
+        
+        const previewBackground = document.querySelector('.preview-background');
+        previewBackground.appendChild(infoElement);
+        
+        setTimeout(() => { 
+            infoElement.style.opacity = 1;
+            console.log(`stationInfo height (${language})`, infoElement.getBoundingClientRect().height);
+            if (infoElement.getBoundingClientRect().height > previewBackground.getBoundingClientRect().height) { 
+                infoElement.style.transition = 'none';
+                infoElement.style.transform = 'translate(-50%, 0%) scale(2.5)';
+                setTimeout(() => { 
+                    infoElement.style.transition = 'all 4s ease-in-out';
+                    infoElement.style.transform = 'translate(-50%, -100%) scale(2.5)';
+                }, 100);
+            } else { 
+                infoElement.style.transition = '';
+                infoElement.style.transform = 'translate(-50%, -50%) scale(2.5)';
             }
             
-            const infoElement = document.createElement('div');
-            infoElement.innerHTML = content.innerHTML;
-            infoElement.classList.add('item');
-            infoElement.style.backgroundColor = 'var(--color-background-card)';
-            infoElement.style.backdropFilter = 'var(--background-filter-transparent)';
-            infoElement.style.width = 'max-content';
-            infoElement.style.height = 'fit-content';
-            infoElement.style.position = 'absolute';
-            infoElement.style.top = '540px';
-            infoElement.style.left = '960px';
-            infoElement.style.transform = 'translate(-50%, -50%) scale(2.5)';
-            infoElement.classList.add('station-info');
-            infoElement.style.opacity = 0;
-            infoElement.querySelectorAll('.train-info-title,.train-info-link,.floors-title,.floors-info').forEach(item => { 
-                item.style.display = 'none';
-            });
-            infoElement.querySelectorAll('.floors-info,.facilities-container').forEach(item => { 
-                item.style.width = '-webkit-fill-available';
-            });
-            
-            const previewBackground = document.querySelector('.preview-background');
-            previewBackground.appendChild(infoElement);
-            
             setTimeout(() => { 
-                infoElement.style.opacity = 1;
-                console.log(`stationInfo height (${language})`, infoElement.getBoundingClientRect().height);
+                infoElement.querySelector('.floors-title').style.display = '';
+                infoElement.querySelectorAll('.floors-info').forEach(item => { 
+                    item.style.display = '';
+                });
+                infoElement.querySelector('.exits-title').style.display = 'none';
+                infoElement.querySelectorAll('.exits-info').forEach(item => { 
+                    item.style.display = 'none';
+                });
+                console.log(`stationInfo height after update (${language})`, infoElement.getBoundingClientRect().height);
                 if (infoElement.getBoundingClientRect().height > previewBackground.getBoundingClientRect().height) { 
                     infoElement.style.transition = 'none';
                     infoElement.style.transform = 'translate(-50%, 0%) scale(2.5)';
@@ -979,56 +1001,34 @@ async function synthesizeAnnouncement(step) {
                     infoElement.style.transition = '';
                     infoElement.style.transform = 'translate(-50%, -50%) scale(2.5)';
                 }
-                
+            }, 5000);
+            
+            setTimeout(() => { 
+                infoElement.style.transition = '';
+                infoElement.style.opacity = 0;
                 setTimeout(() => { 
-                    infoElement.querySelector('.floors-title').style.display = '';
-                    infoElement.querySelectorAll('.floors-info').forEach(item => { 
-                        item.style.display = '';
-                    });
-                    infoElement.querySelector('.exits-title').style.display = 'none';
-                    infoElement.querySelectorAll('.exits-info').forEach(item => { 
-                        item.style.display = 'none';
-                    });
-                    console.log(`stationInfo height after update (${language})`, infoElement.getBoundingClientRect().height);
-                    if (infoElement.getBoundingClientRect().height > previewBackground.getBoundingClientRect().height) { 
-                        infoElement.style.transition = 'none';
-                        infoElement.style.transform = 'translate(-50%, 0%) scale(2.5)';
-                        setTimeout(() => { 
-                            infoElement.style.transition = 'all 4s ease-in-out';
-                            infoElement.style.transform = 'translate(-50%, -100%) scale(2.5)';
-                        }, 100);
-                    } else { 
-                        infoElement.style.transition = '';
-                        infoElement.style.transform = 'translate(-50%, -50%) scale(2.5)';
-                    }
-                }, 5000);
-                
-                setTimeout(() => { 
-                    infoElement.style.transition = '';
-                    infoElement.style.opacity = 0;
-                    setTimeout(() => { 
-                        infoElement.remove();
+                    infoElement.remove();
                         console.log(`车站信息(${language})显示完毕`);
                         resolve(); // 车站信息完全移除后resolve
-                    }, 500);
-                }, 9500);
-            }, 1000);
+                }, 500);
+            }, 9500);
+        }, 1000);
         });
     }
     
     // 先显示中文信息，并等待完成
     const stationInfoPromise = (async () => {
-        await showStationInfo(stationInfoContent, 'zh_hans');
+    await showStationInfo(stationInfoContent, 'zh_hans');
         console.log('中文车站信息显示完成');
-        
+    
         // 延迟后显示英文信息，并等待完成
         await new Promise(async (resolve) => {
-            setTimeout(async () => {
-                await showStationInfo(stationInfoContentEn, 'en');
+        setTimeout(async () => {
+            await showStationInfo(stationInfoContentEn, 'en');
                 console.log('英文车站信息显示完成');
-                resolve();
+            resolve();
             }, 10); // 减少延迟，让英文信息紧接着中文信息显示
-        });
+    });
         
         console.log('所有车站信息显示完毕');
     })();
@@ -1045,115 +1045,115 @@ async function synthesizeAnnouncement(step) {
     
     // 定义单个语言的播报函数
     async function announceInLanguage(lang,index) {
-        switch (step.station) { 
-            case firstSta:
-                break;
-            case destSta: 
+    switch (step.station) { 
+        case firstSta:
+            break;
+        case destSta: 
                 const newAnnouncementLast = 
-                    announcementTypo[lang.voice][step.type+'_last']
+                        announcementTypo[lang.voice][step.type+'_last']
                     .replace('{sta}',getStationName(step.station,activeLineId==='manual'?index:lang.text))
                     .replace('{dest}',getStationName(destSta,activeLineId==='manual'?index:lang.text));
                 showToast(newAnnouncementLast, 10000);
                 await speakText(newAnnouncementLast, lang.voice);
                 removeToast(newAnnouncementLast);
-                if (doorSide) { 
+                    if (doorSide) { 
                     const platAnnouncementLast = 
-                        announcementTypo[lang.voice][step.type+'Plat_last']
-                        .replace('{door}',announcementTypo[lang.voice][doorSide]);
+                            announcementTypo[lang.voice][step.type+'Plat_last']
+                            .replace('{door}',announcementTypo[lang.voice][doorSide]);
                     showToast(platAnnouncementLast, 10000);
                     await speakText(platAnnouncementLast, lang.voice);
                     removeToast(platAnnouncementLast);
-                }
-                if (lines.length>0 && step.type==='nextStation'){
-                    const lastDelimiter = punctuationMap['、'][lang.text];
+                    }
+                    if (lines.length>0 && step.type==='nextStation'){
+                        const lastDelimiter = punctuationMap['、'][lang.text];
                     const transferAnnouncementLast = 
-                        announcementTypo[lang.voice].transfer
-                        .replace(
-                            '{lines}',
-                            lines.map(line => line.name[lang.text])
-                            .join(lastDelimiter)
-                        )
-                        .replace(
-                            // 匹配最后一个分隔符
-                            new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
-                            punctuationMap['and'][lang.text] + '$2'
-                        );
+                            announcementTypo[lang.voice].transfer
+                            .replace(
+                                '{lines}',
+                                lines.map(line => line.name[lang.text])
+                                .join(lastDelimiter)
+                            )
+                            .replace(
+                                // 匹配最后一个分隔符
+                                new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
+                                punctuationMap['and'][lang.text] + '$2'
+                            );
                     showToast(transferAnnouncementLast, 10000);
                     await speakText(transferAnnouncementLast, lang.voice);
                     removeToast(transferAnnouncementLast);
-                }
-                break;
-            case secondSta: 
+                    }
+            break;
+        case secondSta: 
                 if (activeLineId === 'manual') break; // 如果是自定义线路，就不区分首站和末站，全部按常规播报
                 const newAnnouncementFirst = 
-                    announcementTypo[lang.voice][step.type+'_first']
+                        announcementTypo[lang.voice][step.type+'_first']
                     .replace('{sta}',getStationName(step.station,activeLineId==='manual'?index:lang.text))
                     .replace('{dest}',getStationName(destSta,activeLineId==='manual'?index:lang.text));
                 showToast(newAnnouncementFirst, 10000);
                 await speakText(newAnnouncementFirst, lang.voice);
                 removeToast(newAnnouncementFirst);
-                if (doorSide) { 
+                    if (doorSide) { 
                     const platAnnouncementFirst = 
-                        announcementTypo[lang.voice][step.type+'Plat']
-                        .replace('{door}',announcementTypo[lang.voice][doorSide]);
+                            announcementTypo[lang.voice][step.type+'Plat']
+                            .replace('{door}',announcementTypo[lang.voice][doorSide]);
                     showToast(platAnnouncementFirst, 10000);
                     await speakText(platAnnouncementFirst, lang.voice);
                     removeToast(platAnnouncementFirst);
-                }
-                if (lines.length>0 && step.type==='nextStation'){
-                    const lastDelimiter = punctuationMap['、'][lang.text];
+                    }
+                    if (lines.length>0 && step.type==='nextStation'){
+                        const lastDelimiter = punctuationMap['、'][lang.text];
                     const transferAnnouncementFirst = 
-                        announcementTypo[lang.voice].transfer
-                        .replace(
-                            '{lines}',
-                            lines.map(line => line.name[lang.text])
-                            .join(lastDelimiter)
-                        )
-                        .replace(
-                            // 匹配最后一个分隔符
-                            new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
-                            punctuationMap['and'][lang.text] + '$2'
-                        );
+                            announcementTypo[lang.voice].transfer
+                            .replace(
+                                '{lines}',
+                                lines.map(line => line.name[lang.text])
+                                .join(lastDelimiter)
+                            )
+                            .replace(
+                                // 匹配最后一个分隔符
+                                new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
+                                punctuationMap['and'][lang.text] + '$2'
+                            );
                     showToast(transferAnnouncementFirst, 10000);
                     await speakText(transferAnnouncementFirst, lang.voice);
                     removeToast(transferAnnouncementFirst);
-                }
-                break;
-            default: 
-                const newAnnouncement = 
-                    announcementTypo[lang.voice][step.type]
+                    }
+            break;
+        default: 
+                    const newAnnouncement = 
+                        announcementTypo[lang.voice][step.type]
                     .replace('{sta}',getStationName(step.station,activeLineId==='manual'?index:lang.text))
                     .replace('{dest}',getStationName(destSta,activeLineId==='manual'?index:lang.text));
-                showToast(newAnnouncement, 10000);
-                await speakText(newAnnouncement, lang.voice);
-                removeToast(newAnnouncement);
-                if (doorSide) { 
-                    const platAnnouncement = 
-                        announcementTypo[lang.voice][step.type+'Plat']
-                        .replace('{door}',announcementTypo[lang.voice][doorSide]);
-                    showToast(platAnnouncement, 10000);
-                    await speakText(platAnnouncement, lang.voice);
-                    removeToast(platAnnouncement);
+                    showToast(newAnnouncement, 10000);
+                    await speakText(newAnnouncement, lang.voice);
+                    removeToast(newAnnouncement);
+                    if (doorSide) { 
+                        const platAnnouncement = 
+                            announcementTypo[lang.voice][step.type+'Plat']
+                            .replace('{door}',announcementTypo[lang.voice][doorSide]);
+                        showToast(platAnnouncement, 10000);
+                        await speakText(platAnnouncement, lang.voice);
+                        removeToast(platAnnouncement);
+                    }
+                    if (lines.length>0 && step.type==='nextStation'){
+                        const lastDelimiter = punctuationMap['、'][lang.text];
+                        const transferAnnouncement = 
+                            announcementTypo[lang.voice].transfer
+                            .replace(
+                                '{lines}',
+                                lines.map(line => line.name[lang.text])
+                                .join(lastDelimiter)
+                            )
+                            .replace(
+                                // 匹配最后一个分隔符
+                                new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
+                                punctuationMap['and'][lang.text] + '$2'
+                            );
+                        showToast(transferAnnouncement, 10000);
+                        await speakText(transferAnnouncement, lang.voice);
+                        removeToast(transferAnnouncement);
+                    }
                 }
-                if (lines.length>0 && step.type==='nextStation'){
-                    const lastDelimiter = punctuationMap['、'][lang.text];
-                    const transferAnnouncement = 
-                        announcementTypo[lang.voice].transfer
-                        .replace(
-                            '{lines}',
-                            lines.map(line => line.name[lang.text])
-                            .join(lastDelimiter)
-                        )
-                        .replace(
-                            // 匹配最后一个分隔符
-                            new RegExp('(' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ')([^' + lastDelimiter.replace(/[.*+\?^${}()|[\]\\]/g, '\\$&') + ']*$)', 'g'),
-                            punctuationMap['and'][lang.text] + '$2'
-                        );
-                    showToast(transferAnnouncement, 10000);
-                    await speakText(transferAnnouncement, lang.voice);
-                    removeToast(transferAnnouncement);
-                }
-        }
     }
     
     // 按语言顺序串行播报：先播完一种语言的所有内容，再播下一种语言
@@ -1866,8 +1866,8 @@ function handleWindowResize() {
         expandWindowText.style.opacity = 0;
         fullscreenBtn.style.display = 'none';
         fullscreenBtn.classList = 'icon-btn fullscreen-btn active';
-        toggleFullscreen();
     }
+    toggleFullscreen();
 
     const previewContainer = document.querySelector('.preview-container');
     previewContainer.style.width = window.innerWidth *(fullscreenBtn.classList.contains('active') ? 1 : 0.6)+ 'px';

@@ -436,9 +436,9 @@ function updateSearchURLParameter(searchTerm) {
 
 function getStationName(stationCode, lang = getCurrentLanguage()) {
     console.log(window.activeLine);
-    if (window.activeLine.id === 'manual') { 
+    if (window.activeLine && window.activeLine.id === 'manual') { 
         const currentStation = window.activeLine.route.find(station => station.code === stationCode);
-        if (lang > 0) lang = currentStation.name.length - 1;
+        if (lang > 0) lang = currentStation.name.filter(name => name!=='').length - 1;
         console.log('getStationName', currentStation,lang);
         return currentStation.name[lang];
     }

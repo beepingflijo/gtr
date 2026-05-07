@@ -98,19 +98,42 @@ function authenticateToken(req, res, next) {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
+        console.log('❌ Token验证失败：未提供token');
         return res.status(401).json({ 
             success: false, 
             message: 'Access token required' 
         });
     }
 
+    console.log('🔍 收到Token验证请求');
+    console.log('   - Token前20字符:', token.substring(0, 20) + '...');
+    
+    // 先解码token看看payload是什么
+    try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+            console.log('   - Token Payload (解码):', payload);
+        }
+    } catch(e) {
+        console.log('   - Token解码失败:', e.message);
+    }
+
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
+            console.log('❌ Token验证失败：', err.message);
             return res.status(403).json({ 
                 success: false, 
                 message: 'Invalid or expired token' 
             });
         }
+        
+        console.log('✅ JWT.verify 成功，解析结果:', {
+            id: user.id,
+            username: user.username,
+            iat: user.iat,
+            exp: user.exp
+        });
         req.user = user;
         next();
     });
@@ -168,6 +191,12 @@ async function verifyAuthMeAccount(authmeUsername, authmePassword) {
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { username, password, email, authmeUsername, authmePassword } = req.body;
+        
+        console.log('📝 收到注册请求:', {
+            username,
+            hasEmail: !!email,
+            hasAuthme: !!(authmeUsername && authmePassword)
+        });
 
         // 验证基本输入
         if (!username || !password) {
@@ -262,11 +291,21 @@ app.post('/api/auth/register', async (req, res) => {
         saveUsers(users);
 
         // 生成Token
+        const tokenPayload = { id: newUser.id, username: newUser.username };
+        console.log('🔑 生成JWT Token，payload:', tokenPayload);
+        
         const token = jwt.sign(
-            { id: newUser.id, username: newUser.username },
+            tokenPayload,
             JWT_SECRET,
             { expiresIn: TOKEN_EXPIRY }
         );
+
+        console.log('✅ 注册成功，返回用户信息:', {
+            id: newUser.id,
+            username: newUser.username,
+            authmeBound: newUser.authmeBound,
+            tokenLength: token.length
+        });
 
         res.status(201).json({
             success: true,
@@ -297,6 +336,8 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { username, password } = req.body;
+        
+        console.log('🔐 收到登录请求:', { username });
 
         // 验证输入
         if (!username || !password) {
@@ -310,6 +351,7 @@ app.post('/api/auth/login', async (req, res) => {
         const user = users.find(u => u.username === username);
 
         if (!user) {
+            console.log('❌ 登录失败：用户不存在', username);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid username or password'
@@ -319,22 +361,38 @@ app.post('/api/auth/login', async (req, res) => {
         // 验证密码
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
+            console.log('❌ 登录失败：密码错误', username);
             return res.status(401).json({
                 success: false,
                 message: 'Invalid username or password'
             });
         }
 
+        console.log('✅ 密码验证成功，用户:', {
+            id: user.id,
+            username: user.username
+        });
+
         // 更新最后登录时间
         user.lastLogin = new Date().toISOString();
         saveUsers(users);
 
         // 生成Token
+        const tokenPayload = { id: user.id, username: user.username };
+        console.log('🔑 生成JWT Token，payload:', tokenPayload);
+        
         const token = jwt.sign(
-            { id: user.id, username: user.username },
+            tokenPayload,
             JWT_SECRET,
             { expiresIn: TOKEN_EXPIRY }
         );
+
+        console.log('✅ 登录成功，返回用户信息:', {
+            id: user.id,
+            username: user.username,
+            authmeBound: user.authmeBound,
+            tokenLength: token.length
+        });
 
         res.json({
             success: true,
@@ -363,15 +421,25 @@ app.post('/api/auth/login', async (req, res) => {
 
 // 验证Token（获取当前用户信息）
 app.get('/api/auth/me', authenticateToken, (req, res) => {
+    console.log('📋 /api/auth/me 被调用');
+    console.log('   - req.user (从JWT解析):', req.user);
+    
     const users = readUsers();
+    console.log('   - 正在查找用户ID:', req.user.id);
+    
     const user = users.find(u => u.id === req.user.id);
-
+    
     if (!user) {
+        console.log('   - ❌ 用户未找到！');
+        console.log('   - 所有用户ID列表:', users.map(u => ({ id: u.id, username: u.username })));
+        
         return res.status(404).json({
             success: false,
             message: 'User not found'
         });
     }
+
+    console.log('   - ✅ 找到用户:', user.username);
 
     res.json({
         success: true,
@@ -597,7 +665,12 @@ async function startServer() {
     await initializeAdmin();
     
     app.listen(PORT, () => {
-        console.log(`\n🚀 GTR API Server running on http://localhost:${PORT}`);
+        console.log(`\n🚀 GTR API Server v1.0.4-JWT-FIX running on http://localhost:${PORT}`);
+        console.log(`   ⚠️  JWT_SECRET 长度: ${JWT_SECRET.length} 字符`);
+        console.log(`   ⚠️  JWT_SECRET 前缀: ${JWT_SECRET.substring(0, 20)}...`);
+        console.log(`   ⚠️  如果长度不是35，说明使用了自定义JWT_SECRET！`);
+        console.log(`   Environment: ${process.env.NODE_ENV || 'production'}`);
+        console.log(`   PORT env: ${process.env.PORT || 'not set'}`);
         console.log(`\n📝 API Documentation:`);
         console.log(`   POST /api/auth/register - 用户注册`);
         console.log(`   POST /api/auth/login - 用户登录`);
