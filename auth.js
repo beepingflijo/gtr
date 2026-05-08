@@ -768,7 +768,10 @@ async function updateLoginStatusUI() {
         toggleLogin.removeEventListener('click', handleLoginClick);
         toggleLogin.addEventListener('click', handleLogoutClick);
         
-        // 如果是admin用户，显示管理入口
+                // Show cloud sync status
+        const cloudSyncItem = document.getElementById('cloudSyncItem');
+        if (cloudSyncItem) cloudSyncItem.style.display = '';
+// 如果是admin用户，显示管理入口
         if (user.username === 'admin') {
             const adminLink = document.getElementById('adminLink');
             if (adminLink) {
@@ -785,7 +788,10 @@ async function updateLoginStatusUI() {
         toggleLogin.removeEventListener('click', handleLogoutClick);
         toggleLogin.addEventListener('click', handleLoginClick);
         
-        // 隐藏管理入口
+                // Hide cloud sync status
+        const cloudSyncItem = document.getElementById('cloudSyncItem');
+        if (cloudSyncItem) cloudSyncItem.style.display = 'none';
+// 隐藏管理入口
         const adminLink = document.getElementById('adminLink');
         if (adminLink) {
             adminLink.style.display = 'none';

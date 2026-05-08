@@ -8,6 +8,7 @@ let actionListAssembled = false;
 let activeStepIndex = 0;
 let isUpwards = false;
 let playAnnouncement = false;
+let isShowStationInfo = true;
 let newStationCount = 2;
 let isPlayingAnnouncement = false; // 标记是否正在播放报站或显示车站信息
 const backgroundTypeNames = {
@@ -25,7 +26,7 @@ function setAnnouncementLockVisual() {
         '.line-selector .selection-item, ' +
         '.station-list .pref-item, ' +
         '.prev-btn, .next-btn, ' +
-        '.set-upwards'
+        '.set-upwards, .show-station-info'
     );
     
     lockElements.forEach(element => {
@@ -43,7 +44,7 @@ function clearAnnouncementLockVisual() {
         '.line-selector .selection-item, ' +
         '.station-list .pref-item, ' +
         '.prev-btn, .next-btn, ' +
-        '.set-upwards'
+        '.set-upwards, .show-station-info'
     );
     
     lockElements.forEach(element => {
@@ -52,23 +53,35 @@ function clearAnnouncementLockVisual() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function () { 
-    fetch('./data/lines.json')
-        .then(response => response.json())
-        .then(data => {
+function waitForStrings() {
+    return new Promise(resolve => {
+        if (window.strings) { resolve(); return; }
+        const check = setInterval(() => {
+            if (window.strings) { clearInterval(check); resolve(); }
+        }, 50);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', async function () { 
+    try {
+            const response = await fetch('./data/lines.json');
+            const data = await response.json();
             window.lines = data.lines;
+            await waitForStrings();
             resumeProgress();
             init();
             initLineSelector();
             initLineNameInputs();
             initUpwardsSwitch();
             initAnnounceSwitch();
+            initStationInfoSwitch();
             initStationList();
             initPlayList();
             handleWindowResize();
             window.addEventListener('resize', handleWindowResize);
-        })
-        .catch(error => console.error('Error loading lines data:', error));
+        } catch(error) {
+            console.error('Error loading lines data:', error);
+        }
 });
 
 function init() { 
@@ -824,7 +837,7 @@ async function synthesizeAnnouncement(step) {
             'arrive':'{sta}，到了。',
             'arrive_last':'终点站{sta}，到了。',
             'arrivePlat':'请从列车前进方向的{door}车门下车。',
-            'arrivePlat_last':'请从列车前进方向的{door}车门下车，欢迎再次乘坐通运铁路。',
+            'arrivePlat_last':'请全体乘客从列车前进方向的{door}车门下车，欢迎再次乘坐通运铁路。',
             'transfer':'换乘{lines}的乘客，请从该站下车。请您注意换乘时间，合理安排行程。',
             'left':'左侧','right':'右侧','both':'两侧'
         },
@@ -837,8 +850,8 @@ async function synthesizeAnnouncement(step) {
             'nextStationPlat_last':'列车将会开{door}的车门儿，所有乘客都得搁这站下车。',
             'arrive':'{sta}到了。',
             'arrive_last':'终点站{sta}，到了。',
-            'arrivePlat':'请从列车前进方向的{door}车门儿下车。',
-            'arrivePlat_last':'请从列车前进方向的{door}车门儿下车，欢迎再次乘坐通运铁路。',
+            'arrivePlat':'请从列车前进方向{door}的车门儿下车。',
+            'arrivePlat_last':'所有乘客都得搁列车前进方向{door}的车门儿下车，欢迎再次乘坐通运铁路。',
             'transfer':'导{lines}的乘客得搁这站下车，请您注意换乘时间，合理安排行程。',
             'left':'左半拉儿','right':'右半拉儿','both':'两边儿'
         },
@@ -865,23 +878,23 @@ async function synthesizeAnnouncement(step) {
             'nextStationPlat_last':'{door}嘅車門將會打開。',
             'arrive':'列車已經到達：{sta}。',
             'arrive_last':'列車已經到達終點站：{sta}。歡迎再次乘搭通運鐵路。',
-            'arrivePlat':'...',
-            'arrivePlat_last':'...',
+            'arrivePlat':'',
+            'arrivePlat_last':'',
             'transfer':'轉乘{lines}嘅乘客請喺呢一站落車。',
             'left':'左邊','right':'右邊','both':'两邊'
         },
         'uk-UA':{
             'nextStation_first':'Наступна станцiя: {sta}.',
             'nextStation':'Наступна станцiя: {sta}.',
-            'nextStation_last':'Наступна станцiя: {sta}.',
-            'nextStationPlat_first':'...',
-            'nextStationPlat':'...',
-            'nextStationPlat_last':'...',
-            'arrive':'...',
-            'arrive_last':'...',
-            'arrivePlat':'...',
-            'arrivePlat_last':'...',
-            'transfer':'...'
+            'nextStation_last':'Наступна станцiя: {sta}, кінцева станцiя.',
+            'nextStationPlat_first':'',
+            'nextStationPlat':'',
+            'nextStationPlat_last':'',
+            'arrive':'Станцiя {sta}.',
+            'arrive_last':'Станцiя {sta}, кінцева станцiя.',
+            'arrivePlat':'',
+            'arrivePlat_last':'',
+            'transfer':'Перехід на {lines}.',
         },
     }
     let languages = [
@@ -933,6 +946,67 @@ async function synthesizeAnnouncement(step) {
     
     console.log('MTR线路信息已加载完成，准备显示中文信息');
     
+
+    // Get visible text, excluding material-symbols icon text
+    function _getVisibleText(el) {
+        const clone = el.cloneNode(true);
+        clone.querySelectorAll('.material-symbols-outlined').forEach(icon => icon.remove());
+        return (clone.textContent || '').replace(/\s+/g, ' ');
+    }
+
+    // 计算文本总字数的辅助函数（提升到外部作用域）
+    function calculateTotalTextLength(element, phase = 'all', language = 'zh_hans') {
+        if (!element) return 0;
+        let totalLength = 0;
+        let totalText = '';
+        
+        let selectors = [];
+        if (phase === 'first') {
+            // 第一阶段只统计 exits-info
+            selectors = ['.exits-info'];
+        } else if (phase === 'second') {
+            // 第二阶段只统计 floors-info
+            selectors = ['.floors-info > * > *'];
+        } else {
+            // 默认统计所有可见文本(排除标题和链接)
+            const textElements = element.querySelectorAll(':not(.floors-title):not(.exits-title):not(.train-info-title):not(.train-info-link)');
+            textElements.forEach(el => {
+                if (el.textContent && el.style.display !== 'none') {
+                    // 去除所有空格后统计长度
+                    const trimmedText = _getVisibleText(el);
+                    totalLength += trimmedText.length;
+                }
+            });
+            return totalLength;
+        }
+        
+        // 根据阶段选择器统计字数
+        selectors.forEach(selector => {
+            const elements = element.querySelectorAll(selector+':not(.material-symbols-outlined)');
+            elements.forEach(el => {
+                if (el.textContent && el.style.display !== 'none') {
+                    // 去除所有空格后统计长度
+                    const trimmedText = _getVisibleText(el);
+                    console.log(`Counting text for selector "${selector}" (${language}):`,trimmedText.split(/\s+/).length, trimmedText);
+                    if (language.includes('zh')) totalLength += trimmedText.length;
+                    else totalLength += trimmedText.length * 0.3; // 英文按30%权重计算字数
+                    totalText += trimmedText;
+                }
+            });
+        });
+        console.log(`Total text for ${element.id}: ${totalText}`);
+        
+        return totalLength;
+    }
+    
+    // 根据字数计算展示时间（每个字符约100ms，最少3秒，最多15秒）
+    function calculateDisplayTime(textLength) {
+        const baseTime = 3000; // 基础时间3秒
+        const timePerChar = 50; // 每个字符50ms
+        const maxTime = 15000; // 最大时间15秒
+        return Math.min(maxTime, Math.max(baseTime, textLength * timePerChar));
+    }
+    
     // 定义显示车站信息的通用函数，返回Promise以便追踪完成时间
     async function showStationInfo(content, language) {
         return new Promise((resolve) => {
@@ -968,13 +1042,18 @@ async function synthesizeAnnouncement(step) {
         previewBackground.appendChild(infoElement);
         
         setTimeout(() => { 
+            
+            // 计算第一阶段的字数和时间（只统计exits-info）
+            const firstPhaseTextLength = calculateTotalTextLength(infoElement, 'first', language);
+            const firstPhaseDisplayTime = calculateDisplayTime(firstPhaseTextLength);
+            console.log(`第一阶段字数(exits-info): ${firstPhaseTextLength}, 展示时间: ${firstPhaseDisplayTime}ms`);
             infoElement.style.opacity = 1;
             console.log(`stationInfo height (${language})`, infoElement.getBoundingClientRect().height);
             if (infoElement.getBoundingClientRect().height > previewBackground.getBoundingClientRect().height) { 
                 infoElement.style.transition = 'none';
                 infoElement.style.transform = 'translate(-50%, 0%) scale(2.5)';
                 setTimeout(() => { 
-                    infoElement.style.transition = 'all 4s ease-in-out';
+                    infoElement.style.transition = `all ${firstPhaseDisplayTime - 1000}ms ease-in-out`;
                     infoElement.style.transform = 'translate(-50%, -100%) scale(2.5)';
                 }, 100);
             } else { 
@@ -983,6 +1062,7 @@ async function synthesizeAnnouncement(step) {
             }
             
             setTimeout(() => { 
+                // 先更新显示状态,再计算字数
                 infoElement.querySelector('.floors-title').style.display = '';
                 infoElement.querySelectorAll('.floors-info').forEach(item => { 
                     item.style.display = '';
@@ -991,47 +1071,75 @@ async function synthesizeAnnouncement(step) {
                 infoElement.querySelectorAll('.exits-info').forEach(item => { 
                     item.style.display = 'none';
                 });
+                
+                // 计算第二阶段的字数和时间（只统计floors-info）
+                const secondPhaseTextLength = calculateTotalTextLength(infoElement, 'second', language);
+                const secondPhaseDisplayTime = calculateDisplayTime(secondPhaseTextLength);
+                console.log(`第二阶段字数(floors-info): ${secondPhaseTextLength}, 展示时间: ${secondPhaseDisplayTime}ms`);
+                
                 console.log(`stationInfo height after update (${language})`, infoElement.getBoundingClientRect().height);
                 if (infoElement.getBoundingClientRect().height > previewBackground.getBoundingClientRect().height) { 
                     infoElement.style.transition = 'none';
                     infoElement.style.transform = 'translate(-50%, 0%) scale(2.5)';
                     setTimeout(() => { 
-                        infoElement.style.transition = 'all 4s ease-in-out';
+                        infoElement.style.transition = `all ${secondPhaseDisplayTime - 1000}ms ease-in-out`;
                         infoElement.style.transform = 'translate(-50%, -100%) scale(2.5)';
                     }, 100);
                 } else { 
                     infoElement.style.transition = '';
                     infoElement.style.transform = 'translate(-50%, -50%) scale(2.5)';
                 }
-            }, 5000);
-            
-            setTimeout(() => { 
-                infoElement.style.transition = '';
-                infoElement.style.opacity = 0;
+                
                 setTimeout(() => { 
-                    infoElement.remove();
-                        console.log(`车站信息(${language})显示完毕`);
-                        resolve(); // 车站信息完全移除后resolve
-                }, 500);
-            }, 9500);
+                    infoElement.style.transition = '';
+                    infoElement.style.opacity = 0;
+                    setTimeout(() => { 
+                        infoElement.remove();
+                            console.log(`车站信息(${language})显示完毕`);
+                            resolve(); // 车站信息完全移除后resolve
+                    }, 500);
+                }, secondPhaseDisplayTime);
+            }, firstPhaseDisplayTime);
         }, 1000);
         });
-    }
-    
+    } 
     // 先显示中文信息（不等待完成）
-    showStationInfo(stationInfoContent, 'zh_hans');
-    console.log('中文车站信息开始显示');
-    
-    // 9.5秒后显示英文信息，并等待完成
-    const stationInfoPromise = new Promise(async (resolve) => {
-        setTimeout(async () => {
-            await showStationInfo(stationInfoContentEn, 'en');
-            console.log('英文车站信息显示完成');
-            resolve();
-        }, 9500);
+    let stationInfoResolve;
+    const stationInfoPromise = new Promise((resolve) => {
+        stationInfoResolve = resolve;
     });
     
-    console.log('所有车站信息显示完毕');
+    if (isShowStationInfo) {  
+        showStationInfo(stationInfoContent, 'zh_hans');
+        console.log('中文车站信息开始显示');
+        
+        // 监听中文第二阶段开始,计算轮换时间并提前0.5秒启动英文信息
+        const checkChineseSecondPhase = setInterval(() => {
+            const zhElement = document.querySelector('.station-info:last-of-type');
+            if (zhElement) {
+                const floorsTitle = zhElement.querySelector('.floors-title');
+                if (floorsTitle && floorsTitle.style.display !== 'none') {
+                    // 第二阶段已开始,计算时间（只统计floors-info）
+                    const secondPhaseTextLength = calculateTotalTextLength(zhElement, 'second', 'zh_hans');
+                    const secondPhaseDisplayTime = calculateDisplayTime(secondPhaseTextLength);
+                    console.log(`中文第二阶段字数(floors-info): ${secondPhaseTextLength}, 展示时间: ${secondPhaseDisplayTime}ms`);
+                    clearInterval(checkChineseSecondPhase);
+                    
+                    // 在第二阶段结束前0.5秒启动英文信息显示
+                    const advanceTime = Math.max(0, secondPhaseDisplayTime - 1000);
+                    console.log(`将在 ${advanceTime}ms 后启动英文信息显示（提前1秒）`);
+                    
+                    setTimeout(async () => {
+                        await showStationInfo(stationInfoContentEn, 'en');
+                        console.log('英文车站信息显示完成');
+                        stationInfoResolve();
+                    }, advanceTime);
+                }
+            }
+        }, 100);
+        console.log('所有车站信息显示完毕');
+    }
+    
 
     //console.log('synthesizeAnnouncement',languages,step.station,activeLine);
     const firstSta = isUpwards?activeLine.route[activeLine.route.length-1].code:activeLine.route[0].code;
@@ -1041,7 +1149,7 @@ async function synthesizeAnnouncement(step) {
     
     // 异步获取doorSide
     const doorSide = await getDoorSide(step.station, step.platform, isUpwards?'up':'down');
-    const lines = getLinesForStation(step.station).filter(line => line.id !== activeLineId);
+    const lines = getLinesForStation(step.station).filter(line => line.id !== activeLineId.replace('-R',''));
     console.log(activeLine);
     
     // 定义单个语言的播报函数
@@ -1168,7 +1276,9 @@ async function synthesizeAnnouncement(step) {
     console.log('所有语言播报完成');
     
     // 并行执行：同时等待车站信息显示和语音播报完成
-    await Promise.all([stationInfoPromise]);
+    if (isShowStationInfo) {
+        await Promise.all([stationInfoPromise]);
+    }
     console.log('所有车站信息显示和语音播报均已完成');
     
     // 所有报站和车站信息显示完成，解除锁定
@@ -1251,6 +1361,7 @@ function recordProgress() {
     
     // 保存到localStorage（覆盖原有数据）
     localStorage.setItem('pov_progress', JSON.stringify(progressData));
+        if (typeof CloudSync !== 'undefined' && CloudSync.pushCloudData) CloudSync.pushCloudData();
 }
 
 function resumeProgress() { 
@@ -1303,7 +1414,7 @@ function getLanguageListForStation(stationCode) {
             else languages.push({ code: 'end', name: '' });
         }
     } else { 
-        const stationNames = window?.strings.station_names[stationCode] || activeLine.route.find(station => station.code === stationCode).name;
+        const stationNames = window?.strings?.station_names?.[stationCode] || activeLine.route.find(station => station.code === stationCode).name;
         // 如果stationCode以A开头则添加乌克兰语
         const addUk = stationCode.startsWith('A');
         if (stationNames.original) languages.push({ code: 'original', name: stationNames.original });
@@ -1353,6 +1464,27 @@ function initAnnounceSwitch() {
 
     switchElement.addEventListener('click', () => {
         playAnnouncement = !playAnnouncement;
+        switchElement.classList.toggle('active');
+        refreshFrame();
+    });
+}
+
+function initStationInfoSwitch() {
+    const switchElement = document.querySelector('.show-station-info');
+    if (!switchElement) return;
+    if (isShowStationInfo === true) {
+        switchElement.classList.add('active');
+    } else { 
+        switchElement.classList.remove('active');
+    }
+
+    switchElement.addEventListener('click', () => {
+        if (isPlayingAnnouncement) {
+            console.warn('报站进行中，无法切换车站');
+            showToast(strings?.toast?.announcement_in_progress || '报站进行中，请稍后再试', 2000);
+            return;
+        }
+        isShowStationInfo = !isShowStationInfo;
         switchElement.classList.toggle('active');
         refreshFrame();
     });

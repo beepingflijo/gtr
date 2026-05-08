@@ -65,6 +65,10 @@ main {
     width: fit-content;
 }
 
+.preview-container .station-info * { 
+    text-wrap: wrap;
+}
+
 .frame-background { 
     background-color: var(--color-primary);
     width: 1920px;

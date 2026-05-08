@@ -654,8 +654,58 @@ app.put('/api/admin/users/:userId/reset-password', authenticateToken, async (req
     });
 });
 
-// ==================== 静态文件服务 ====================
+// ==================== User Cloud Data Sync ====================
 
+// Get user cloud data
+app.get('/api/user/data', authenticateToken, (req, res) => {
+    const users = readUsers();
+    const user = users.find(u => u.id === req.user.id);
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({
+        success: true,
+        data: {
+            preferences: user.cloudData?.preferences || null,
+            visitedPages: user.cloudData?.visitedPages || null,
+            pov_progress: user.cloudData?.pov_progress || null,
+            lastSync: user.cloudData?.lastSync || null
+        }
+    });
+});
+
+// Update user cloud data
+app.put('/api/user/data', authenticateToken, (req, res) => {
+    const users = readUsers();
+    const userIndex = users.findIndex(u => u.id === req.user.id);
+    if (userIndex === -1) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const { preferences, visitedPages, pov_progress } = req.body;
+    if (!users[userIndex].cloudData) {
+        users[userIndex].cloudData = {};
+    }
+    if (preferences !== undefined) {
+        users[userIndex].cloudData.preferences = preferences;
+    }
+    if (visitedPages !== undefined) {
+        users[userIndex].cloudData.visitedPages = visitedPages;
+    }
+    if (pov_progress !== undefined) {
+        users[userIndex].cloudData.pov_progress = pov_progress;
+    }
+    users[userIndex].cloudData.lastSync = new Date().toISOString();
+    saveUsers(users);
+    res.json({
+        success: true,
+        data: {
+            lastSync: users[userIndex].cloudData.lastSync
+        }
+    });
+});
+
+
+// ==================== 静态文件服务 ====================
 // 在生产环境中，Express也提供静态文件
 app.use(express.static(path.join(__dirname)));
 
@@ -681,7 +731,9 @@ async function startServer() {
         console.log(`   DELETE /api/admin/users/:id - 删除用户（需要admin权限）`);
         console.log(`   PUT  /api/admin/users/:id/reset-password - 重置密码（需要admin权限）`);
         console.log(`   GET  /api/health - 健康检查`);
-        console.log(`\n👤 管理页面: http://localhost:${PORT}/admin.html`);
+
+        console.log(`   GET  /api/user/data - 获取云端数据（需要登录）`);
+        console.log(`   PUT  /api/user/data - 更新云端数据（需要登录）`);        console.log(`\n👤 管理页面: http://localhost:${PORT}/admin.html`);
         console.log(`\n⚠️  默认管理员账户: admin / admin123`);
         console.log(`   请首次登录后立即修改密码！\n`);
     });

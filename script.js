@@ -173,6 +173,7 @@ function recordLastVisitedPage(paramsString,page) {
             .flat();  // 将二维数组展平成一维数组
         
         localStorage.setItem('visitedPages', JSON.stringify(visitedPages));
+        if (typeof CloudSync !== 'undefined' && CloudSync.pushCloudData) CloudSync.pushCloudData();
     }
 }
 

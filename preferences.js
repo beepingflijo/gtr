@@ -51,6 +51,7 @@ function getPreferences() {
 function savePreferences(prefs) {
     try {
         localStorage.setItem('preferences', JSON.stringify(prefs));
+        if (typeof CloudSync !== 'undefined' && CloudSync.pushCloudData) CloudSync.pushCloudData();
     } catch (e) {
         console.error('Error saving preferences:', e);
     }
@@ -92,7 +93,10 @@ function init() {
     // 初始化登录状态（后续由auth模块更新）
     loginStatus.textContent = strings.preferences.not_logged_in[lang];
     toggleLogin.textContent = strings.preferences.login[lang];
-    
+
+    // Initialize cloud sync label
+    const cloudSyncPref = document.getElementById('cloudSyncPref');
+    if (cloudSyncPref) cloudSyncPref.textContent = (strings.preferences.cloud_sync && strings.preferences.cloud_sync[lang]) || '云端同步';    
     const followPlayersPref = document.getElementById('followPlayersPref');
     followPlayersPref.textContent = strings.preferences.following_players[lang];
     const showPlayersPref = document.getElementById('showPlayersPref');

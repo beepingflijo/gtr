@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
@@ -44,6 +44,12 @@
             <div class="pref-item"> 
                 <span id="loginStatus">未登录</span>
                 <div class="icon-btn" id="toggleLogin">登录</div>
+            </div>
+            <div class="pref-item" id="cloudSyncItem" style="display:none;"> 
+                <div class="pref-item-header">
+                    <span id="cloudSyncPref">云端同步</span>
+                    <span id="cloudSyncStatus" style="font-size: 0.85em; opacity: 0.7;"></span>
+                </div>
             </div>
             <div class="pref-item"> 
                 <span id="followPlayersPref">关注的玩家</span>
@@ -187,7 +193,9 @@
 <script src="auth.js"></script>
 <script src="preferences.js" type="module"></script>
 <script src="position_utils.js"></script>
+<script src="cloud-sync.js"></script>
 <script src="script.js"></script>
+    
 <script src="layout.js"></script>
 <script src="keyboard.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>

@@ -180,7 +180,10 @@
             "zh_hans": "同步中…", 
             "en": "Auto-syncing...", 
             "zh_hant": "同步中…",
-            "uk": "Синхронізація..."}
+            "uk": "Синхронізація..."},
+        "sync_error": {"zh_hans": "同步失败", "en": "Sync failed", "zh_hant": "同步失敗", "uk": "Синхронізація не вдалася"},
+        "cloud_sync": {"zh_hans": "云端同步", "en": "Cloud Sync", "zh_hant": "雲端同步", "uk": "Хмарна синхронізація"},
+        "cloud_sync_desc": {"zh_hans": "登录后自动同步偏好设置、浏览历史和轨道视角进度", "en": "Auto-sync preferences, visited pages and POV progress when logged in", "zh_hant": "登入後自動同步偏好設定、瀏覽歷史和軌道視角進度", "uk": "Автоматична синхронізація налаштувань, відвіданих сторінок та прогресу POV при вході"}
     },
     "storage_descriptions": {
         "preferences":{
