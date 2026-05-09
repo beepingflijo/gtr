@@ -1030,6 +1030,7 @@ header * {
     flex-direction: row;
     padding: 4px;
     gap: 0;
+    flex-wrap: nowrap;
 }
 
 .actions, .side-bar.collapsed { 
@@ -1148,7 +1149,7 @@ header * {
     width: fit-content;
 }
 
-.selection.segment .selection-item:not(.active) span:not(.material-symbols-outlined) {
+.selection.segment .selection-item:not(.active) span:not(.material-symbols-outlined,.badge) {
     width: 0;
     opacity: 0;
 }

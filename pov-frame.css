@@ -308,3 +308,39 @@ input[type="color"]::-webkit-color-swatch-wrapper {
     opacity: 0.1;
     cursor: wait;
 }
+
+.share-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.share-id {
+    font-family: monospace;
+    font-size: 0.9em;
+    letter-spacing: 2px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background-color: var(--color-secondary);
+    user-select: all;
+    transition: all 0.2s ease;
+}
+
+.share-id:hover {
+    background-color: var(--color-secondary-hover);
+}
+
+.copy-btn {
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}

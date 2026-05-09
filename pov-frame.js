@@ -1,16 +1,21 @@
-let activeLineId;
+﻿let activeLineId;
+let __povViewOnly = false;
+let __povShareId = null;
+let __originalTitle = '';
 let activeLine = [];
 let actionList = [];
 let widthList = [];
 let playList = [];
 let currentBgType = 'transparent';
+let currentBgContent = '';
 let actionListAssembled = false;
 let activeStepIndex = 0;
 let isUpwards = false;
 let playAnnouncement = false;
 let isShowStationInfo = true;
 let newStationCount = 2;
-let isPlayingAnnouncement = false; // 标记是否正在播放报站或显示车站信息
+let isPlayingAnnouncement = false;
+let __announceTimeout = null;
 const backgroundTypeNames = {
     'transparent': '透明',
     'color': '纯色',
@@ -62,21 +67,158 @@ function waitForStrings() {
     });
 }
 
+// 展示模式：隐藏所有控制组件，只显示预览
+function enterViewOnlyMode() {
+    document.body.classList.add('view-only');
+    const main = document.querySelector('main');
+    const footer = document.querySelector('footer');
+    const title = document.querySelector('.title');
+    const disclaimer = document.querySelector('.disclaimer');
+    const expandWindowText = document.querySelector('.expand-window-text');
+    if (main) main.style.display = 'none';
+    if (footer) footer.style.display = 'none';
+    if (title) title.style.display = 'none';
+    if (disclaimer) disclaimer.style.display = 'none';
+    if (expandWindowText) expandWindowText.style.display = 'none';
+    const previewContainer = document.querySelector('.preview-container');
+    if (previewContainer) {
+        previewContainer.style.width = window.innerWidth + 'px';
+        previewContainer.style.minWidth = window.innerWidth + 'px';
+        previewContainer.style.left = '';
+        previewContainer.style.minHeight = window.innerWidth * 0.5625 + 'px';
+        previewContainer.style.margin = '0';
+        previewContainer.style.borderRadius = '0';
+        previewContainer.style.backgroundColor = 'transparent';
+        previewContainer.style.boxShadow = 'none';
+        previewContainer.style.position = 'absolute';
+        previewContainer.style.top = '0';
+        previewContainer.style.transform = 'translate(-50%, 0)';
+        previewContainer.style.transformOrigin = 'top center';
+    }
+    const appContainer = document.querySelector('.app-container');
+    if (appContainer) {
+        appContainer.style.flexDirection = 'column';
+        appContainer.style.alignItems = 'center';
+        appContainer.style.overflow = 'hidden';
+    }
+    actionListAssembled = false;
+    refreshFrame();
+    startViewOnlyPolling();
+}
+
+// 展示模式：定时从云端拉取最新进度
+let __viewOnlyPollTimer = null;
+function startViewOnlyPolling() {
+    if (!__povShareId) return;
+    __viewOnlyPollTimer = setInterval(async () => {
+        try {
+            const resp = await fetch('./api/pov/share/' + encodeURIComponent(__povShareId));
+            if (!resp.ok) {
+                clearInterval(__viewOnlyPollTimer);
+                showToast(resp.status === 403 ? '分享进度已关闭' : '分享链接已失效', 3000);
+                return;
+            }
+            const data = await resp.json();
+            console.log('View-only mode progress data:', data);
+            const prog = data.progress;
+            const sharerName = data.username || '';
+            if (sharerName) {
+                document.title = sharerName + '的分享 - ' + __originalTitle;
+            }
+            if (prog && prog.activeLine) {
+                const prevIndex = activeStepIndex;
+                const prevLineId = activeLineId;
+                activeLine = prog.activeLine;
+                activeLineId = prog.activeLineId;
+                isUpwards = prog.isUpwards;
+                actionList = prog.actionList || [];
+                playList = prog.playList || [];
+                if (prog.playAnnouncement !== undefined) playAnnouncement = prog.playAnnouncement;
+                if (prog.isShowStationInfo !== undefined) isShowStationInfo = prog.isShowStationInfo;
+                applyBackgroundFromData(prog.bgType, prog.bgContent);
+                const nextIndex = prog.activeStepIndex || 0;
+                if (prevIndex !== nextIndex || prevLineId !== activeLineId) {
+                    activeStepIndex = nextIndex;
+                    if (prevLineId !== activeLineId) {
+                        actionListAssembled = false;
+                    }
+                    refreshFrame();
+                }
+            }
+        } catch (err) {
+            console.warn('展示模式轮询失败:', err);
+        }
+    }, 1000);
+}
+
 document.addEventListener('DOMContentLoaded', async function () { 
     try {
+            __originalTitle = document.title;
             const response = await fetch('./data/lines.json');
             const data = await response.json();
             window.lines = data.lines;
             await waitForStrings();
-            resumeProgress();
+
+            // 检测 shareId 参数，进入展示模式
+            const urlParams = new URLSearchParams(window.location.search);
+            const shareIdParam = urlParams.get('shareId');
+            if (shareIdParam) {
+                __povViewOnly = true;
+                __povShareId = shareIdParam;
+                try {
+                    const resp = await fetch('./api/pov/share/' + encodeURIComponent(shareIdParam));
+                    if (!resp.ok) {
+                        const errText =
+                            resp.status === 404
+                                ? '该分享 ID 不存在或已过期'
+                                : resp.status === 403
+                                    ? '该用户未开启分享进度功能'
+                                    : '获取分享进度失败';
+                        showToast(errText + '，已返回一般模式', 3000);
+                        __povViewOnly = false;
+                        __povShareId = null;
+                    } else {
+                        const shareData = await resp.json();
+                        const prog = shareData.progress;
+                        if (prog && prog.activeLine) {
+                            activeLine = prog.activeLine;
+                            activeLineId = prog.activeLineId;
+                            isUpwards = prog.isUpwards;
+                            activeStepIndex = prog.activeStepIndex || 0;
+                            actionList = prog.actionList || [];
+                            playList = prog.playList || [];
+                            if (prog.playAnnouncement !== undefined) playAnnouncement = prog.playAnnouncement;
+                            if (prog.isShowStationInfo !== undefined) isShowStationInfo = prog.isShowStationInfo;
+                        }
+                        enterViewOnlyMode();
+                        if (prog && prog.bgType) {
+                            applyBackgroundFromData(prog.bgType, prog.bgContent);
+                        }
+                        const sharerName = shareData.username || '';
+                        if (sharerName) {
+                            document.title = sharerName + '的分享 - ' + __originalTitle;
+                        }
+                    }
+                } catch (fetchErr) {
+                    console.warn('获取分享进度失败:', fetchErr);
+                    showToast('获取分享进度失败，已返回一般模式', 3000);
+                    __povViewOnly = false;
+                    __povShareId = null;
+                }
+            }
+
+            if (!__povViewOnly) { resumeProgress(); }
             init();
             initLineSelector();
-            initLineNameInputs();
-            initUpwardsSwitch();
-            initAnnounceSwitch();
-            initStationInfoSwitch();
-            initStationList();
-            initPlayList();
+            if (!__povViewOnly) {
+                initLineNameInputs();
+                initUpwardsSwitch();
+                initAnnounceSwitch();
+                initStationInfoSwitch();
+                initStationList();
+                initPlayList();
+                initShareSwitch();
+            }
             handleWindowResize();
             window.addEventListener('resize', handleWindowResize);
         } catch(error) {
@@ -115,6 +257,7 @@ function init() {
     });
     const previewContainer = document.querySelector('.preview-container');
     previewContainer.addEventListener('wheel', (e) => { 
+        if (__povViewOnly) return;
         e.preventDefault();
         if (isPlayingAnnouncement) {
             console.warn('报站进行中，无法切换车站');
@@ -239,6 +382,7 @@ function applyBackgroundMode(mode,inputContainer=document) {
         case 'transparent':
             previewBackground.style.backgroundColor = 'transparent';
             currentBgType = 'transparent';
+            currentBgContent = '';
             break;
         case 'color':
             elementToHide.style.height = '30px';
@@ -255,7 +399,9 @@ function applyBackgroundMode(mode,inputContainer=document) {
                 const color = e.target.value;
                 previewBackground.style.backgroundColor = color;
                 allColorInputs.forEach(input => { input.value = color; });
+                currentBgContent = color;
             });
+            currentBgContent = colorInput.value;
             elementToHide.classList.remove('collapsed');
             currentBgType = 'color';
             break;
@@ -331,6 +477,7 @@ function applyBackgroundMode(mode,inputContainer=document) {
             // 监听URL输入事件
             linkInput.oninput = (e) => {
                 const url = e.target.value;
+                currentBgContent = url;
                 if (url) {
                     // 检测URL类型（图片或视频）
                     if (isImageUrl(url)) {
@@ -815,17 +962,19 @@ function refreshFrame() {
     });
 
     recordProgress();
+    if (shareEnabled) syncToServer();
     window.activeLine = activeLine;
     window.activeLineId = activeLineId;
 
-    const announceTimeout = setTimeout(async () => { 
-        //console.log('refreshStationList',actionList[activeStepIndex]);
+    if (__announceTimeout) clearTimeout(__announceTimeout);
+    __announceTimeout = setTimeout(async () => { 
+        __announceTimeout = null;
         await synthesizeAnnouncement(actionList[activeStepIndex]);
     }, 1000);
 }
 
 async function synthesizeAnnouncement(step) { 
-    if (!step || playAnnouncement!==true) return;
+    if (!step || playAnnouncement!==true || isPlayingAnnouncement === true) return;
     const announcementTypo = {
         'zh-CN':{
             'nextStation_first':'欢迎乘坐通运铁路，祝您出行愉快。本次列车终点站：{dest}。下一站：{sta}。',
@@ -1344,12 +1493,12 @@ async function speakText(text, lang) {
 }
 
 function recordProgress() { 
+    if (__povViewOnly) return;
     const prefs = getPreferences();
     // 只有当用户明确禁用时才不记录进度（undefined或true都视为启用）
     if (prefs.resumeOnLoading === false) return;
-    console.log('recordProgress');
     
-    // 创建新的进度记录数组，仅包含当前记录
+    const bgContent = (currentBgType === 'color' || currentBgType === 'link') ? currentBgContent : '';
     const progressData = [{
         id: activeLineId,
         line: activeLine,
@@ -1357,7 +1506,12 @@ function recordProgress() {
         index: activeStepIndex,
         steps: actionList,
         manualLine: window.lines.find(line => line.id === 'manual'),
+        bgType: currentBgType,
+        bgContent: bgContent,
+        playAnnouncement: playAnnouncement,
+        isShowStationInfo: isShowStationInfo,
     }];
+    console.log('recordProgress',progressData);
     
     // 保存到localStorage（覆盖原有数据）
     localStorage.setItem('pov_progress', JSON.stringify(progressData));
@@ -1366,7 +1520,6 @@ function recordProgress() {
 
 function resumeProgress() { 
     const prefs = getPreferences();
-    // 只有当用户明确禁用时才不记录进度（undefined或true都视为启用）
     const progressData = JSON.parse(localStorage.getItem('pov_progress'));
     if (prefs.resumeOnLoading !== false && progressData && progressData.length > 0) {
         const progress = progressData[0];
@@ -1376,8 +1529,13 @@ function resumeProgress() {
         activeStepIndex = progress.index;
         actionList = progress.steps;
         playList = progress.playList;
+        playAnnouncement = false;
+        isShowStationInfo = progress.isShowStationInfo !== false;
         if (progress.manualLine) { 
             window.lines.push(progress.manualLine);
+        }
+        if (progress.bgType) {
+            applyBackgroundFromData(progress.bgType, progress.bgContent);
         }
     } else { 
         console.log(window.lines, window.lines[0]);
@@ -1385,6 +1543,72 @@ function resumeProgress() {
         activeLine = window.lines[0];
     }
     console.log('resumeProgress', activeLineId, activeStepIndex, isUpwards, actionList);
+}
+
+function applyBackgroundFromData(bgType, bgContent) {
+    if (!bgType || bgType === 'transparent') {
+        currentBgType = 'transparent';
+        currentBgContent = '';
+        return;
+    }
+    const previewBackground = document.querySelector('.preview-background');
+    if (!previewBackground) return;
+    switch (bgType) {
+        case 'color':
+            if (bgContent) {
+                currentBgType = 'color';
+                currentBgContent = bgContent;
+                previewBackground.style.backgroundColor = bgContent;
+                previewBackground.style.backgroundImage = '';
+            }
+            break;
+        case 'link':
+            if (bgContent) {
+                currentBgType = 'link';
+                currentBgContent = bgContent;
+                if (isImageUrl(bgContent)) {
+                    previewBackground.style.backgroundImage = `url(${bgContent})`;
+                    previewBackground.style.backgroundSize = 'cover';
+                    previewBackground.style.backgroundPosition = 'center';
+                    previewBackground.innerHTML = '';
+                } else if (isVideoUrl(bgContent)) {
+                    if (bgContent.toLowerCase().endsWith('.m3u8')) {
+                        const video = document.createElement('video');
+                        video.style.width = '100%';
+                        video.style.height = '100%';
+                        video.style.objectFit = 'fill';
+                        video.autoplay = true;
+                        video.loop = true;
+                        video.muted = true;
+                        previewBackground.innerHTML = '';
+                        previewBackground.appendChild(video);
+                        if (video.canPlayType('application/vnd.apple.mpegurl') || 
+                            video.canPlayType('application/x-mpegURL')) {
+                            video.src = bgContent;
+                        } else if (window.Hls && window.Hls.isSupported()) {
+                            const hls = new window.Hls();
+                            hls.loadSource(bgContent);
+                            hls.attachMedia(video);
+                            hls.on(window.Hls.Events.ERROR, function (event, data) {
+                                console.error('HLS error:', data);
+                            });
+                        }
+                    } else {
+                        previewBackground.innerHTML = `<video src="${bgContent}" autoplay loop muted style="width:100%;height:100%;object-fit:fill;"></video>`;
+                    }
+                    setTimeout(() => {
+                        const v = previewBackground.querySelector('video');
+                        if (v) { v.volume = 0.05; v.muted = false; }
+                    }, 100);
+                } else {
+                    previewBackground.style.backgroundImage = `url(${bgContent})`;
+                    previewBackground.style.backgroundSize = 'cover';
+                    previewBackground.style.backgroundPosition = 'center';
+                    previewBackground.innerHTML = '';
+                }
+            }
+            break;
+    }
 }
 
 function calculateTextWidth(string) {
@@ -2011,3 +2235,135 @@ function handleWindowResize() {
 }
 
 window.handleWindowResize = handleWindowResize;
+
+let sessionId = localStorage.getItem('povSessionId') || '';
+let shareEnabled = localStorage.getItem('povShareEnabled') === null ? true : localStorage.getItem('povShareEnabled') === 'true';
+function initShareSwitch() {
+    if (__povViewOnly) return;
+    const shareToggle = document.querySelector('.share-toggle');
+    const shareIdEl = document.getElementById('shareId');
+    const copyBtn = document.getElementById('copyShareLink');
+    const sharePrefItem = shareToggle?.closest('.pref-item');
+    if (!shareToggle || !shareIdEl) return;
+
+    const loggedIn = typeof window.auth !== 'undefined' && window.auth.isLoggedIn && window.auth.isLoggedIn();
+    if (!loggedIn) {
+        shareEnabled = false;
+        if (sharePrefItem) {
+            sharePrefItem.style.opacity = '0.5';
+            sharePrefItem.style.cursor = 'not-allowed';
+            sharePrefItem.title = '请先登录后再使用分享功能';
+        }
+        shareToggle.classList.remove('active');
+        shareToggle.style.pointerEvents = 'none';
+        if (copyBtn) copyBtn.style.display = 'none';
+        shareIdEl.style.display = 'none';
+        shareToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showToast('请先登录后再使用分享功能', 3000);
+            if (window.auth && window.auth.login) window.auth.login();
+        });
+        if (sharePrefItem) {
+            sharePrefItem.addEventListener('click', () => {
+                showToast('请先登录后再使用分享功能', 3000);
+                if (window.auth && window.auth.login) window.auth.login();
+            });
+        }
+        return;
+    }
+
+    function viewerLink() {
+        return './pov-frame.html?shareId=' + encodeURIComponent(sessionId);
+    }
+
+    shareToggle.addEventListener('click', () => {
+        shareEnabled = !shareEnabled;
+        localStorage.setItem('povShareEnabled', String(shareEnabled));
+        updateUI();
+        syncToServer();
+    });
+
+    shareIdEl.addEventListener('click', () => {
+        window.open(viewerLink(), '_blank');
+    });
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+        if (!sessionId) return;
+        navigator.clipboard.writeText(sessionId).then(() => {
+            showToast('分享链接已复制到剪贴板');
+        }).catch(() => {
+            showToast('复制失败，请手动复制链接');
+        });
+        });
+    }
+
+    updateUI();
+    syncToServer();
+
+    window.addEventListener('beforeunload', () => {
+        if (!shareEnabled) return;
+        try {
+            navigator.sendBeacon('./api/pov/share', new Blob([JSON.stringify(buildProgressPayload())], { type: 'application/json' }));
+        } catch (error) {
+            console.warn('离开时同步进度失败:', error);
+        }
+    });
+}
+
+async function syncToServer() {
+    try {
+        const response = await fetch('./api/pov/share', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(buildProgressPayload())
+        });
+        const data = await response.json();
+        if (data.success) {
+            sessionId = data.sessionId;
+            localStorage.setItem('povSessionId', sessionId);
+            updateUI();
+        }
+    } catch (error) {
+        console.warn('同步分享进度失败:', error);
+    }
+}
+
+function buildProgressPayload() {
+    const progress = JSON.parse(localStorage.getItem('pov_progress'));
+    const current = Array.isArray(progress) && progress.length > 0 ? progress[0] : null;
+    const bgContent = (currentBgType === 'color' || currentBgType === 'link') ? currentBgContent : '';
+    const currentUser = (typeof window.auth !== 'undefined' && window.auth.getCurrentUser) ? window.auth.getCurrentUser() : null;
+    return {
+        sessionId,
+        shared: shareEnabled,
+        username: currentUser ? currentUser.username : '',
+        progress: {
+            activeLineId,
+            activeLine,
+            isUpwards,
+            activeStepIndex,
+            actionList,
+            playList,
+            bgType: currentBgType,
+            bgContent: bgContent,
+            playAnnouncement,
+            isShowStationInfo,
+            savedAt: Date.now(),
+            lineSummary: current || null
+        }
+    };
+}
+
+function updateUI() {
+    const shareToggle = document.querySelector('.share-toggle');
+    const shareIdEl = document.getElementById('shareId');
+    shareToggle.classList.toggle('active', shareEnabled);
+    if (sessionId) {
+        shareIdEl.textContent = sessionId;
+        shareIdEl.title = '点击查看分享链接';
+    } else {
+        shareIdEl.textContent = '';
+        shareIdEl.title = '';
+    }
+}

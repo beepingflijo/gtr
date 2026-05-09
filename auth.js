@@ -221,14 +221,15 @@ async function validateToken() {
 }
 
 // 用户注册
-async function registerUser(username, password, email = null, authmeUsername = null, authmePassword = null) {
+async function registerUser(username, password, email = null, authmeUsername = null, authmePassword = null, verificationNote = null) {
     try {
         const requestBody = { username, password, email };
         
-        // 如果提供了AuthMe凭据，添加到请求中
         if (authmeUsername && authmePassword) {
             requestBody.authmeUsername = authmeUsername;
             requestBody.authmePassword = authmePassword;
+        } else if (verificationNote) {
+            requestBody.verificationNote = verificationNote;
         }
         
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -242,18 +243,18 @@ async function registerUser(username, password, email = null, authmeUsername = n
         const data = await response.json();
 
         if (!response.ok) {
-            // 处理不同的错误类型
             if (data.errorCode === 'AUTHME_ALREADY_BOUND') {
-                // AuthMe用户名已被其他账号绑定
                 throw new Error(data.message || strings.preferences.authme_already_bound[lang] || '该AuthMe账户已被其他用户绑定');
             } else if (data.requiresAuthMeVerification) {
-                // AuthMe验证失败
                 throw new Error(data.message || strings.preferences.authme_verification_failed[lang] || 'AuthMe验证失败');
             }
             throw new Error(data.message || 'Registration failed');
         }
 
         if (data.success) {
+            if (data.pendingReview) {
+                return { success: true, pendingReview: true, user: data.data.user };
+            }
             saveUserSession({
                 token: data.data.token,
                 user: data.data.user,
@@ -564,6 +565,8 @@ async function showLoginDialog() {
 // 显示注册对话框
 async function showRegisterDialog() {
     return new Promise((resolve) => {
+        let useAuthme = true;
+
         const dialogContent = document.createElement('div');
         dialogContent.className = 'register-dialog-content';
         dialogContent.innerHTML = `
@@ -584,16 +587,30 @@ async function showRegisterDialog() {
                     <label for="register-confirm-password">${strings.preferences.confirm_password[lang] || '确认密码'}</label>
                     <input type="password" id="register-confirm-password" class="form-input" placeholder="${strings.preferences.confirm_password_placeholder[lang] || '再次输入密码'}" autocomplete="new-password">
                 </div>
-                <div class="form-group">
-                    <label for="register-authme-username">${strings.preferences.authme_username[lang] || '服务器账号用户名'} <span style="color: crimson;">*</span></label>
-                    <input type="text" id="register-authme-username" class="form-input" placeholder="${strings.preferences.authme_username_placeholder[lang] || '输入服务器账号用户名'}" autocomplete="off" required>
+                <div id="authme-section">
+                    <div class="form-group">
+                        <label for="register-authme-username">${strings.preferences.authme_username[lang] || '服务器账号用户名'} <span style="color: crimson;">*</span></label>
+                        <input type="text" id="register-authme-username" class="form-input" placeholder="${strings.preferences.authme_username_placeholder[lang] || '输入服务器账号用户名'}" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-authme-password">${strings.preferences.authme_password[lang] || '服务器账号密码'} <span style="color: crimson;">*</span></label>
+                        <input type="password" id="register-authme-password" class="form-input" placeholder="${strings.preferences.authme_password_placeholder[lang] || '输入服务器账号密码'}" autocomplete="off">
+                    </div>
+                    <div style="font-size: 12px; color: var(--color-text-secondary); transform: translateY(-2em);">
+                        ${strings.preferences.authme_required[lang] || '必须验证服务器账户才能注册'}
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="register-authme-password">${strings.preferences.authme_password[lang] || '服务器账号密码'} <span style="color: crimson;">*</span></label>
-                    <input type="password" id="register-authme-password" class="form-input" placeholder="${strings.preferences.authme_password_placeholder[lang] || '输入服务器账号密码'}" autocomplete="off" required>
+                <div id="verification-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="register-verification-note">${strings.preferences.verification_note[lang] || '申请说明'} <span style="color: crimson;">*</span></label>
+                        <textarea id="register-verification-note" class="form-input" rows="4" placeholder="${strings.preferences.verification_note_placeholder[lang] || '请说明您注册的原因'}" style="resize: vertical;"></textarea>
+                    </div>
+                    <div style="font-size: 12px; color: var(--color-text-secondary); transform: translateY(-1em);">
+                        ${strings.preferences.pending_review[lang] || '提交后需等待管理员审核'}
+                    </div>
                 </div>
-                <div style="font-size: 12px; color: var(--color-text-secondary); transform: translateY(-2em);">
-                    ${strings.preferences.authme_required[lang] || '必须验证服务器账户才能注册'}
+                <div id="toggle-authme-link" style="text-align: center; margin-top: -0.5em;">
+                    <a href="#" style="color: var(--color-primary); font-size: 13px; text-decoration: none;">${strings.preferences.no_authme_account[lang] || '没有服务器账号？'}</a>
                 </div>
                 <div class="form-error" id="register-error" style="display: none; color: crimson; margin-top: 8px; font-size: 14px;"></div>
             </div>
@@ -618,45 +635,52 @@ async function showRegisterDialog() {
         const errorDiv = dialogContent.querySelector('#register-error');
         const submitBtn = dialogButtons.querySelector('#register-submit-btn');
         const cancelBtn = dialogButtons.querySelector('#register-cancel-btn');
-        
-        // AuthMe相关元素（现在是必填）
         const authmeUsernameInput = dialogContent.querySelector('#register-authme-username');
         const authmePasswordInput = dialogContent.querySelector('#register-authme-password');
+        const verificationNoteInput = dialogContent.querySelector('#register-verification-note');
+        const authmeSection = dialogContent.querySelector('#authme-section');
+        const verificationSection = dialogContent.querySelector('#verification-section');
+        const toggleLink = dialogContent.querySelector('#toggle-authme-link a');
 
-        // 回车提交
-        confirmPasswordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                submitBtn.click();
+        function switchMode() {
+            useAuthme = !useAuthme;
+            if (useAuthme) {
+                authmeSection.style.display = '';
+                verificationSection.style.display = 'none';
+                toggleLink.textContent = strings.preferences.no_authme_account[lang] || '没有服务器账号？';
+            } else {
+                authmeSection.style.display = 'none';
+                verificationSection.style.display = '';
+                toggleLink.textContent = strings.preferences.register_with_authme[lang] || '使用服务器账号注册';
             }
+            errorDiv.style.display = 'none';
+        }
+
+        toggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchMode();
+        });
+
+        confirmPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitBtn.click();
         });
         
         authmePasswordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                submitBtn.click();
-            }
+            if (e.key === 'Enter') submitBtn.click();
         });
 
-        // 取消按钮
         cancelBtn.addEventListener('click', () => {
             const dialogElement = dialogContent.closest('.dialog-overlay');
-            if (dialogElement) {
-                dialogElement.remove();
-            }
+            if (dialogElement) dialogElement.remove();
             resolve(false);
         });
 
-        // 注册按钮点击事件
         submitBtn.addEventListener('click', async () => {
             const username = usernameInput.value.trim();
             const email = emailInput.value.trim();
             const password = passwordInput.value;
             const confirmPassword = confirmPasswordInput.value;
-            
-            // AuthMe相关字段（必填）
-            const authmeUsername = authmeUsernameInput.value.trim();
-            const authmePassword = authmePasswordInput.value;
 
-            // 验证基本输入
             if (!username || !password || !confirmPassword) {
                 errorDiv.textContent = strings.preferences.register_error_empty[lang] || '请填写所有必填字段';
                 errorDiv.style.display = 'block';
@@ -680,36 +704,50 @@ async function showRegisterDialog() {
                 errorDiv.style.display = 'block';
                 return;
             }
-            
-            // 验证AuthMe字段（必填）
-            if (!authmeUsername || !authmePassword) {
-                errorDiv.textContent = strings.preferences.authme_verification_failed[lang] + ': ' + (strings.preferences.authme_account_not_found[lang] || '请输入AuthMe用户名和密码');
-                errorDiv.style.display = 'block';
-                return;
-            }
 
-            // 禁用按钮，显示加载状态
             submitBtn.disabled = true;
             submitBtn.textContent = strings.preferences.registering[lang] || '注册中...';
             errorDiv.style.display = 'none';
 
-            // 调用注册API（包含AuthMe信息）
-            const result = await registerUser(username, password, email || null, authmeUsername, authmePassword);
+            let result;
+            if (useAuthme) {
+                const authmeUsername = authmeUsernameInput.value.trim();
+                const authmePassword = authmePasswordInput.value;
+                if (!authmeUsername || !authmePassword) {
+                    errorDiv.textContent = strings.preferences.authme_verification_failed[lang] + ': ' + (strings.preferences.authme_account_not_found[lang] || '请输入AuthMe用户名和密码');
+                    errorDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = strings.preferences.register[lang] || '注册';
+                    return;
+                }
+                result = await registerUser(username, password, email || null, authmeUsername, authmePassword);
+            } else {
+                const verificationNote = verificationNoteInput.value.trim();
+                if (!verificationNote || verificationNote.length < 10) {
+                    errorDiv.textContent = strings.preferences.verification_note_required[lang] || '请填写申请说明（至少10个字符）';
+                    errorDiv.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = strings.preferences.register[lang] || '注册';
+                    return;
+                }
+                result = await registerUser(username, password, email || null, null, null, verificationNote);
+            }
 
             if (result.success) {
-                // 注册成功，关闭对话框并刷新页面以更新UI
-                showToast(strings.preferences.register_success[lang] || '注册成功', 2000);
+                if (result.pendingReview) {
+                    showToast(strings.preferences.register_pending_review[lang] || '注册申请已提交，请等待管理员审核', 4000);
+                } else {
+                    showToast(strings.preferences.register_success[lang] || '注册成功', 2000);
+                }
                 const dialogElement = dialogContent.closest('.modal-overlay');
                 if (dialogElement) {
                     closeDialog(dialogElement);
                 }
-                // 延迟刷新页面，确保toast显示
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
+                if (!result.pendingReview) {
+                    setTimeout(() => { window.location.reload(); }, 500);
+                }
                 resolve(true);
             } else {
-                // 注册失败，显示错误
                 errorDiv.textContent = result.message;
                 errorDiv.style.display = 'block';
                 submitBtn.disabled = false;
@@ -717,7 +755,6 @@ async function showRegisterDialog() {
             }
         });
 
-        // 聚焦到用户名输入框
         setTimeout(() => {
             usernameInput.focus();
         }, 100);
@@ -752,11 +789,9 @@ async function updateLoginStatusUI() {
     const user = getCurrentUser();
 
     if (user) {
-        // 从当前用户信息中获取authmeUsername
         const authmeUsername = await getAuthmeUsernameByUsername(user.username) || '';
 
         console.log('已登录', user);
-        // 已登录状态
         loginStatus.innerHTML = '<img src="https://mc-heads.hydcraft.cn/avatar/' + (authmeUsername || 'MHF_Steve') + '/24.png" alt="' + user.username + '" style="border-radius: 4px"><span>' + user.username + '</span>';
         loginStatus.style.display = 'flex';
         loginStatus.style.alignItems = 'center';
@@ -764,19 +799,22 @@ async function updateLoginStatusUI() {
         toggleLogin.textContent = strings.preferences.logout[lang] || '登出';
         toggleLogin.style.color = 'crimson';
         
-        // 移除旧的监听器，添加新的
         toggleLogin.removeEventListener('click', handleLoginClick);
         toggleLogin.addEventListener('click', handleLogoutClick);
         
-                // Show cloud sync status
         const cloudSyncItem = document.getElementById('cloudSyncItem');
         if (cloudSyncItem) cloudSyncItem.style.display = '';
-// 如果是admin用户，显示管理入口
+
         if (user.username === 'admin') {
             const adminLink = document.getElementById('adminLink');
-            if (adminLink) {
-                adminLink.style.display = 'inline-block';
-            }
+            if (adminLink) adminLink.style.display = 'inline-block';
+        }
+
+        const verificationStatus = user.verificationStatus || 'approved';
+        if (verificationStatus === 'pending') {
+            showToast(strings.preferences.account_pending_review[lang] || '您的账户正在等待管理员审核，部分功能暂不可用。', 5000);
+        } else if (verificationStatus === 'rejected') {
+            showToast(strings.preferences.verification_rejected[lang] || '您的注册申请未通过审核', 5000);
         }
     } else {
         // 未登录状态
@@ -813,12 +851,10 @@ async function handleLogoutClick() {
 async function initAuth() {
     console.log('🚀 初始化认证系统...');
     
-    // 检查是否有保存的会话
     const session = getUserSession();
     
     if (session && session.token) {
         console.log('📋 发现已保存的会话，用户:', session.user?.username);
-        // 验证token有效性
         const isValid = await validateToken();
         
         if (!isValid) {
@@ -830,8 +866,21 @@ async function initAuth() {
         console.log('ℹ️ 没有已保存的会话');
     }
 
-    // 更新UI
     updateLoginStatusUI();
+}
+
+function isVerified() {
+    const user = getCurrentUser();
+    if (!user) return false;
+    if (user.username === 'admin') return true;
+    return (user.verificationStatus || 'approved') === 'approved';
+}
+
+function getVerificationStatus() {
+    const user = getCurrentUser();
+    if (!user) return null;
+    if (user.username === 'admin') return 'approved';
+    return user.verificationStatus || 'approved';
 }
 
 // 导出函数供其他模块使用
@@ -839,6 +888,8 @@ window.auth = {
     isLoggedIn,
     getCurrentUser,
     getUserSession,
+    isVerified,
+    getVerificationStatus,
     login: showLoginDialog,
     logout: showLogoutDialog,
     register: showRegisterDialog,

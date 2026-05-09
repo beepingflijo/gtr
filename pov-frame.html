@@ -106,6 +106,14 @@
                 <span id="showStationInfoPref">报站时显示车站信息</span>
                 <div class="switch show-station-info"></div>
             </div>
+            <div class="pref-item">
+                <span id="shareProgressPref">分享进度</span>
+                <div class="share-controls">
+                    <span class="share-id" id="shareId" title="点击复制"></span>
+                    <span class="material-symbols-outlined copy-btn" id="copyShareLink" title="复制链接">content_copy</span>
+                    <div class="switch share-toggle active"></div>
+                </div>
+            </div>
             <div class="pref-item play-list"> 
             </div>
         </div>
@@ -172,7 +180,7 @@
         </div>
     </footer>
 </div>
-<script src="pov-frame.js" type="module"></script>
+<script src="auth.js"></script>
 <script src="position_utils.js"></script>
 <script src="cloud-sync.js"></script>
 <script src="script.js"></script>
@@ -180,6 +188,7 @@
 <script src="layout.js"></script>
 <script src="dialog.js"></script>
 <script src="keyboard.js"></script>
+<script src="pov-frame.js" type="module"></script>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </body>

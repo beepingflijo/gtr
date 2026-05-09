@@ -60,6 +60,7 @@
         }
         
         .user-table th {
+            min-width: 5em;
             background: var(--color-bg-tertiary);
             padding: 16px;
             padding-block-start: 8px;
@@ -134,7 +135,78 @@
         .back-link:hover {
             background: var(--color-bg-hover);
         }
-        
+
+        .selection.segment.filter-tabs { 
+            gap: 4px;
+            margin: 0;
+            margin-block-end: 1em;
+            max-width: -webkit-fill-available;
+        }
+
+        .selection-item.filter-tab { 
+            padding: 0.2em 0.5em !important;
+            min-width: fit-content !important;
+            overflow: visible !important;
+        }
+
+        .filter-tab .badge {
+            background: rgba(255,255,255,0.3);
+            padding: 2px;
+            border-radius: 10px;
+            font-size: 12px;
+            min-width: 18px;
+            text-align: center;
+            border: 1px solid var(--color-primary);
+        }
+
+        .filter-tab:not(.active) .badge {
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-text-secondary);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            text-wrap: nowrap;
+        }
+
+        .status-approved {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4caf50;
+        }
+
+        .status-pending {
+            background: rgba(255, 152, 0, 0.15);
+            color: #ff9800;
+        }
+
+        .status-rejected {
+            background: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+        }
+
+        .btn-approve {
+            color: #4caf50;
+        }
+
+        .btn-reject {
+            color: #ff9800;
+        }
+
+        .verification-note-text {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            color: var(--color-primary);
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+
         @media (max-width: 768px) {
             .user-table {
                 font-size: 14px;
@@ -287,69 +359,99 @@
             }
             
             // 计算统计数据
-            const totalUsers = users.length;
-            const adminCount = users.filter(u => u.username === 'admin').length;
-            const withEmail = users.filter(u => u.email).length;
-            
-            // 调试：打印第一个用户的AuthMe信息
-            if (users.length > 0) {
-                console.log('用户列表调试信息:', users.map(u => ({
-                    username: u.username,
-                    authmeBound: u.authmeBound,
-                    authmeUsername: u.authmeUsername,
-                    hasAuthmeField: 'authmeBound' in u
-                })));
-            }
-            
-            content.innerHTML = `
-                <div class="stats-container user-stats">
-                    <div class="stat-card">
-                        <div class="stats-num">${totalUsers}</div>
-                        <div class="stats-desc">总用户数</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stats-num">${adminCount}</div>
-                        <div class="stats-desc">管理员账户</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stats-num">${withEmail}</div>
-                        <div class="stats-desc">已绑定邮箱</div>
-                    </div>
+        const totalUsers = users.length;
+        const adminCount = users.filter(u => u.username === 'admin').length;
+        const withEmail = users.filter(u => u.email).length;
+        const pendingCount = users.filter(u => u.verificationStatus === 'pending').length;
+        const rejectedCount = users.filter(u => u.verificationStatus === 'rejected').length;
+        
+        content.innerHTML = `
+            <div class="stats-container user-stats">
+                <div class="stat-card">
+                    <div class="stats-num">${totalUsers}</div>
+                    <div class="stats-desc">总用户数</div>
                 </div>
-                
-                <div class="item user-table-container">
-                    <table class="user-table">
-                        <thead>
-                            <tr>
-                                <th>用户名</th>
-                                <th>服务器账户</th>
-                                <th>邮箱</th>
-                                <th>注册时间</th>
-                                <th>最后登录</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${users.map(user => `
-                                <tr data-user-id="${user.id}">
+                <div class="stat-card">
+                    <div class="stats-num">${pendingCount}</div>
+                    <div class="stats-desc">待审核</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stats-num">${adminCount}</div>
+                    <div class="stats-desc">管理员账户</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stats-num">${withEmail}</div>
+                    <div class="stats-desc">已绑定邮箱</div>
+                </div>
+            </div>
+            
+            <div class="selection segment filter-tabs">
+                <span class="selection-item filter-tab active" data-filter="all">全部 <span class="badge">${totalUsers}</span></span>
+                <span class="selection-item filter-tab" data-filter="pending">待审核 <span class="badge">${pendingCount}</span></span>
+                <span class="selection-item filter-tab" data-filter="approved">已通过 <span class="badge">${users.filter(u => (u.verificationStatus || 'approved') === 'approved').length}</span></span>
+                <span class="selection-item filter-tab" data-filter="rejected">已拒绝 <span class="badge">${rejectedCount}</span></span>
+            </div>
+            
+            <div class="item user-table-container">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>审核状态</th>
+                            <th>服务器账户</th>
+                            <th>申请说明</th>
+                            <th>邮箱</th>
+                            <th>注册时间</th>
+                            <th>最后登录</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => {
+                            const vs = user.verificationStatus || 'approved';
+                            const statusLabel = vs === 'approved' ? '已通过' : vs === 'pending' ? '待审核' : '已拒绝';
+                            return `
+                                <tr data-user-id="${user.id}" data-verification="${vs}">
                                     <td><strong>${escapeHtml(user.username)}</strong></td>
+                                    <td><span class="status-badge status-${vs}">${statusLabel}</span></td>
                                     <td>${user.authmeBound ? `<span style="color: var(--color-primary);">${escapeHtml(user.authmeUsername || 'N/A')}</span>` : '<em style="color: #999;">未绑定</em>'}</td>
+                                    <td>${user.verificationNote ? `<span class="verification-note-text" onclick="viewNote('${escapeHtml(user.username)}', this.dataset.note)" data-note="${escapeHtml(user.verificationNote)}" title="点击查看完整内容">${escapeHtml(user.verificationNote)}</span>` : '<em style="color: #999;">—</em>'}</td>
                                     <td>${user.email ? escapeHtml(user.email) : '<em>未设置</em>'}</td>
                                     <td>${formatDate(user.createdAt)}</td>
                                     <td>${user.lastLogin ? formatDate(user.lastLogin) : '<em>从未登录</em>'}</td>
                                     <td>
-                                            <div class="icon-btn action-btn btn-reset" onclick="resetPassword('${user.id}', '${escapeHtml(user.username)}')" title="重置密码"><span class="material-symbols-outlined">refresh</span>重置</div>
+                                        <div class="icon-btn action-btn btn-reset" onclick="resetPassword('${user.id}', '${escapeHtml(user.username)}')" title="重置密码"><span class="material-symbols-outlined">refresh</span>重置</div>
+                                        ${vs === 'pending' ? `
+                                            <div class="icon-btn action-btn btn-approve" onclick="verifyUser('${user.id}', '${escapeHtml(user.username)}', 'approve')" title="批准"><span class="material-symbols-outlined">check</span>批准</div>
+                                            <div class="icon-btn action-btn btn-reject" onclick="verifyUser('${user.id}', '${escapeHtml(user.username)}', 'reject')" title="拒绝"><span class="material-symbols-outlined">close</span>拒绝</div>
+                                        ` : ''}
                                         ${user.username !== 'admin' ? `
                                             <div class="icon-btn action-btn btn-delete" onclick="deleteUser('${user.id}', '${escapeHtml(user.username)}')" title="注销账户"><span class="material-symbols-outlined">delete</span></div>
                                         ` : ''}
                                     </td>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        content.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                content.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const filter = tab.dataset.filter;
+                content.querySelectorAll('tbody tr').forEach(row => {
+                    if (filter === 'all' || row.dataset.verification === filter) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
         
         // HTML转义
         function escapeHtml(text) {
@@ -438,6 +540,49 @@
                 console.error('Error resetting password:', error);
                 alert('重置失败，请检查网络连接');
             }
+        }
+        
+        // 审批用户注册
+        async function verifyUser(userId, username, action) {
+            const actionLabel = action === 'approve' ? '批准' : '拒绝';
+            if (!confirm(`确定要${actionLabel}用户 "${username}" 的注册申请吗？`)) {
+                return;
+            }
+            
+            const session = window.auth.getUserSession ? window.auth.getUserSession() : null;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/verify`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${session.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`已${actionLabel}用户 "${username}"`);
+                    loadUsers();
+                } else {
+                    alert(`${actionLabel}失败：` + data.message);
+                }
+            } catch (error) {
+                console.error('Error verifying user:', error);
+                alert(`${actionLabel}失败，请检查网络连接`);
+            }
+        }
+
+        // 查看申请说明
+        function viewNote(username, note) {
+            if (!note) return;
+            const content = document.createElement('div');
+            content.innerHTML = `
+                <div style="padding: 8px 0; line-height: 1.6; white-space: pre-wrap; word-break: break-all;">${escapeHtml(note)}</div>
+            `;
+            pushDialog(content, 'custom', `${username} 的申请说明`);
         }
         
         // 页面加载时执行

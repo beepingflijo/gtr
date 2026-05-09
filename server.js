@@ -139,6 +139,32 @@ function authenticateToken(req, res, next) {
     });
 }
 
+function requireVerified(req, res, next) {
+    if (req.user.username === 'admin') return next();
+    const users = readUsers();
+    const user = users.find(u => u.id === req.user.id);
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (user.verificationStatus === 'rejected') {
+        return res.status(403).json({
+            success: false,
+            message: 'Your registration has been rejected',
+            verificationStatus: 'rejected',
+            errorCode: 'VERIFICATION_REJECTED'
+        });
+    }
+    if (user.verificationStatus !== 'approved') {
+        return res.status(403).json({
+            success: false,
+            message: 'Your account is pending admin review',
+            verificationStatus: 'pending',
+            errorCode: 'PENDING_REVIEW'
+        });
+    }
+    next();
+}
+
 // ==================== API路由 ====================
 
 // 验证AuthMe账户
@@ -220,27 +246,9 @@ app.post('/api/auth/register', async (req, res) => {
             });
         }
 
-        // AuthMe验证现在是强制要求
-        if (!authmeUsername || !authmePassword) {
-            return res.status(400).json({
-                success: false,
-                message: 'AuthMe username and password are required',
-                errorCode: 'AUTHME_REQUIRED'
-            });
-        }
-
-        // 验证AuthMe账户
-        const authmeVerificationResult = await verifyAuthMeAccount(authmeUsername, authmePassword);
-        
-        if (!authmeVerificationResult.success) {
-            return res.status(400).json({
-                success: false,
-                message: authmeVerificationResult.message,
-                errorCode: authmeVerificationResult.errorCode,
-                requiresAuthMeVerification: true
-            });
-        }
-
+        const { verificationNote } = req.body;
+        const hasAuthme = !!(authmeUsername && authmePassword);
+        let authmeVerificationResult = null;
         const users = readUsers();
 
         // 检查用户名是否已存在
@@ -251,32 +259,56 @@ app.post('/api/auth/register', async (req, res) => {
             });
         }
 
-        // 检查authmeUsername是否已被其他账号绑定
-        const existingUserWithAuthme = users.find(u => u.authmeUsername === authmeUsername);
-        if (existingUserWithAuthme) {
-            return res.status(409).json({
-                success: false,
-                message: `This AuthMe account (${authmeUsername}) is already bound to another user`,
-                errorCode: 'AUTHME_ALREADY_BOUND'
-            });
+        if (hasAuthme) {
+            // 路径A：提供AuthMe凭据
+            authmeVerificationResult = await verifyAuthMeAccount(authmeUsername, authmePassword);
+            
+            if (!authmeVerificationResult.success) {
+                return res.status(400).json({
+                    success: false,
+                    message: authmeVerificationResult.message,
+                    errorCode: authmeVerificationResult.errorCode,
+                    requiresAuthMeVerification: true
+                });
+            }
+
+            const existingUserWithAuthme = users.find(u => u.authmeUsername === authmeUsername);
+            if (existingUserWithAuthme) {
+                return res.status(409).json({
+                    success: false,
+                    message: `This AuthMe account (${authmeUsername}) is already bound to another user`,
+                    errorCode: 'AUTHME_ALREADY_BOUND'
+                });
+            }
+        } else {
+            // 路径B：无AuthMe凭据，需要提交审核说明
+            if (!verificationNote || verificationNote.trim().length < 10) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Application note is required (at least 10 characters)',
+                    errorCode: 'VERIFICATION_NOTE_REQUIRED'
+                });
+            }
         }
 
         // 哈希密码
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // 创建新用户
+        const now = new Date().toISOString();
         const newUser = {
             id: Date.now().toString(),
             username,
             password: hashedPassword,
             email: email || authmeVerificationResult?.email || null,
-            authmeBound: !!authmeVerificationResult,
+            authmeBound: hasAuthme,
             authmeUsername: authmeVerificationResult?.authmeUsername || null,
             authmeDisplayName: authmeVerificationResult?.authmeDisplayName || null,
             authmeAvatarUrl: authmeVerificationResult?.authmeAvatarUrl || null,
-            createdAt: new Date().toISOString(),
-            lastLogin: null
+            verificationStatus: hasAuthme ? 'approved' : 'pending',
+            verificationNote: hasAuthme ? null : (verificationNote?.trim() || null),
+            verificationAt: hasAuthme ? now : null,
+            createdAt: now
         };
 
         console.log('✅ 新用户注册成功:', {
@@ -284,28 +316,31 @@ app.post('/api/auth/register', async (req, res) => {
             username: newUser.username,
             authmeBound: newUser.authmeBound,
             authmeUsername: newUser.authmeUsername,
-            authmeDisplayName: newUser.authmeDisplayName
+            authmeDisplayName: newUser.authmeDisplayName,
+            verificationStatus: newUser.verificationStatus
         });
 
         users.push(newUser);
         saveUsers(users);
 
-        // 生成Token
-        const tokenPayload = { id: newUser.id, username: newUser.username };
-        console.log('🔑 生成JWT Token，payload:', tokenPayload);
-        
-        const token = jwt.sign(
-            tokenPayload,
-            JWT_SECRET,
-            { expiresIn: TOKEN_EXPIRY }
-        );
+        if (!hasAuthme) {
+            return res.status(201).json({
+                success: true,
+                message: 'Registration application submitted, pending admin review',
+                pendingReview: true,
+                data: {
+                    user: {
+                        id: newUser.id,
+                        username: newUser.username,
+                        email: newUser.email,
+                        verificationStatus: 'pending'
+                    }
+                }
+            });
+        }
 
-        console.log('✅ 注册成功，返回用户信息:', {
-            id: newUser.id,
-            username: newUser.username,
-            authmeBound: newUser.authmeBound,
-            tokenLength: token.length
-        });
+        const tokenPayload = { id: newUser.id, username: newUser.username };
+        const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
 
         res.status(201).json({
             success: true,
@@ -318,7 +353,8 @@ app.post('/api/auth/register', async (req, res) => {
                     authmeBound: newUser.authmeBound || false,
                     authmeUsername: newUser.authmeUsername || null,
                     authmeDisplayName: newUser.authmeDisplayName || null,
-                    authmeAvatarUrl: newUser.authmeAvatarUrl || null
+                    authmeAvatarUrl: newUser.authmeAvatarUrl || null,
+                    verificationStatus: newUser.verificationStatus
                 },
                 token
             }
@@ -405,7 +441,8 @@ app.post('/api/auth/login', async (req, res) => {
                     authmeBound: user.authmeBound || false,
                     authmeUsername: user.authmeUsername || null,
                     authmeDisplayName: user.authmeDisplayName || null,
-                    authmeAvatarUrl: user.authmeAvatarUrl || null
+                    authmeAvatarUrl: user.authmeAvatarUrl || null,
+                    verificationStatus: user.verificationStatus || 'approved'
                 },
                 token
             }
@@ -452,6 +489,7 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
                 authmeUsername: user.authmeUsername || null,
                 authmeDisplayName: user.authmeDisplayName || null,
                 authmeAvatarUrl: user.authmeAvatarUrl || null,
+                verificationStatus: user.verificationStatus || 'approved',
                 createdAt: user.createdAt,
                 lastLogin: user.lastLogin
             }
@@ -559,6 +597,9 @@ app.get('/api/admin/users', authenticateToken, (req, res) => {
         authmeUsername: user.authmeUsername || null,
         authmeDisplayName: user.authmeDisplayName || null,
         authmeAvatarUrl: user.authmeAvatarUrl || null,
+        verificationStatus: user.verificationStatus || 'approved',
+        verificationNote: user.verificationNote || null,
+        verificationAt: user.verificationAt || null,
         createdAt: user.createdAt,
         lastLogin: user.lastLogin
     }));
@@ -654,10 +695,54 @@ app.put('/api/admin/users/:userId/reset-password', authenticateToken, async (req
     });
 });
 
+// 审批用户注册（需要管理员权限）
+app.put('/api/admin/users/:userId/verify', authenticateToken, async (req, res) => {
+    if (req.user.username !== 'admin') {
+        return res.status(403).json({
+            success: false,
+            message: 'Admin access required'
+        });
+    }
+
+    const userId = req.params.userId;
+    const { action } = req.body;
+
+    if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Action must be "approve" or "reject"'
+        });
+    }
+
+    const users = readUsers();
+    const user = users.find(u => u.id === userId);
+
+    if (!user) {
+        return res.status(404).json({
+            success: false,
+            message: 'User not found'
+        });
+    }
+
+    user.verificationStatus = action === 'approve' ? 'approved' : 'rejected';
+    user.verificationAt = new Date().toISOString();
+    saveUsers(users);
+
+    res.json({
+        success: true,
+        message: `User ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+        data: {
+            id: user.id,
+            username: user.username,
+            verificationStatus: user.verificationStatus
+        }
+    });
+});
+
 // ==================== User Cloud Data Sync ====================
 
 // Get user cloud data
-app.get('/api/user/data', authenticateToken, (req, res) => {
+app.get('/api/user/data', authenticateToken, requireVerified, (req, res) => {
     const users = readUsers();
     const user = users.find(u => u.id === req.user.id);
     if (!user) {
@@ -675,7 +760,7 @@ app.get('/api/user/data', authenticateToken, (req, res) => {
 });
 
 // Update user cloud data
-app.put('/api/user/data', authenticateToken, (req, res) => {
+app.put('/api/user/data', authenticateToken, requireVerified, (req, res) => {
     const users = readUsers();
     const userIndex = users.findIndex(u => u.id === req.user.id);
     if (userIndex === -1) {
@@ -703,6 +788,48 @@ app.put('/api/user/data', authenticateToken, (req, res) => {
         }
     });
 });
+
+// ==================== POV Sharing ====================
+const povSessions = new Map();
+const POV_ID_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function generatePovId() {
+    let id = '';
+    for (let i = 0; i < 8; i++) id += POV_ID_CHARS[Math.floor(Math.random() * POV_ID_CHARS.length)];
+    return id;
+}
+
+// Create or update a POV session
+app.post('/api/pov/share', (req, res) => {
+    const { sessionId, progress, shared, username } = req.body;
+    let id = sessionId;
+    if (!id || !povSessions.has(id)) {
+        do { id = generatePovId(); } while (povSessions.has(id));
+    }
+    const existing = povSessions.get(id) || { progress: null, shared: true, username: '', created: Date.now() };
+    if (progress !== undefined) existing.progress = progress;
+    if (shared !== undefined) existing.shared = shared;
+    if (username !== undefined && username) existing.username = username;
+    existing.lastUpdate = Date.now();
+    povSessions.set(id, existing);
+    res.json({ success: true, sessionId: id, shared: existing.shared });
+});
+
+// Get a shared POV session
+app.get('/api/pov/share/:id', (req, res) => {
+    const session = povSessions.get(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    if (!session.shared) return res.status(403).json({ error: 'Sharing is disabled' });
+    res.json({ success: true, progress: session.progress, username: session.username || '', lastUpdate: session.lastUpdate });
+});
+
+// Cleanup stale sessions every 30 min (sessions older than 6 hours)
+setInterval(() => {
+    const cutoff = Date.now() - 6 * 60 * 60 * 1000;
+    for (const [key, val] of povSessions) {
+        if (val.lastUpdate < cutoff) povSessions.delete(key);
+    }
+}, 30 * 60 * 1000);
+
 
 
 // ==================== 静态文件服务 ====================
