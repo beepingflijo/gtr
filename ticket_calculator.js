@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         .then(stringsResponse => stringsResponse.json())
                         .then(stringsData => {
                             window.strings = stringsData;
-                            init();
+                            const waitForScript = window.scriptReady || Promise.resolve();
+                            waitForScript.then(() => init());
                         })
                     .catch(error => console.error('Error loading Language data:', error));
                 })

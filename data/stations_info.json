@@ -453,7 +453,7 @@
         "facilities":[
             {
                 "type":"platforms","floor":"2F",
-                "desc":"1/2/3/4/5/6/7","lines":["劍","日光","江广线","北广城际"]
+                "desc":"1/2/3/4/5/6/7","lines":["江广线","北广城际"]
             },
             {
                 "type":"ticket","floor":"3F",

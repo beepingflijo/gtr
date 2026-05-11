@@ -15,16 +15,19 @@ document.addEventListener('DOMContentLoaded', function () {
             window.strings = stringsData;
             window.trainsInfo = trainsInfoData.trains;
 
-            if (typeof PositionUtils !== 'undefined') {
-                PositionUtils.init({
-                    trainsInfo: window.trainsInfo,
-                    stationsNetwork: window.stationsNetwork,
-                    lines: window.lines,
-                    strings: window.strings,
-                    lang: lang
-                });
-            }
-            init();
+            const waitForScript = window.scriptReady || Promise.resolve();
+            waitForScript.then(() => {
+                if (typeof PositionUtils !== 'undefined') {
+                    PositionUtils.init({
+                        trainsInfo: window.trainsInfo,
+                        stationsNetwork: window.stationsNetwork,
+                        lines: window.lines,
+                        strings: window.strings,
+                        lang: lang
+                    });
+                }
+                init();
+            });
         })
         .catch(error => console.error('Error loading initial data:', error));
 });
@@ -1418,7 +1421,54 @@ function calculateLineTotalTime(lineId) {
     return totalTime;
 }
 
-function shareRouteMap() { 
+function shareRouteMap() {
+    if (typeof MapMode !== 'undefined' && MapMode.isOpen()) {
+        const sourceCanvas = document.getElementById('map-canvas');
+        const container = document.getElementById('map-canvas-container');
+        if (!sourceCanvas || !container) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const sidebar = document.querySelector('.side-bar');
+        const sidebarRect = sidebar ? sidebar.getBoundingClientRect() : null;
+        const sidebarOpen = sidebar && !sidebar.classList.contains('collapsed') && sidebarRect && sidebarRect.width > 0 && sidebarRect.right > containerRect.left && sidebarRect.left < containerRect.right;
+
+        const overlapLeft = sidebarOpen ? Math.max(0, Math.min(sidebarRect.right, containerRect.right) - containerRect.left) : 0;
+        const cropX = Math.round(overlapLeft * (sourceCanvas.width / containerRect.width));
+        const cropW = sourceCanvas.width - cropX;
+        const cropH = sourceCanvas.height;
+
+        if (cropW <= 0 || cropH <= 0) return;
+
+        const titleText = strings.lines_info.map_all_lines[lang];
+        const titleFontSize = 32;
+        const titlePadding = 24;
+
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = cropW;
+        exportCanvas.height = cropH + titleFontSize + titlePadding * 2;
+        const exportCtx = exportCanvas.getContext('2d');
+
+        const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background').trim() || '#f5f5f5';
+        exportCtx.fillStyle = bgColor;
+        exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+        exportCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#000';
+        exportCtx.font = `bold ${titleFontSize}px ${getComputedStyle(document.body).getPropertyValue('--font-family')}`;
+        exportCtx.textAlign = 'left';
+        exportCtx.textBaseline = 'top';
+        exportCtx.fillText(titleText, titlePadding, titlePadding);
+
+        exportCtx.drawImage(sourceCanvas, cropX, 0, cropW, cropH, 0, titleFontSize + titlePadding * 2, cropW, cropH);
+
+        const img = exportCanvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        const timestamp = new Date().getTime();
+        a.href = img;
+        a.download = `${getLineName(getActiveLineId())}_map_${timestamp}.png`;
+        a.click();
+        return;
+    }
+
     const backgroundColor = getComputedStyle(document.body).backgroundColor;
     const stationsDisplay = document.querySelector('.stations-display');
     const stationList = stationsDisplay.querySelector('.station-list');
@@ -1430,8 +1480,6 @@ function shareRouteMap() {
     lineTitle.style.marginBottom = '1rem';
     stationsDisplay.insertBefore(lineTitle, stationsDisplay.firstChild);
     html2canvas(stationsDisplay, {
-        //width: 1200,
-        //height: 800,
         backgroundColor: backgroundColor,
     }).then(canvas => {
         const img = canvas.toDataURL('image/png');
@@ -1513,7 +1561,7 @@ function handleWindowResize() {
         sideBar.style.position = 'relative';
         prefActions.style.display = 'none';
         main.style.paddingBottom = '36px';
-        if (!sidebarCollapseDone) { 
+        if (!sidebarCollapseDone && sideBarBtn) { 
             if (prefs.collapseSidebar) { 
                 if (!sideBar.classList.contains('collapsed')) {
                     sideBar.classList.add('collapsed');
@@ -1533,8 +1581,8 @@ function handleWindowResize() {
                     }
                 }
             }
+            sidebarCollapseDone = true;
         }
-        sidebarCollapseDone = true;
         setTimeout(() => {
             const lineSelectorWidth = sideBar.getBoundingClientRect().width <= 60 ? 0 : sideBar.getBoundingClientRect().width;
             const mainWidth = main.getBoundingClientRect().width;
@@ -1918,6 +1966,26 @@ var MapMode = (function () {
         var padding = 80;
         var scaleX = (visibleW - padding * 2) / worldW;
         var scaleY = (ch - padding * 2) / worldH;
+        var initialZoom = Math.min(scaleX, scaleY);
+
+        ctx.font = '11px ' + getComputedStyle(document.body).getPropertyValue('--font-family');
+        var maxLabelW = 0;
+        Object.keys(stationCoordsMap).forEach(function (code) {
+            var s = stationCoordsMap[code];
+            if (s.count === 0) return;
+            var name = getStationName(code, lang);
+            var w = ctx.measureText(name).width;
+            if (w > maxLabelW) maxLabelW = w;
+        });
+
+        var labelMarginPx = Math.max(maxLabelW, 32) + STATION_RADIUS + 10;
+        var labelMarginWorld = labelMarginPx / initialZoom;
+
+        var expandedW = worldW + labelMarginWorld * 2;
+        var expandedH = worldH + labelMarginWorld * 2;
+
+        scaleX = (visibleW - padding * 2) / expandedW;
+        scaleY = (ch - padding * 2) / expandedH;
         viewState.zoom = Math.min(scaleX, scaleY);
         MIN_ZOOM = viewState.zoom;
 
@@ -2059,17 +2127,152 @@ var MapMode = (function () {
         });
     }
 
+    var mapSegments = [];
+
+    function buildMapSegments() {
+        mapSegments = [];
+        window.lines.forEach(function (line) {
+            if (line.id.match('-R')) return;
+            var tracks = line.route.filter(function (n) { return n.type === 'track'; });
+            tracks.forEach(function (track) {
+                if (!track.nodes || track.nodes.length < 2) return;
+                for (var i = 0; i < track.nodes.length - 1; i++) {
+                    var p0 = worldToScreen(track.nodes[i].x, track.nodes[i].z);
+                    var p1 = worldToScreen(track.nodes[i + 1].x, track.nodes[i + 1].z);
+                    mapSegments.push({ x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y });
+                }
+            });
+        });
+    }
+
+    function segmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+        var d1 = (x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3);
+        var d2 = (x4 - x3) * (y2 - y3) - (y4 - y3) * (x2 - x3);
+        var d3 = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
+        var d4 = (x2 - x1) * (y4 - y1) - (y2 - y1) * (x4 - x1);
+        if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+            ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) {
+            return true;
+        }
+        return false;
+    }
+
+    function rectIntersectsSegment(rx, ry, rw, rh, x1, y1, x2, y2) {
+        var pad = 2;
+        var left = rx - pad;
+        var top = ry - pad;
+        var right = rx + rw + pad;
+        var bottom = ry + rh + pad;
+
+        if ((x1 >= left && x1 <= right && y1 >= top && y1 <= bottom) ||
+            (x2 >= left && x2 <= right && y2 >= top && y2 <= bottom)) {
+            return true;
+        }
+
+        var corners = [[left, top], [right, top], [right, bottom], [left, bottom]];
+        for (var i = 0; i < 4; i++) {
+            var j = (i + 1) % 4;
+            if (segmentsIntersect(x1, y1, x2, y2, corners[i][0], corners[i][1], corners[j][0], corners[j][1])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    var placedLabels = [];
+
+    function rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+        return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+    }
+
+    function checkLabelCollision(labelX, labelY, labelW, labelH) {
+        for (var i = 0; i < mapSegments.length; i++) {
+            var seg = mapSegments[i];
+            if (rectIntersectsSegment(labelX, labelY, labelW, labelH, seg.x1, seg.y1, seg.x2, seg.y2)) {
+                return true;
+            }
+        }
+        for (var j = 0; j < placedLabels.length; j++) {
+            var r = placedLabels[j];
+            if (rectsOverlap(labelX, labelY, labelW, labelH, r.x, r.y, r.w, r.h)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function buildCandidatePositions(pos, nameWidth, nameHeight, gap) {
+        var positions = [];
+        var DISTANCES = [gap, gap + 2, gap + 4];
+
+        var rightAngles = [0, 20, -20, 40, -40, 60, -60, 80, -80];
+        var leftAngles = [180, 160, 200, 140, 220, 120, 240, 100, 260];
+        var centerAngles = [270, 90];
+
+        DISTANCES.forEach(function (d) {
+            rightAngles.forEach(function (deg) {
+                var rad = deg * Math.PI / 180;
+                var anchorX = pos.x + Math.cos(rad) * d;
+                var anchorY = pos.y + Math.sin(rad) * d;
+                positions.push({
+                    textX: anchorX,
+                    textY: anchorY,
+                    boxX: anchorX,
+                    boxY: anchorY - nameHeight / 2,
+                    align: 'left'
+                });
+            });
+
+            leftAngles.forEach(function (deg) {
+                var rad = deg * Math.PI / 180;
+                var anchorX = pos.x + Math.cos(rad) * d;
+                var anchorY = pos.y + Math.sin(rad) * d;
+                positions.push({
+                    textX: anchorX,
+                    textY: anchorY,
+                    boxX: anchorX - nameWidth,
+                    boxY: anchorY - nameHeight / 2,
+                    align: 'right'
+                });
+            });
+
+            centerAngles.forEach(function (deg) {
+                var rad = deg * Math.PI / 180;
+                var anchorX = pos.x + Math.cos(rad) * d;
+                var anchorY = pos.y + Math.sin(rad) * d;
+                positions.push({
+                    textX: anchorX,
+                    textY: anchorY,
+                    boxX: anchorX - nameWidth / 2,
+                    boxY: anchorY - nameHeight / 2,
+                    align: 'center'
+                });
+            });
+        });
+
+        return positions;
+    }
+
     function drawStations() {
+        buildMapSegments();
+        placedLabels = [];
+
+        var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background-card-solid').trim() || '#fff';
+        var textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#000';
+        var fontFamily = getComputedStyle(document.body).getPropertyValue('--font-family');
+        ctx.font = '11px ' + fontFamily;
+
+        var STATION_RADIUS_PX = STATION_RADIUS;
+        var GAP = STATION_RADIUS_PX + 6;
+
         Object.keys(stationCoordsMap).forEach(function (code) {
             var station = stationCoordsMap[code];
             if (station.count === 0) return;
 
             var pos = worldToScreen(station.x, station.z);
-            var r = STATION_RADIUS;
 
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-            var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background-card-solid').trim() || '#fff';
+            ctx.arc(pos.x, pos.y, STATION_RADIUS_PX, 0, Math.PI * 2);
             ctx.fillStyle = bgColor;
             ctx.fill();
 
@@ -2079,11 +2282,34 @@ var MapMode = (function () {
             ctx.stroke();
 
             var name = getStationName(code, lang);
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#000';
-            ctx.font = '11px ' + getComputedStyle(document.body).getPropertyValue('--font-family');
-            ctx.textAlign = 'left';
+            var nameWidth = Math.max(ctx.measureText(name).width, 32);
+            var nameHeight = 14;
+
+            var candidates = buildCandidatePositions(pos, nameWidth, nameHeight, GAP);
+            var best = null;
+
+            for (var i = 0; i < candidates.length; i++) {
+                var c = candidates[i];
+                if (!checkLabelCollision(c.boxX, c.boxY, nameWidth, nameHeight)) {
+                    best = c;
+                    break;
+                }
+            }
+
+            if (!best) return;
+
+            placedLabels.push({ x: best.boxX, y: best.boxY, w: nameWidth, h: nameHeight });
+
+            ctx.textAlign = best.align;
             ctx.textBaseline = 'middle';
-            ctx.fillText(name, pos.x + r + 6, pos.y);
+
+            ctx.strokeStyle = bgColor;
+            ctx.lineWidth = 3;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(name, best.textX, best.textY);
+
+            ctx.fillStyle = textColor;
+            ctx.fillText(name, best.textX, best.textY);
         });
     }
 
@@ -2114,10 +2340,14 @@ var MapMode = (function () {
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            ctx.fillStyle = '#fff';
             ctx.font = '16px "Material Symbols Outlined"';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.lineJoin = 'round';
+            ctx.strokeText('\ue534', pos.x, pos.y);
+            ctx.fillStyle = '#fff';
             ctx.fillText('\ue534', pos.x, pos.y);
         });
     }
@@ -2125,18 +2355,20 @@ var MapMode = (function () {
     function drawCoordinates() {
         var ch = getCanvasCssHeight();
         var textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || 'rgba(128,128,128,0.6)';
-        ctx.fillStyle = textColor;
+        var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background').trim() || '#f5f5f5';
         ctx.font = '10px ' + getComputedStyle(document.body).getPropertyValue('--font-family');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
 
         var centerX = getVisibleCenterX();
         var centerWorld = screenToWorld(centerX, ch / 2);
-        ctx.fillText(
-            'x: ' + Math.round(centerWorld.x) + '  z: ' + Math.round(centerWorld.z),
-            centerX,
-            ch - 20
-        );
+        var coordText = 'x: ' + Math.round(centerWorld.x) + '  z: ' + Math.round(centerWorld.z);
+        ctx.strokeStyle = bgColor;
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(coordText, centerX, ch - 20);
+        ctx.fillStyle = textColor;
+        ctx.fillText(coordText, centerX, ch - 20);
     }
 
     function render() {

@@ -14,16 +14,19 @@ document.addEventListener('DOMContentLoaded', function () {
             window.strings = stringsData;
             window.trainsInfo = trainsInfoData.trains;
 
-            if (typeof PositionUtils !== 'undefined') {
-                PositionUtils.init({
-                    trainsInfo: window.trainsInfo,
-                    stationsNetwork: window.stationsNetwork,
-                    lines: window.lines,
-                    strings: window.strings,
-                    lang: lang
-                });
-            }
-            init();
+            const waitForScript = window.scriptReady || Promise.resolve();
+            waitForScript.then(() => {
+                if (typeof PositionUtils !== 'undefined') {
+                    PositionUtils.init({
+                        trainsInfo: window.trainsInfo,
+                        stationsNetwork: window.stationsNetwork,
+                        lines: window.lines,
+                        strings: window.strings,
+                        lang: lang
+                    });
+                }
+                init();
+            });
         })
         .catch(error => console.error('Error loading initial data:', error));
 });

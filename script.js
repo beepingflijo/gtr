@@ -15,27 +15,27 @@ window.compactParam = compactParam;
 let lang = null;
 
 // 从 strings.json 获取 strings 和初始化语言
+let _resolveScriptReady;
+window.scriptReady = new Promise(resolve => { _resolveScriptReady = resolve; });
+
 document.addEventListener('DOMContentLoaded', async () => { 
     try {
-        // 先初始化语言设置
         lang = await getCurrentLanguage();
         console.log('Current language:', lang);
         const html = document.querySelector('html');
         html.lang = lang.includes('zh') ? 'zh' : lang;
         
-        // 加载 strings 数据
         const stringsResponse = await fetch('strings.json');
         const stringsData = await stringsResponse.json();
         strings = stringsData;
         
-        // 初始化其他功能
         initSearchPanel();
         initSidebar();
         initPrefActions();
         initTabs();
         initSearchBar();
-        applySavedTheme(); // 应用保存的主题设置
-        checkForceRefresh(); // 检查是否需要强制刷新
+        applySavedTheme();
+        checkForceRefresh();
         initHistoryBtn();
         setInterval(handleFooterItemCollapse, 150);
         if (window.listenKeyboardShortcuts) {
@@ -45,20 +45,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         handleActions();
         const tabs = document.querySelectorAll('footer .tabs');
         
-        // 暴露 lang 到全局供其他模块使用
         window.lang = lang;
-        // 使用setTimeout确保在其他DOM操作完成后执行
-        //setTimeout(hideNonActiveSelectionItems, 0);
         initBlurLayers();
 
         const themeColor = document.createElement('meta');
         themeColor.name = 'theme-color';
-        // 转为十六进制颜色
         const hexColor = getComputedStyle(document.body).getPropertyValue('--color-primary').trim();
         themeColor.content = hexColor;
         document.head.appendChild(themeColor);
         
-        // 为侧边栏按钮添加点击事件监听器
         const sidebarButtons = document.querySelectorAll('.side-bar-btn');
         sidebarButtons.forEach(button => {
             button.addEventListener('click', toggleSidebar);
@@ -72,10 +67,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         })
     } catch (error) {
         console.error('Error initializing language and strings:', error);
-        // 降级处理
         lang = 'zh_hans';
         window.lang = lang;
     }
+    _resolveScriptReady();
 });
 
 // 请求通知权限
