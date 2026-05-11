@@ -6897,18 +6897,44 @@
     },
     {
         "id":"04139678-66a6-4533-82d8-2e6f695979aa",
-        "name":"GPA02B","dimension":"minecraft:overworld",
+        "name":"GPA04B","dimension":"minecraft:overworld",
         "location":{"x":-5293.5,"y":31.0,"z":2403.5},"angle":360.0,"assembling":false
     },
     {
         "id":"460bde0e-2f25-4654-8b21-f7dd12974090",
-        "name":"GPA01A","dimension":"minecraft:overworld",
+        "name":"GPA03A","dimension":"minecraft:overworld",
         "location":{"x":-5313.5,"y":31.0,"z":2527.5},"angle":180.0,"assembling":false
+    },
+    {
+        "id":"04139678-66a6-4533-82d8-2e6f695979aa",
+        "name":"GPA06B","dimension":"minecraft:overworld",
+        "location":{"x":-5270,"y":31.0,"z":2440},"angle":360.0,"assembling":false
+    },
+    {
+        "id":"460bde0e-2f25-4654-8b21-f7dd12974090",
+        "name":"GPA05A","dimension":"minecraft:overworld",
+        "location":{"x":-5337,"y":31.0,"z":2527.5},"angle":180.0,"assembling":false
     },
     {
         "id":"6503212b-8f1d-469e-99b4-f1a62ecd7346",
         "name":"00GPAA","dimension":"minecraft:overworld",
         "location":{"x":-5306.5,"y":31.0,"z":2527.5},"angle":180.0,"assembling":false
+    },
+    {
+        "name":"GYQ13A","dimension":"minecraft:overworld",
+        "location":{"x":-4465,"y":31.0,"z":1664},"angle":270.0,"assembling":false
+    },
+    {
+        "name":"GYQ14A","dimension":"minecraft:overworld",
+        "location":{"x":-4465,"y":31.0,"z":1684},"angle":270.0,"assembling":false
+    },
+    {
+        "name":"GYQ15B","dimension":"minecraft:overworld",
+        "location":{"x":-4378,"y":31.0,"z":1690},"angle":90.0,"assembling":false
+    },
+    {
+        "name":"GYQ16B","dimension":"minecraft:overworld",
+        "location":{"x":-4378,"y":31.0,"z":1710},"angle":90.0,"assembling":false
     },
     {
         "id":"dadff6e1-19f5-45b8-a6ed-d4caa650395e",

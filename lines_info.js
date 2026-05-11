@@ -1,46 +1,32 @@
 let sidebarCollapseDone = false;
 
-// 页面加载完成后执行初始化函数
 document.addEventListener('DOMContentLoaded', function () {
-    
-    // 加载线路数据
-    fetch('./data/lines.json')
-        .then(response => response.json())
-        .then(data => {
-            window.lines = data.lines;
-            // 加载network.json
-            fetch('./data/network.json')
-                .then(networkResponse => networkResponse.json())
-                .then(networkData => {
-                    window.stationsNetwork = networkData.stations;
-                    fetch('strings.json')
-                        .then(stringsResponse => stringsResponse.json())
-                        .then(stringsData => {
-                            window.strings = stringsData;
-                            // 加载列车信息数据
-                            fetch('./data/trains_info.json')
-                                .then(trainsInfoResponse => trainsInfoResponse.json())
-                                .then(trainsInfoData => {
-                                    window.trainsInfo = trainsInfoData.trains;
-                                    // 初始化PositionUtils模块
-                                    if (typeof PositionUtils !== 'undefined') {
-                                        PositionUtils.init({
-                                            trainsInfo: window.trainsInfo,
-                                            stationsNetwork: window.stationsNetwork,
-                                            lines: window.lines,
-                                            strings: window.strings,
-                                            lang: lang
-                                        });
-                                    }
-                                    init();
-                                })
-                                .catch(error => console.error('Error loading trains info data:', error));
-                        })
-                    .catch(error => console.error('Error loading Language data:', error));
-                })
-                .catch(error => console.error('Error loading network data:', error));
+    const loadLines = fetch('./data/lines.json').then(r => r.json());
+    const loadNetwork = typeof TrainDataSource !== 'undefined'
+        ? TrainDataSource.loadNetworkData()
+        : fetch('./data/network.json').then(r => r.json());
+    const loadStrings = fetch('strings.json').then(r => r.json());
+    const loadTrainsInfo = fetch('./data/trains_info.json').then(r => r.json());
+
+    Promise.all([loadLines, loadNetwork, loadStrings, loadTrainsInfo])
+        .then(([linesData, networkData, stringsData, trainsInfoData]) => {
+            window.lines = linesData.lines;
+            window.stationsNetwork = networkData.stations;
+            window.strings = stringsData;
+            window.trainsInfo = trainsInfoData.trains;
+
+            if (typeof PositionUtils !== 'undefined') {
+                PositionUtils.init({
+                    trainsInfo: window.trainsInfo,
+                    stationsNetwork: window.stationsNetwork,
+                    lines: window.lines,
+                    strings: window.strings,
+                    lang: lang
+                });
+            }
+            init();
         })
-        .catch(error => console.error('Error loading lines data:', error));
+        .catch(error => console.error('Error loading initial data:', error));
 });
 
 // 初始化函数
@@ -63,8 +49,27 @@ function init() {
     // 获取线路选择和车站显示的DOM元素
     const stationsDisplay = document.querySelector('.stations-display');
 
-    // 为selection.line-selector也添加线路选项selection-item
     const lineSelectors = document.querySelectorAll('.line-selector');
+    lineSelectors.forEach(lineSelector => {
+        const mapEntry = document.createElement('div');
+        mapEntry.className = 'selection-item map-entry';
+        mapEntry.setAttribute('style', '--current-color: #808080');
+        mapEntry.innerHTML = `
+            <div class="item-content" style="cursor:pointer;">
+                <div><span class="material-symbols-outlined" style="vertical-align:middle;">map</span></div>
+                <div class="line-name-container">
+                    <span class="line-name">${strings.lines_info.map_all_lines[lang]}</span>
+                </div>
+            </div>
+        `;
+        mapEntry.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            openMapMode();
+        });
+        lineSelector.insertBefore(mapEntry, lineSelector.firstChild);
+    });
+
     window.lines.forEach(line => {
         lineSelectors.forEach(lineSelector => {
             if (!line.id.match('-R')) {
@@ -109,10 +114,9 @@ function init() {
     loadUpdateTime();
 
     displayStations(line);
-    displayTrains();
-    // 当获取受阻时再试一次
-    
-    //setInterval(displayTrains, 5000);
+    initDataSource();
+
+    initMapMode();
 
     const shareBtn = document.querySelector('.share-btn');
     shareBtn.title = strings.lines_info.share_route[lang];
@@ -226,834 +230,488 @@ function getStationCode(displayName) {
 }
 
 let offlineToastShown = false;
+let exampleToastShown = false;
 
 let dataCount = 0;
 let capturedData = null;
 
-// 显示列车信息
-function displayTrains() {
-    // 清除现有的列车元素
+function isMaintenanceWindow() {
+    const now = new Date();
+    const utcH = now.getUTCHours();
+    const utcM = now.getUTCMinutes();
+    return utcH === 20 && utcM <= 15;
+}
+
+function initDataSource() {
+    if (typeof TrainDataSource !== 'undefined') {
+        TrainDataSource.on('online', function () {
+            offlineToastShown = false;
+            exampleToastShown = false;
+        });
+
+        TrainDataSource.on('data', function (payload) {
+            handleTrainsUpdate(payload);
+        });
+
+        TrainDataSource.on('offline', function () {
+            if (!offlineToastShown) {
+                let msg = strings.lines_info.loading[lang];
+                if (isMaintenanceWindow()) {
+                    msg += strings.lines_info.server_maintaining[lang];
+                }
+                showToast(msg);
+                offlineToastShown = true;
+            }
+        });
+
+        TrainDataSource.on('fallback_success', function () {
+            if (!exampleToastShown) {
+                showToast(strings.trains_info.loading_example_data[lang], 5000);
+                exampleToastShown = true;
+            }
+        });
+
+        TrainDataSource.start();
+    } else {
+        displayTrains();
+    }
+}
+
+function handleTrainsUpdate(payload) {
     document.querySelectorAll('.train-item').forEach(el => el.remove());
     document.querySelectorAll('.player-count-container').forEach(el => el.remove());
 
     if (!window.lines || !window.stationsNetwork) return;
-
     const trainsContainer = document.querySelector('.stations-display');
     if (!trainsContainer) return;
 
-    // 加载列车数据
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', 'https://track.nitrogen.hydcraft.cn/api/trains.rt', true);
-    // 如无法加载则提示离线
-    xhr.onerror = function () {
-        if (offlineToastShown === false) {
-            let maintainingToast = '';
-            // 当时间在北京时间4:00-4:10 之间显示提示
-            if (new Date().getUTCHours() == 20 && new Date().getUTCMinutes() <= 10 ) {
-                maintainingToast = strings.lines_info.server_maintaining[lang];
-            }
-            showToast(strings.lines_info.loading[lang] + maintainingToast);
-            offlineToastShown = true;
-        }
-        setTimeout(function () {
-            displayTrains();
-        }, 5000);
-        return;
+    let data = payload;
+    if (!data || !data.trains || !Array.isArray(data.trains)) return;
+
+    const isValidTrain = (train) => {
+        return train && typeof train === 'object' && train.name && train.cars &&
+               Array.isArray(train.cars) && train.cars.length > 0 &&
+               train.cars[0].leading && train.cars[0].leading.location;
     };
+    data.trains = data.trains.filter(isValidTrain);
+    if (data.trains.length === 0) return;
 
-    xhr.onreadystatechange = function () {
-        if (xhr.status === 200) {
-            offlineToastShown = false;
-            // 解析服务器发送的数据，移除前缀'data:'并解析JSON
-            let rawData = xhr.responseText.replace(/^data:/, '');
-            // 移除所有空白字符（包括换行符、空格等）和注释
-            rawData = rawData.replace(/[$\s\*\/]+/g, '');
+    if (!capturedData) {
+        try {
+            capturedData = structuredClone(data);
+            capturedData.timestamp = Date.now();
+        } catch (e) {
+            capturedData = JSON.parse(JSON.stringify(data));
+            capturedData.timestamp = Date.now();
+        }
+    }
 
-            // 手动解析 raw data，提取最后一个有效的 JSON 字符串
-            let jsonStrings = [];
-            let startIndex = -1;
-            let depth = 0;
+    processTrainsData(data);
+}
 
+function processTrainsData(data) {
+    const trainsContainer = document.querySelector('.stations-display');
+    if (!trainsContainer) return;
 
-            for (let i = 0; i < rawData.length; i++) {
-                const char = rawData[i];
-                
-                if (char === '{' && depth++ === 0) {
-                    startIndex = i;
-                } else if (char === '}' && --depth === 0 && startIndex !== -1) {
-                    jsonStrings.push(rawData.substring(startIndex, i + 1));
-                    startIndex = -1;
-                }
+    document.querySelectorAll('.train-item').forEach(el => el.remove());
+
+    data.trains.forEach(train => {
+        if (!train || !train.name || !train.cars || !Array.isArray(train.cars) || train.cars.length === 0) return;
+        if (!train.cars[0].leading || !train.cars[0].leading.location) return;
+
+        let closestTrackDistance = Infinity;
+        let currentTrack = null;
+        let trackProgress = 0;
+        let carDirection = '';
+        let closestSegmentDirection = null;
+        let isTrainAtStation = false;
+
+        let carPos = train.cars[0].leading.location;
+        let isStopped = train.stopped === 'true';
+
+        let direction = getDirection(train.name, carPos, isStopped);
+
+        let stationTrainItem = null;
+        let trackItem = null;
+
+        const isGXTrain = train.name.startsWith('GX');
+        let isStationInCurrentLine = false;
+
+        if (isGXTrain) {
+            const currentLine = window.lines.find(line => line.id === getActiveLineId());
+            if (currentLine) {
+                const gxCheck = detectTrainAtStation(train, currentLine, { atStationThreshold: 200 });
+                isStationInCurrentLine = gxCheck.isAtStation;
             }
+        }
 
-            // 尝试解析每个 JSON 字符串，取最后一个有效的结果
-            let data = null;
-            let lastError = null;
-            if (jsonStrings && jsonStrings.length > 0) {
-                for (let i = 0; i < jsonStrings.length; i++) {
+        const activeLine = window.lines.find(line => line.id === getActiveLineId());
+        const stationResult = detectTrainAtStation(train, activeLine, {
+            atStationThreshold: 100,
+            isGXTrain,
+            isStationInCurrentLine
+        });
+
+        if (stationResult.isAtStation) {
+            isTrainAtStation = true;
+
+            stationTrainItem = document.createElement('div');
+            stationTrainItem.className = 'train-item';
+
+            stationTrainItem.innerHTML = `
+                <span class="material-symbols-outlined train-icon">
+                directions_subway
+                </span>
+                <span class="train-name">${train.name}</span>
+                <span class="platform">${stationResult.platform} </span>
+            `;
+
+            const stationCode = stationResult.stationNode.code;
+            const stationElement = document.querySelectorAll('.station-list-item');
+            stationElement.forEach(element => {
+                const stationName = element.querySelector('.station-name').textContent;
+                if (stationName === getStationName(stationCode, lang)) {
+                    const trainContainer = element.querySelector('.train-container');
+                    if (trainContainer) {
+                        trainContainer.appendChild(stationTrainItem);
+                    }
+                }
+            });
+
+            checkAndAddWarningSign(train, stationTrainItem, true);
+        }
+
+        if (!isTrainAtStation) {
+            window.lines.forEach(line => {
+                const activeLineId = getActiveLineId();
+                if (line.id !== activeLineId) return;
+                line.route.filter(node => node.type === 'track').forEach((track, index) => {
+                    for (let i = 0; i < track.nodes.length - 1; i++) {
+                        const v = track.nodes[i];
+                        const w = track.nodes[i + 1];
+                        const distance = distanceFromSegment(carPos, v, w);
+
+                        if (distance < closestTrackDistance && distance <= 100) {
+                            closestTrackDistance = distance;
+                            const currentLine = line.id;
+                            currentTrack = { currentLine, track, index };
+                            closestSegmentDirection = [(w.x - v.x), (w.z - v.z)];
+
+                            const upwardDistance = calculateTotalDistance(carPos, track, index);
+                            const segmentDistance = calculateTotalDistance(track.nodes[track.nodes.length - 1], track, track.nodes.length - 1);
+                            trackProgress = upwardDistance / segmentDistance;
+                        }
+                    }
+                });
+            });
+
+            if (closestSegmentDirection) {
+                const magDirection = Math.sqrt(direction[0] ** 2 + direction[1] ** 2);
+                const magTrackDirection = Math.sqrt(closestSegmentDirection[0] ** 2 + closestSegmentDirection[1] ** 2);
+
+                if (magDirection === 0 || magTrackDirection === 0) {
                     try {
-                        //console.log (`解析第 ${i} 个 JSON`);
-                        data = JSON.parse(jsonStrings[i]);
-                        dataCount++;
-                        lastError = null; // 清除错误记录
+                        const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                        const currentTrainData = allTrainsData[train.name];
+                        if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
+                            carDirection = currentTrainData.direction;
+                        } else {
+                            if (typeof PositionUtils !== 'undefined') {
+                                carDirection = PositionUtils.resolveDirectionFromSpeed(train.name, 'unknown');
+                            } else {
+                                carDirection = 'unknown';
+                            }
+                        }
                     } catch (e) {
-                        console.error(`解析第 ${i} 个 JSON 失败:`, e);
-                        lastError = e; // 记录最后一个错误
+                        carDirection = 'unknown';
                     }
-                }
-            } else {
-                console.error('未找到有效的 JSON 数据');
-            }
-
-            // 如果解析失败，尝试更灵活的解析方法
-            if (!data && rawData) {
-                try {
-                    // 使用函数方式创建 JSON 对象作为最后的尝试
-                    let cleanedRawData = rawData
-                        .replace(/(['"])?([a-zA-Z0-9_]+)(['"]):/g, '"$2":') // 确保键名有引号
-                        .replace(/:([^,"}\]]+)$/gm, ': "$1"') // 修复末尾值
-                        .replace(/(["'])$(?:(?=(\\?))\2.)*?\1/g, match => match.replace(/\n/g, '\\n')); // 转义换行符
-
-                    data = new Function('return ' + cleanedRawData)();
-                } catch (fallbackError) {
-                    console.error('备用解析失败:', fallbackError);
-                    // 如果有之前的解析错误，也一并记录
-                    if (lastError) {
-                        console.error('之前的解析错误:', lastError);
-                    }
-                    //showToast(strings.lines_info.json_parse_error?.[lang] || 'JSON解析错误');
-                    return;
-                }
-            }
-
-            // 验证数据结构
-            if (data) {
-                if (typeof data === 'object' && data.trains && Array.isArray(data.trains)) {
-                    // 验证列车数据结构的有效性
-                    const isValidTrain = (train) => {
-                        return train && 
-                               typeof train === 'object' && 
-                               train.name && 
-                               train.cars && 
-                               Array.isArray(train.cars) && 
-                               train.cars.length > 0 &&
-                               train.cars[0].leading && 
-                               train.cars[0].leading.location;
-                    };
-                    
-                    // 过滤掉无效的列车数据
-                    data.trains = data.trains.filter(isValidTrain);
-                    
-                    //console.log(`有效列车数据数量: ${data.trains.length}`);
                 } else {
-                    console.error('解析成功但数据结构无效');
-                    //showToast(strings.lines_info.invalid_data_format?.[lang] || '数据格式错误');
-                    return;
-                }
-                
-                if (data && !capturedData) {
-                    try {
-                        capturedData = structuredClone(data);
-                        // 为capturedData添加一个时间戳
-                        capturedData.timestamp = Date.now();
-                    } catch (cloneError) {
-                        console.warn('structuredClone失败，使用替代方法:', cloneError);
+                    const cosTheta = (direction[0] * closestSegmentDirection[0] + direction[1] * closestSegmentDirection[1]) / (magDirection * magTrackDirection);
+
+                    if (cosTheta > 0.5) {
+                        carDirection = 'down';
+                    } else if (cosTheta < -0.5) {
+                        carDirection = 'up';
+                    } else {
+                        carDirection = 'unknown';
                         try {
-                            capturedData = JSON.parse(JSON.stringify(data));
-                            capturedData.timestamp = Date.now();
-                        } catch (jsonError) {
-                            console.error('JSON序列化失败:', jsonError);
-                            capturedData = data;
-                            capturedData.timestamp = Date.now();
+                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                            const currentTrainData = allTrainsData[train.name];
+                            if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
+                                carDirection = currentTrainData.direction;
+                            } else {
+                                if (typeof PositionUtils !== 'undefined') {
+                                    carDirection = PositionUtils.resolveDirectionFromSpeed(train.name, carDirection);
+                                }
+                            }
+                        } catch (e) {
+                            // 保留 'unknown'
                         }
                     }
                 }
-
-                // 不再筛选对应线路列车以及GX开头的列车
-                if (data && data.trains && Array.isArray(data.trains)) {
-                    // 先清理现有的列车元素，避免重复
-                    document.querySelectorAll('.train-item').forEach(el => el.remove());
-                    
-                    data.trains
-                        .filter(train => { 
-                            // 检查列车数据是否完整
-                            if (!train || !train.name || !train.cars || !Array.isArray(train.cars) || train.cars.length === 0) {
-                                console.warn('过滤掉不完整的列车数据:', train);
-                                return false; // 过滤掉不完整的列车数据
-                            }
-                            
-                            if (!train.cars[0].leading || !train.cars[0].leading.location) {
-                                console.warn('过滤掉缺少位置信息的列车:', train.name);
-                                return false; // 过滤掉缺少位置信息的列车
-                            }
-                            
-                            const activeLineId = getActiveLineId();
-                            return train.name;
-                            //return train.name.startsWith(activeLineId) || train.name.startsWith('GX');
-                        })
-                        .forEach(train => {
-                            //console.log('Processing train:', train.name);
-                        //data.trains.forEach(train => {
-                            // 检查是否在轨道上
-                            let closestTrackDistance = Infinity;
-                            let currentTrack = null;
-                            let trackProgress = 0;
-                            let carDirection = '';
-                            let closestSegmentDirection = null; // 保存最近线段的方向
-                            let isTrainAtStation = false; // 标记列车是否在车站
-                            //train.cars.forEach((car, index) => {
-                                //if (index < 1) {
-                                    // 获取列车初始位置并进行深拷贝，避免后续随原数据变化
-                                    let carPos = train.cars[0].leading.location;
-                                    let isStopped = train.stopped === 'true';
-
-                                    // 将列车在一段时间内位移的方向定义为行驶方向
-                                    let direction = getDirection(train.name, carPos, isStopped);
-                                    
-                                    // 首先检查列车是否在车站
-                                    let closestStationDistance = Infinity;
-                                    let platform = '';
-                                    let stationTrainItem = null;
-                                    
-                                    // 检查是否为GX列车且在车站内
-                                    const isGXTrain = train.name.startsWith('GX');
-                                    let isStationInCurrentLine = false;
-                                    
-                                    // 如果是GX列车，先检查当前线路是否包含该车站
-                                    if (isGXTrain) {
-                                        const currentLine = window.lines.find(line => line.id === getActiveLineId());
-                                        if (currentLine) {
-                                            // 检查当前线路是否包含列车所在车站
-                                            for (const station of currentLine.route.filter(node => node.type === 'station')) {
-                                                const stationCoords = findStationCoordinates(station.code);
-                                                for (const coord of stationCoords) {
-                                                    const distance = Math.sqrt(
-                                                        Math.pow(carPos.x - coord.x, 2) + 
-                                                        Math.pow(carPos.y - coord.y, 2) + 
-                                                        Math.pow(carPos.z - coord.z, 2)
-                                                    );
-                                                    if (distance <= 200) {
-                                                        isStationInCurrentLine = true;
-                                                        break;
-                                                    }
-                                                }
-                                                if (isStationInCurrentLine) break;
-                                            }
-                                        }
-                                    }
-                                    
-                                    window.lines.forEach(line => {
-                                        if (line.id !== getActiveLineId()) return;
-                                        line.route.filter(node => node.type === 'station').forEach(station => {
-                                            const stationCoords = findStationCoordinates(station.code);
-                                            stationCoords.forEach(coord => {
-                                                // 确保坐标数据存在
-                                                if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
-                                                    return;
-                                                }
-                                                
-                                                const distance = Math.sqrt(
-                                                    Math.pow(carPos.x - coord.x, 2) + 
-                                                    Math.pow(carPos.y - coord.y, 2) + 
-                                                    Math.pow(carPos.z - coord.z, 2)
-                                                );
-                                                if (distance <= 200 && distance < closestStationDistance) {
-                                                    closestStationDistance = distance;
-                                                    // 对于GX列车，如果不在当前线路停靠，则显示省略号
-                                                    if (isGXTrain && !isStationInCurrentLine) {
-                                                        platform = '…';
-                                                    } else {
-                                                        // 将coord.name去掉station.code作为站台名
-                                                        platform = coord.name.replace(station.code, "");
-
-                                                        if (train.stopped === 'false') {
-                                                            // 如果列车未到站则去除站台编号中的字母
-                                                            platform = platform.replace(/[A-Za-z]/g, '') + '…';
-                                                        }
-                                                    }
-                                                }
-                                            });
-                                        });
-                                    });
-                                    
-                                    // 如果列车在车站范围内，则标记为在车站
-                                    if (closestStationDistance <= 140) {
-                                        isTrainAtStation = true;
-                                        
-                                        // 创建列车元素并放置到对应的车站
-                                        stationTrainItem = document.createElement('div');
-                                        stationTrainItem.className = 'train-item';
-                                        
-                                        // 根据列车方向确定站台编号
-                                        let platformWithDirection = platform;
-                                        /*if (carDirection === 'down') {
-                                            // 下行方向显示为A站台
-                                            platformWithDirection = platform.replace(/[A-Za-z]/g, '') + 'A';
-                                        } else if (carDirection === 'up') {
-                                            // 上行方向显示为B站台
-                                            platformWithDirection = platform.replace(/[A-Za-z]/g, '') + 'B';
-                                        }*/
-                                        // 如果方向未知，则保持原始platform值
-                                        
-                                        stationTrainItem.innerHTML = `
-                                            <span class="material-symbols-outlined">
-                                            directions_subway
-                                            </span>
-                                            <span class="train-name">${train.name}</span>
-                                            <span class="platform">${platformWithDirection} </span>
-                                        `;
-                                        
-                                        // 将列车放置到对应车站
-                                        window.lines.forEach(line => {
-                                            if (line.id !== getActiveLineId()) return;
-                                            line.route.filter(node => node.type === 'station').forEach(station => {
-                                                const stationCoords = findStationCoordinates(station.code);
-                                                let filteredCoords = stationCoords.filter(coord => 
-                                                    coord.name.replace(station.code, "") === platform);
-                                                
-                                                filteredCoords.forEach(coord => {
-                                                    // 确保坐标数据存在
-                                                    if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
-                                                        return;
-                                                    }
-                                                    
-                                                    const distance = Math.sqrt(
-                                                        Math.pow(carPos.x - coord.x, 2) + 
-                                                        Math.pow(carPos.y - coord.y, 2) + 
-                                                        Math.pow(carPos.z - coord.z, 2)
-                                                    );
-                                                    if (distance <= 200) {
-                                                        // 找到对应车站的DOM节点
-                                                        const stationElement = document.querySelectorAll('.station-list-item');
-                                                        stationElement.forEach(element => {
-                                                            const stationName = element.querySelector('.station-name').textContent;
-                                                            if (stationName === getStationName(station.code,lang)) {
-                                                                const trainContainer = element.querySelector('.train-container');
-                                                                if (trainContainer) {
-                                                                    trainContainer.appendChild(stationTrainItem);
-                                                                }
-                                                            }
-                                                        });
-                                                    }
-                                                });
-                                            });
-                                        });
-                                        
-                                        // 检查是否需要添加警告标志
-                                        checkAndAddWarningSign(train, stationTrainItem, true);
-                                    }
-                                    
-                                    // 只有当列车不在车站范围内时，才执行轨道位置检测
-                                    if (!isTrainAtStation) {
-                                        window.lines.forEach(line => {
-                                            const activeLineId = getActiveLineId();
-                                            const activeLineName = getLineName(activeLineId);
-                                            if (line.id !== activeLineId) return;
-                                            line.route.filter(node => node.type === 'track').forEach((track, index) => {
-                                                for (let i = 0; i < track.nodes.length - 1; i++) {
-                                                    const v = track.nodes[i];
-                                                    const w = track.nodes[i + 1];
-                                                    const distance = distanceFromSegment(carPos, v, w);
-                                                    
-                                                    // 添加调试日志
-                                                    //console.log(`列车 ${train.name} 到轨道段[${index}][${i}]的距离: ${distance}`);
-                                                    
-                                                    //console.log(distance);
-                                                    if (distance < closestTrackDistance && distance <= 100) { // 增加距离阈值到100
-                                                        closestTrackDistance = distance;
-                                                        const currentLine = line.id;
-                                                        currentTrack = { currentLine, track, index };
-                                                        //console.log('track:',currentTrack);
-
-                                                        // 保存最近线段的方向向量
-                                                        closestSegmentDirection = [(w.x - v.x), (w.z - v.z)];
-                                                        
-                                                        // 计算此时列车离上一个节点的距离
-                                                        const upwardDistance = calculateTotalDistance(carPos, track, index);
-                                                        //console.log('track.nodes[track.nodes.length]: ',track.nodes[track.nodes.length - 1]);
-                                                        const segmentDistance = calculateTotalDistance(track.nodes[track.nodes.length - 1], track, track.nodes.length - 1);
-                                                        trackProgress = upwardDistance / segmentDistance;
-                                                        //console.log(train.name,'trackProgress: ',trackProgress,'distance: ',upwardDistance,'/',segmentDistance);
-                                                    }
-                                                }
-                                                //console.log('track distance: ',closestTrackDistance, line.id, index);
-                                            });
-                                        });
-                                        
-                                        /*console.log(`列车 ${train.name} 轨道检测结果:`, {
-                                            isTrainAtStation: isTrainAtStation,
-                                            closestTrackDistance: closestTrackDistance,
-                                            currentTrack: currentTrack,
-                                            closestSegmentDirection: closestSegmentDirection
-                                        });*/
-                                        
-                                        // 只有找到最近的轨道段时才计算方向
-                                        if (closestSegmentDirection) {
-                                            // 计算方向向量的模长
-                                            const magDirection = Math.sqrt(direction[0] ** 2 + direction[1] ** 2);
-                                            // 计算轨道方向向量的模长
-                                            const magTrackDirection = Math.sqrt(closestSegmentDirection[0] ** 2 + closestSegmentDirection[1] ** 2);
-
-                                            // 添加调试日志
-                                            /*console.log(`列车 ${train.name} 方向计算:`, {
-                                                directionVector: direction,
-                                                trackDirectionVector: closestSegmentDirection,
-                                                magDirection: magDirection,
-                                                magTrackDirection: magTrackDirection
-                                            });*/
-
-                                            // 防止除以零
-                                            if (magDirection === 0 || magTrackDirection === 0) {
-                                                // 如果任意向量长度为0，则无法计算角度，默认设为 'unknown'
-                                                // 但我们可以尝试从localStorage中获取之前的方向
-                                                try {
-                                                    const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                                    const currentTrainData = allTrainsData[train.name];
-                                                    if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
-                                                        carDirection = currentTrainData.direction;
-                                                        //console.log(`列车 ${train.name} 无法计算方向，继承之前方向: ${carDirection}`);
-                                                    } else {
-                                                        carDirection = 'unknown';
-                                                        //console.log(`列车 ${train.name} 无法计算方向且无历史方向，设为 unknown`);
-                                                    }
-                                                } catch (e) {
-                                                    carDirection = 'unknown';
-                                                    //console.log(`列车 ${train.name} 无法计算方向且读取历史数据失败，设为 unknown`);
-                                                }
-                                            } else {
-                                                // 计算点积
-                                                const dotProd = direction[0] * closestSegmentDirection[0] + direction[1] * closestSegmentDirection[1];
-                                                const cosAngle = dotProd / (magDirection * magTrackDirection);
-                                                
-                                                // 添加调试日志
-                                                /*console.log(`列车 ${train.name} 点积计算:`, {
-                                                    dotProduct: dotProd,
-                                                    cosAngle: cosAngle
-                                                });*/
-
-                                                // 直接比较余弦值，避免调用 Math.acos 提升性能且增加数值稳定性
-                                                if (cosAngle > 0.1) {  // 增加一点容差
-                                                    carDirection = 'down';  // 当余弦值大于0.1，表示夹角小于约84度
-                                                } else if (cosAngle < -0.1) {  // 增加负值判断
-                                                    carDirection = 'up';    // 当余弦值小于-0.1，表示夹角大于约96度
-                                                } else {
-                                                    // 余弦值在-0.1到0.1之间，方向不确定
-                                                    carDirection = 'unknown';
-                                                    //console.log(`列车 ${train.name} 方向不确定，余弦值接近0: ${cosAngle}`);
-                                                }
-                                                //console.log(`列车 ${train.name} 方向计算结果: ${carDirection}`);
-                                            }
-                                        } else {
-                                            // 如果没有找到最近的轨道段，则无法确定方向
-                                            // 尝试从localStorage中获取之前的方向
-                                            try {
-                                                const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                                const currentTrainData = allTrainsData[train.name];
-                                                if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
-                                                    carDirection = currentTrainData.direction;
-                                                   // console.log(`列车 ${train.name} 未找到最近轨道段，继承之前方向: ${carDirection}`);
-                                                } else {
-                                                    carDirection = 'unknown';
-                                                    //console.log(`列车 ${train.name} 未找到最近轨道段且无历史方向，设为 unknown`);
-                                                }
-                                            } catch (e) {
-                                                carDirection = 'unknown';
-                                                //console.log(`列车 ${train.name} 未找到最近轨道段且读取历史数据失败，设为 unknown`);
-                                            }
-                                        }
-
-                                        // 处理backwards属性
-                                        if (train.backwards === 'true') { 
-                                            if (carDirection !== 'unknown') {
-                                                carDirection = carDirection === 'up' ? 'down' : 'up';
-                                                //console.log(`列车 ${train.name} backwards属性为true，方向调整为: ${carDirection}`);
-                                            } else {
-                                                //console.log(`列车 ${train.name} backwards属性为true但方向未知，无法调整`);
-                                            }
-                                        }
-
-                                        // 优先考虑速度方向来确定列车方向
-                                        try {
-                                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                            const currentTrainData = allTrainsData[train.name];
-                                            
-                                            if (currentTrainData && currentTrainData.speed !== undefined && !currentTrainData.isSpeedLost) {
-                                                // 如果有有效速度信息
-                                                if (currentTrainData.speed > 5) { // 速度大于5km/h
-                                                    if (currentTrainData.speed > (currentTrainData.lastReportedSpeed || 0) + 10) {
-                                                        // 如果速度突然增加超过10km/h，可能表示方向改变
-                                                        //console.log(`列车 ${train.name} 检测到速度显著增加，可能方向改变`);
-                                                        // 这里可以添加额外的逻辑来处理方向变化
-                                                    }
-                                                    
-                                                    // 使用速度方向作为最终方向
-                                                    if (carDirection === 'unknown' && currentTrainData.direction !== 'unknown') {
-                                                        carDirection = currentTrainData.direction;
-                                                        //console.log(`列车 ${train.name} 用速度方向替代未知方向: ${carDirection}`);
-                                                    }
-                                                }
-                                            }
-                                        } catch (e) {
-                                            console.warn('使用速度方向确定列车方向时出错:', e);
-                                        }
-                                        
-                                        // 添加列车运行方向信息（与线路默认方向一致为下行，相反为上行）
-                                        const trainDirection = carDirection === 'down' ? '下行' : carDirection === 'up' ? '上行' : '未知方向';
-                                        
-                                        // 保存列车方向信息到localStorage
-                                        try {
-                                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                            if (!allTrainsData[train.name]) {
-                                                allTrainsData[train.name] = {};
-                                            }
-                                            // 修复方向显示问题，统一使用"上行/下行"的定义
-                                            // 与轨道默认方向一致为下行（down），相反为上行（up）
-                                            // unknown表示无法确定方向
-                                            allTrainsData[train.name].direction = carDirection;
-                                            // 添加方向文本表示，用于tooltip显示
-                                            allTrainsData[train.name].directionText = trainDirection;
-                                            localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
-                                            //console.log(`列车 ${train.name} 方向信息已保存: ${carDirection} (${trainDirection})`);
-                                        } catch (e) {
-                                            console.warn('保存列车方向信息时出错:', e);
-                                        }
-
-                                    }
-
-                                    // 如果找到轨道，则在轨道上显示列车
-                                    if (currentTrack && !isTrainAtStation) {
-                                        const activeLineId = getActiveLineId();
-                                        const activeLineName = getLineName(activeLineId);
-                                        //console.log(activeLineId);
-                                        // 根据currentTrack.currentLine作为id查到的线路名称是否和activeLineName相匹配
-                                        if (currentTrack.currentLine === activeLineId) {
-                                            // 如果在轨道上，找到轨道的DOM元素并将列车信息插入进去，也就是第currentTrack.index个.station-line-block类
-                                            const trackElements = document.querySelectorAll('.station-line');
-                                            if (trackElements.length > currentTrack.index) {
-                                                const trackElement = trackElements[currentTrack.index];
-                                                //console.log(trackElement);
-                                                // 这里需要实现具体的逻辑来定位正确的轨道位置
-                                                // 可以基于当前轨道的线路颜色等特征匹配DOM上的元素
-                                                // 然后创建列车元素并将其放入.track-container中
-
-                                                const trainItem = document.createElement('div');
-                                                trainItem.className = 'train-item';
-                                                // 修复方向显示，使显示与实际方向一致
-                                                // down表示与轨道默认方向一致，显示为↓；up表示与轨道默认方向相反，显示为↑
-                                                // unknown表示无法确定方向，显示为?
-                                                let directionSymbol = '';
-                                                if (carDirection === 'up') {
-                                                    directionSymbol = '↑';
-                                                } else if (carDirection === 'down') {
-                                                    directionSymbol = '↓';
-                                                } else if (carDirection === 'unknown') {
-                                                    directionSymbol = '?';
-                                                }
-                                                
-                                                //console.log(`列车 ${train.name} 创建元素，方向符号: ${directionSymbol}, 方向: ${carDirection}`);
-                                                
-                                                trainItem.innerHTML = `
-                                                    <span class="material-symbols-outlined">
-                                                    directions_subway
-                                                    </span>
-                                                    <span class="train-name">${directionSymbol} ${train.name}</span>
-                                                `;
-                                                // 将列车项加入容器
-
-                                                // 如果匹配，则将trainItem加入trainContainer
-                                                const trainContainer = trackElement.querySelectorAll('.train-container');
-                                                trainContainer.forEach(container => { 
-                                                    container.appendChild(trainItem);
-                                                    //trainItem.style.marginTop = trackProgress * 60 + 'px' ;
-                                                    //trainItem.style.position = 'relative';
-                                                    //trainItem.style.top = '40%' ;
-                                                    //trainItem.style.bottom = '40%' ;
-                                                });
-                                                
-                                                // 检查是否需要添加警告标志
-                                                checkAndAddWarningSign(train, trainItem, false);
-                                                
-                                                // 检查列车是否接近关注的玩家
-                                                try {
-                                                    // 从localStorage获取关注的玩家列表
-                                                    const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
-                                                    if (prefs.followPlayers && 
-                                                        typeof PositionUtils !== 'undefined' && typeof PositionUtils.checkTrainApproachingPlayers === 'function') {
-                                                        console.log('通过XHR检查列车接近玩家');
-                                                        PositionUtils.checkTrainApproachingPlayers(train, prefs.followPlayers);
-                                                    }
-                                                } catch (error) {
-                                                    console.error('检查列车接近玩家时出错:', error);
-                                                }
-                                                
-                                                // 更新已存在的列车方向箭头
-                                                updateTrainDirectionArrows();
-                                            }
-                                        }
-                                    }
-                        
-                            // 对轨道上的列车按距离上行车站由近到远排序
-                            sortTrainsOnTracks();
-                            
-                            const trainItems = document.querySelectorAll('.train-item');
-                            //console.log('train-items: ', trainItems);
-                            if (trainItems.length === 0) {
-                                //console.warn('没有找到.train-item元素');
-                            }
-
-                            // 使用Map来跟踪已经添加过事件监听器的列车元素
-                            const trainItemEventMap = new Map();
-                            
-                            // 更新完列车信息后，获取并显示玩家信息
-                            PositionUtils.fetchAndDisplayPlayers((players) => {
-                                // 使用PositionUtils模块显示玩家信息
-                                if (typeof PositionUtils !== 'undefined') {
-                                    PositionUtils.displayPlayers(players, () => prefs.showPlayers);
-                                }
-                            });
-                            trainItems.forEach(item => { 
-                                // 需要和train的信息对应
-                                const trainNameElement = item.querySelector('.train-name');
-                                if (!trainNameElement) return;
-                                
-                                const fullTrainName = trainNameElement.textContent;
-                                // 检查是否已经为这个列车元素添加过事件监听器
-                                if (trainItemEventMap.has(fullTrainName)) {
-                                    return; // 已经添加过事件监听器，跳过
-                                }
-                                
-                                // 标记已经为这个列车元素添加过事件监听器
-                                trainItemEventMap.set(fullTrainName, true);
-                                
-                                // 添加点击事件监听器，跳转到列车详细信息页面
-                                item.addEventListener('click', function() {
-                                    // 提取纯列车名称（去除方向符号）
-                                    const cleanTrainName = fullTrainName.replace(/[↑↓? ]/g, '');
-                                    window.open(`trains_info.html?q=${cleanTrainName}`, '_self');
-                                });
-                                
-                                if (fullTrainName.includes(train.name)){
-                                    item.addEventListener('mouseover', function() { 
-                                        // 移除现有的train-tooltip
-                                        const existingTooltip = document.querySelectorAll('.train-tooltip');
-                                        existingTooltip.forEach(tooltip => { 
-                                            //tooltip.remove();
-                                        });
-
-                                        const trainTooltip = document.createElement('div');
-                                        trainTooltip.classList.add('tooltip');
-                                        trainTooltip.classList.add('train-tooltip');
-                                        
-                                        trainTooltip.innerHTML = '';
-
-                                        const trainTooltipTitle = document.createElement('h4');
-                                        trainTooltipTitle.className = 'train-tooltip-title';
-                                        trainTooltipTitle.textContent = train.name;
-                                        trainTooltip.appendChild(trainTooltipTitle);
-
-                                        train.cars.forEach(car => {
-                                            const carName = car.id;
-                                            const carType = car.type;
-                                            const carPos = train.backwards === 'true' ? car.trailing.location : car.leading.location;
-                                            //console.log(carName, carType, carPos);
-                                            const carPosX = Math.round(carPos.x, 2);
-                                            const carPosZ = Math.round(carPos.z, 2);
-                                            const locationItem = document.createElement('div');
-                                            locationItem.classList.add('location-item'); 
-                                            locationItem.innerHTML = `
-                                                <div class="car-name">${carName}</div>
-                                                <div class="car-pos">(${carPosX},${carPosZ})</div>
-                                            `;
-                                            trainTooltip.appendChild(locationItem);
-                                        });
-                                        item.insertBefore(trainTooltip, item.firstChild);
-
-                                        const isBackwardsElement = document.createElement("div");
-                                        isBackwardsElement.className = "is-backwards";
-                                        isBackwardsElement.textContent = train.backwards === 'true' ? strings.lines_info.going_backwards[lang] : '';
-                                        trainTooltip.appendChild(isBackwardsElement);
-                                        
-                                        // 检查列车是否在车站内（通过检查是否有.platform元素）
-                                        const platformElement = item.querySelector('.platform');
-                                        if (platformElement) {
-                                            // 车站内的列车，根据方向更新站台编号
-                                            const platformText = platformElement.textContent.trim();
-                                            let newPlatformText = platformText;
-                                            
-                                            // 从localStorage获取列车方向信息
-                                            try {
-                                                const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                                const currentTrainData = allTrainsData[train.name];
-                                                
-                                                if (currentTrainData && currentTrainData.direction !== undefined) {
-                                                    const carDirection = currentTrainData.direction;
-                                                    
-                                                    // 根据方向更新站台编号
-                                                    /*if (carDirection === 'down') {
-                                                        // 下行方向显示为A站台
-                                                        newPlatformText = platformText.replace(/[A-Za-z]/g, '') + 'A';
-                                                    } else if (carDirection === 'up') {
-                                                        // 上行方向显示为B站台
-                                                        newPlatformText = platformText.replace(/[A-Za-z]/g, '') + 'B';
-                                                    }*/
-                                                    // 如果方向未知，则保持原始platform值
-                                                    
-                                                    // 更新站台编号
-                                                    platformElement.textContent = newPlatformText + ' ';
-                                                }
-                                            } catch (e) {
-                                                console.warn('更新车站内列车站台编号时出错:', e);
-                                            }
-                                            
-                                            // 车站内的列车不显示方向箭头
-                                        } else {
-                                            // 添加列车运行方向信息
-                                            const directionElement = document.createElement("div");
-                                            directionElement.className = "train-direction";
-                                            // 确定列车运行方向文本，修复方向显示逻辑
-                                            // up表示与轨道默认方向相反，为上行；down表示与轨道默认方向一致，为下行
-                                            // unknown表示无法确定方向
-                                            let directionText = '';
-                                            if (carDirection === 'up') {
-                                                directionText = strings.lines_info.running_direction_up[lang] || '上行';
-                                            } else if (carDirection === 'down') {
-                                                directionText = strings.lines_info.running_direction_down[lang] || '下行';
-                                            } else if (carDirection === 'unknown') {
-                                                directionText = strings.lines_info.unknown_direction[lang] || '未知方向';
-                                            }
-                                            directionElement.textContent = directionText;
-                                            //trainTooltip.appendChild(directionElement);
-                                        }
-                                        
-                                        // 从localStorage获取之前计算并存储的速度信息
-                                        try {
-                                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                            const currentTrainData = allTrainsData[train.name];
-                                            const isStopped = train.isStopped === 'true';
-                                            
-                                            if (currentTrainData && currentTrainData.speed !== undefined) {
-                                                let speed = isStopped ? 0 : currentTrainData.speed.toFixed();
-                                                const speedElement = document.createElement("div");
-                                                speedElement.className = "train-speed";
-                                                
-                                                // 如果速度丢失，则继承之前的速度值
-                                                if (currentTrainData.isSpeedLost && currentTrainData.prevSpeed !== undefined) {
-                                                    speed = currentTrainData.prevSpeed.toFixed();
-                                                }
-                                                
-                                                speedElement.textContent = (strings.lines_info.speed[lang] + speed + 'km/h');
-                                                // 如果速度丢失，则将文本不透明度调整为0.4
-                                                speedElement.style.opacity = currentTrainData.isSpeedLost ? '0.4' : '1';
-                                                trainTooltip.appendChild(speedElement);
-                                            }
-                                        } catch (e) {
-                                            console.warn('获取列车速度时出错:', e);
-                                        }
-                                        
-                                        // 添加警告原因信息
-                                        try {
-                                            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
-                                            const currentTrainData = allTrainsData[train.name];
-                                            
-                                            if (currentTrainData && currentTrainData.warningReasons && currentTrainData.warningReasons.length > 0) {
-                                                const warningReasonsElement = document.createElement("div");
-                                                warningReasonsElement.className = "warning-reasons";
-                                                warningReasonsElement.style.color = 'crimson';
-                                                warningReasonsElement.style.fontWeight = 'bold';
-                                                
-                                                let reasonsText = '! ';
-                                                currentTrainData.warningReasons.forEach(reason => {
-                                                    switch (reason) {
-                                                        case 'long_stop':
-                                                            reasonsText += strings.lines_info.warning_long_stop[lang] + '; ';
-                                                            break;
-                                                        case 'zero_speed':
-                                                            reasonsText += strings.lines_info.warning_zero_speed[lang] + '; ';
-                                                            break;
-                                                        case 'platform_conflict':
-                                                            reasonsText += strings.lines_info.warning_platform_conflict[lang] + '; ';
-                                                    }
-                                                });
-                                                
-                                                // 移除末尾的分号和空格
-                                                reasonsText = reasonsText.slice(0, -2);
-                                                warningReasonsElement.textContent = reasonsText;
-                                                trainTooltip.appendChild(warningReasonsElement);
-                                            }
-                                        } catch (e) {
-                                            console.warn('获取列车警告原因时出错:', e);
-                                        }
-
-                                        // 只显示第一个trainTooltip，其余隐藏
-                                    });
-                                    item.addEventListener('mouseout', function() { 
-                                        const trainTooltip = item.querySelector('.train-tooltip');
-                                        if (trainTooltip) {
-                                            trainTooltip.remove();
-                                        }
-                                    });
-
-                                }
-                            });
-
-                            // 更新已存在的tooltip内容
-                            updateExistingTooltips(data);
-
-                            const activeLineId = getActiveLineId();
-                            const activeLineName = getLineName(activeLineId);
-
-                            loadSegmentInfo();
-
-                            let trainNames = [];
-                            trainItems.forEach(item => {
-                                const trainName = item.querySelector('.train-name').textContent;
-                                //console.log(trainName);
-                                // 如果列车运行线路不是其所属线路或者找不到列车信息则降低不透明度
-                                const trainInfo = window.trainsInfo.find(t => t.name === trainName);
-                                if (!trainInfo || (trainInfo && trainInfo.line !== activeLineId)) {
-                                    const iconElement = item.querySelector('.train-icon');
-                                    const nameElement = item.querySelector('.train-name');
-                                    const platformElement = item.querySelector('.platform');
-                                    iconElement.style.opacity = 0.4;
-                                    nameElement.style.opacity = 0.4;
-                                    if (platformElement) { platformElement.style.opacity = 0.4; }
-                                }
-                                // 如果列车名称在trainNames中则移除
-                                if (trainNames.includes(trainName)) {
-                                    item.remove();
-                                }
-                                trainNames.push(trainName);
-                            });
-
-                            // 更新线路信息显示
-                            updateLineInfoDisplay(activeLineId);
-                    
-                        });
-                        
+            } else {
+                try {
+                    const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                    const currentTrainData = allTrainsData[train.name];
+                    if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
+                        carDirection = currentTrainData.direction;
+                    } else {
+                        if (typeof PositionUtils !== 'undefined') {
+                            carDirection = PositionUtils.resolveDirectionFromSpeed(train.name, 'unknown');
+                        } else {
+                            carDirection = 'unknown';
+                        }
                     }
-                capturedData = structuredClone(data);
-                // 为capturedData添加一个时间戳
-                capturedData.timestamp = structuredClone(Date.now());
-                
-                // 更新已存在的列车方向箭头
-                updateTrainDirectionArrows();
-            }
-        } else {
-            console.error('数据结构无效，无法处理列车信息');
-            // 即使列车数据无效，也更新线路信息
-            const activeLineId = getActiveLineId();
-            updateLineInfoDisplay(activeLineId);
-            loadSegmentInfo();
-            PositionUtils.fetchAndDisplayPlayers((players) => {
-                // 使用PositionUtils模块显示玩家信息
-                if (typeof PositionUtils !== 'undefined') {
-                    PositionUtils.displayPlayers(players, () => prefs.showPlayers);
+                } catch (e) {
+                    carDirection = 'unknown';
                 }
-            });
+            }
+
+            if (typeof PositionUtils !== 'undefined') {
+                PositionUtils.saveTrainDirection(train.name, carDirection, carDirection);
+            }
+
+            const backwards = train.backwards === 'true';
+            if (backwards) {
+                if (carDirection === 'down') carDirection = 'up';
+                else if (carDirection === 'up') carDirection = 'down';
+            }
+
+            if (currentTrack) {
+                if (carDirection === 'down') {
+                    trackProgress = 1 - trackProgress;
+                }
+                train.trackProgress = trackProgress;
+            }
+
+            if (currentTrack) {
+                const stationLineItems = document.querySelectorAll('.station-line');
+                const segmentIndex = currentTrack.index;
+                if (segmentIndex < stationLineItems.length) {
+                    const stationLine = stationLineItems[segmentIndex];
+                    const trainContainer = stationLine.querySelector('.train-container');
+                    if (trainContainer) {
+                        trackItem = document.createElement('div');
+                        trackItem.className = 'train-item';
+                        const prefs = getPreferences();
+
+                        trackItem.innerHTML = `
+                            <span class="material-symbols-outlined train-icon">
+                            directions_subway
+                            </span>
+                            <span class="train-name">${train.name}</span>
+                        `;
+
+                        if (prefs.followPlayers && typeof PositionUtils !== 'undefined' && PositionUtils.checkTrainApproachingPlayers) {
+                            try {
+                                PositionUtils.checkTrainApproachingPlayers(train, prefs.followPlayers);
+                            } catch (e) {
+                                console.warn('检查玩家接近错误:', e);
+                            }
+                        }
+
+                        trainContainer.appendChild(trackItem);
+                        checkAndAddWarningSign(train, trackItem, false);
+                    }
+                }
+            }
+
+            if (!currentTrack) {
+                const activeLineId = getActiveLineId();
+                const activeLineName = getLineName(activeLineId);
+
+                let trackItem = document.createElement('div');
+                trackItem.className = 'train-item';
+
+                trackItem.innerHTML = `
+                    <span class="material-symbols-outlined">
+                    directions_subway
+                    </span>
+                    <span class="train-name">${train.name}</span>
+                `;
+
+                trackItem.style.marginBottom = '1px';
+                trackItem.style.display = 'inline-flex';
+
+                const prefs = getPreferences();
+                if (prefs.followPlayers && typeof PositionUtils !== 'undefined' && PositionUtils.checkTrainApproachingPlayers) {
+                    try {
+                        PositionUtils.checkTrainApproachingPlayers(train, prefs.followPlayers);
+                    } catch (e) {
+                        console.warn('检查玩家接近错误:', e);
+                    }
+                }
+
+                const segmentsDisplay = document.querySelector('.segments-display');
+                if (segmentsDisplay) {
+                    if (!segmentsDisplay.querySelector('.train-container')) {
+                        const trainContainer = document.createElement('div');
+                        trainContainer.className = 'train-container';
+                        segmentsDisplay.appendChild(trainContainer);
+                    }
+                    segmentsDisplay.querySelector('.train-container').appendChild(trackItem);
+                }
+
+                checkAndAddWarningSign(train, trackItem, false);
+            }
         }
-    };
-    xhr.send();
-    //highlightTrainsForCurrentLine();
+
+        const currentTrainItem = isTrainAtStation ? stationTrainItem : trackItem;
+        if (currentTrainItem) {
+            bindTrainTooltip(currentTrainItem, train, carDirection);
+        }
+    });
+
+    updateExistingTooltips(data);
+
+    const activeLineId = getActiveLineId();
+    loadSegmentInfo();
+
+    let trainNames = [];
+    document.querySelectorAll('.train-item').forEach(item => {
+        const trainName = item.querySelector('.train-name').textContent;
+        const trainInfo = window.trainsInfo.find(t => t.name === trainName);
+        if (!trainInfo || (trainInfo && trainInfo.line !== activeLineId)) {
+            const iconElement = item.querySelector('.train-icon');
+            const nameElement = item.querySelector('.train-name');
+            const platformElement = item.querySelector('.platform');
+            if (iconElement) iconElement.style.opacity = 0.4;
+            if (nameElement) nameElement.style.opacity = 0.4;
+            if (platformElement) { platformElement.style.opacity = 0.4; }
+        }
+        if (trainNames.includes(trainName)) {
+            item.remove();
+        }
+        trainNames.push(trainName);
+    });
+
+    updateLineInfoDisplay(activeLineId);
+
+    capturedData = structuredClone(data);
+    capturedData.timestamp = structuredClone(Date.now());
+
+    updateTrainDirectionArrows();
+}
+
+function bindTrainTooltip(element, train, carDirection) {
+    console.log('绑定车次提示', train.name);
+    element.addEventListener('mouseover', function () {
+        const trainTooltip = document.createElement('div');
+        trainTooltip.classList.add('tooltip');
+        trainTooltip.classList.add('train-tooltip');
+        trainTooltip.innerHTML = '';
+
+        const trainTooltipTitle = document.createElement('h4');
+        trainTooltipTitle.className = 'train-tooltip-title';
+        trainTooltipTitle.textContent = train.name;
+        trainTooltip.appendChild(trainTooltipTitle);
+
+        train.cars.forEach(car => {
+            const carName = car.id;
+            const carPos = train.backwards === 'true' ? car.trailing.location : car.leading.location;
+            const carPosX = Math.round(carPos.x, 2);
+            const carPosZ = Math.round(carPos.z, 2);
+            const locationItem = document.createElement('div');
+            locationItem.classList.add('location-item');
+            locationItem.innerHTML = `
+                <div class="car-name">${carName}</div>
+                <div class="car-pos">(${carPosX},${carPosZ})</div>
+            `;
+            trainTooltip.appendChild(locationItem);
+        });
+        element.insertBefore(trainTooltip, element.firstChild);
+
+        const isBackwardsElement = document.createElement("div");
+        isBackwardsElement.className = "is-backwards";
+        isBackwardsElement.textContent = train.backwards === 'true' ? strings.lines_info.going_backwards[lang] : '';
+        trainTooltip.appendChild(isBackwardsElement);
+
+        const platformElement = element.querySelector('.platform');
+        if (platformElement) {
+            try {
+                const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+                const currentTrainData = allTrainsData[train.name];
+                if (currentTrainData && currentTrainData.direction !== undefined) {
+                    platformElement.textContent = platformElement.textContent.trim() + ' ';
+                }
+            } catch (e) { }
+        } else {
+            const directionElement = document.createElement("div");
+            directionElement.className = "train-direction";
+            let directionText = '';
+            if (carDirection === 'up') {
+                directionText = strings.lines_info.running_direction_up[lang] || '上行';
+            } else if (carDirection === 'down') {
+                directionText = strings.lines_info.running_direction_down[lang] || '下行';
+            } else if (carDirection === 'unknown') {
+                directionText = strings.lines_info.unknown_direction[lang] || '未知方向';
+            }
+            directionElement.textContent = directionText;
+            trainTooltip.appendChild(directionElement);
+        }
+
+        try {
+            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+            const currentTrainData = allTrainsData[train.name];
+            const isStopped = train.isStopped === 'true';
+
+            if (currentTrainData && currentTrainData.speed !== undefined) {
+                let speed = isStopped ? 0 : currentTrainData.speed.toFixed();
+                const speedElement = document.createElement("div");
+                speedElement.className = "train-speed";
+
+                if (currentTrainData.isSpeedLost && currentTrainData.prevSpeed !== undefined) {
+                    speed = currentTrainData.prevSpeed.toFixed();
+                }
+
+                speedElement.textContent = (strings.lines_info.speed[lang] + speed + 'km/h');
+                speedElement.style.opacity = currentTrainData.isSpeedLost ? '0.4' : '1';
+                trainTooltip.appendChild(speedElement);
+            }
+        } catch (e) { }
+
+        try {
+            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+            const currentTrainData = allTrainsData[train.name];
+
+            if (currentTrainData && currentTrainData.warningReasons && currentTrainData.warningReasons.length > 0) {
+                const warningReasonsElement = document.createElement("div");
+                warningReasonsElement.className = "warning-reasons";
+                warningReasonsElement.style.color = 'crimson';
+                warningReasonsElement.style.fontWeight = 'bold';
+
+                let reasonsText = '! ';
+                currentTrainData.warningReasons.forEach(reason => {
+                    switch (reason) {
+                        case 'long_stop':
+                            reasonsText += strings.lines_info.warning_long_stop[lang] + '; ';
+                            break;
+                        case 'zero_speed':
+                            reasonsText += strings.lines_info.warning_zero_speed[lang] + '; ';
+                            break;
+                        case 'platform_conflict':
+                            reasonsText += strings.lines_info.warning_platform_conflict[lang] + '; ';
+                    }
+                });
+
+                reasonsText = reasonsText.slice(0, -2);
+                warningReasonsElement.textContent = reasonsText;
+                trainTooltip.appendChild(warningReasonsElement);
+            }
+        } catch (e) { }
+    });
+
+    element.addEventListener('mouseout', function () {
+        const trainTooltip = element.querySelector('.train-tooltip');
+        if (trainTooltip) {
+            trainTooltip.remove();
+        }
+    });
+
+    element.style.cursor = 'pointer';
+    element.addEventListener('click', function () {
+        window.open(`trains_info.html?q=${train.name}`, '_self');
+    });
 }
 
 
@@ -1661,6 +1319,20 @@ function getStationName(stationCode, language = lang) {
     return stationCode;
 }
 
+function detectTrainAtStation(train, line, options) {
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.detectTrainAtStation(train, line, options);
+    }
+    return {
+        isAtStation: false,
+        stationName: '',
+        stationCode: '',
+        platform: '',
+        actualCarPos: null,
+        stationNode: null
+    };
+}
+
 function highlightTrainsForCurrentLine() {
     const trainItems = document.querySelectorAll('.train-item');
     console.log('train-items: ', trainItems);
@@ -1737,7 +1409,7 @@ function calculateLineTotalTime(lineId) {
             line.route.filter(track => track.type === 'track').forEach((track, index) => {
                 totalTime += track.duration;
                 if (index < line.route.length - 1) {
-                    totalTime += 60; // 每段之间加一分钟停车时间
+                    //totalTime += 60; // 每段之间加一分钟停车时间
                 }
             });
         }
@@ -1788,6 +1460,8 @@ function handleWindowResize() {
     const activeItem = sideBar.querySelector('.side-bar-item.active');
     const activeTab = tabs.querySelector('.tab-item.active');
     const prefActions = document.querySelector('.pref-actions');
+    const mapOverlay = document.querySelector('.map-overlay');
+    const mapFitBtn = document.querySelector('.map-fit-btn');
     if (header.contains(tabs)) { 
         header.removeChild(tabs);
     }
@@ -1868,6 +1542,10 @@ function handleWindowResize() {
             tabs.style.marginLeft = `calc(${lineSelectorWidth}px + 2vw)`;
         }, 150);
     }
+
+    setTimeout(() => {
+        mapFitBtn?.click();
+    }, 500)
 }
 
 window.handleWindowResize = handleWindowResize;
@@ -2132,13 +1810,736 @@ function checkIfTrainAtAnyStation(trainName) {
     // 通过列车名称前缀判断所属线路
     const linePrefix = trainName.match(/^([A-Z]+)/)?.[1];
     if (linePrefix) {
-        // 检查所有线路中是否有与列车前缀匹配的线路
         const belongsToLine = window.lines?.find(line => line.id === linePrefix);
         if (belongsToLine) {
-            // 如果列车属于某条线路，那么它在该线路的车站上是正常的，不应触发警告
             return true;
         }
     }
     
     return false;
+}
+
+var MapMode = (function () {
+    var overlay, canvas, ctx, container, tooltip, tooltipTitle, tooltipBody;
+    var zoomIndicator;
+    var isOpen = false;
+    var showTrains = true;
+    var interactionsSetup = false;
+    var dragMoved = false;
+
+    var viewState = {
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        dragOffsetX: 0,
+        dragOffsetY: 0
+    };
+
+    var stationCoordsMap = {};
+    var mapTrainsData = null;
+
+    var MIN_ZOOM = 0.05;
+    var MAX_ZOOM = 8;
+    var STATION_RADIUS = 6;
+    var TRAIN_RADIUS = 10;
+    var sidebarObserver = null;
+
+    function getSidebarWidth() {
+        var sidebar = document.querySelector('.side-bar');
+        if (!sidebar) return 0;
+        if (sidebar.classList.contains('collapsed')) return 0;
+        if (sidebar.style.display === 'none') return 0;
+        var rect = sidebar.getBoundingClientRect();
+        return rect.width > 60 ? rect.width : 0;
+    }
+
+    function getCanvasCssWidth() {
+        return container ? container.getBoundingClientRect().width : canvas.width;
+    }
+
+    function getCanvasCssHeight() {
+        return container ? container.getBoundingClientRect().height : canvas.height;
+    }
+
+    function getVisibleCenterX() {
+        var cw = getCanvasCssWidth();
+        var sw = getSidebarWidth();
+        return (cw + sw) / 2;
+    }
+
+    function worldToScreen(wx, wz) {
+        var ch = getCanvasCssHeight();
+        var centerX = getVisibleCenterX();
+        var sx = (wx + viewState.offsetX) * viewState.zoom + centerX;
+        var sy = (wz + viewState.offsetY) * viewState.zoom + ch / 2;
+        return { x: sx, y: sy };
+    }
+
+    function screenToWorld(sx, sy) {
+        var ch = getCanvasCssHeight();
+        var centerX = getVisibleCenterX();
+        var wx = (sx - centerX) / viewState.zoom - viewState.offsetX;
+        var wz = (sy - ch / 2) / viewState.zoom - viewState.offsetY;
+        return { x: wx, z: wz };
+    }
+
+    function computeBounds() {
+        var minX = Infinity, maxX = -Infinity;
+        var minZ = Infinity, maxZ = -Infinity;
+        window.lines.forEach(function (line) {
+            if (line.id.match('-R')) return;
+            line.route.forEach(function (node) {
+                if (node.type === 'track') {
+                    node.nodes.forEach(function (pt) {
+                        if (pt.x < minX) minX = pt.x;
+                        if (pt.x > maxX) maxX = pt.x;
+                        if (pt.z < minZ) minZ = pt.z;
+                        if (pt.z > maxZ) maxZ = pt.z;
+                    });
+                }
+            });
+        });
+        return { minX: minX, maxX: maxX, minZ: minZ, maxZ: maxZ };
+    }
+
+    function fitAll() {
+        var bounds = computeBounds();
+        var worldW = bounds.maxX - bounds.minX;
+        var worldH = bounds.maxZ - bounds.minZ;
+        if (worldW <= 0 || worldH <= 0) return;
+
+        var cw = getCanvasCssWidth();
+        var ch = getCanvasCssHeight();
+        var sw = getSidebarWidth();
+        var visibleW = cw - sw;
+        var padding = 80;
+        var scaleX = (visibleW - padding * 2) / worldW;
+        var scaleY = (ch - padding * 2) / worldH;
+        viewState.zoom = Math.min(scaleX, scaleY);
+        MIN_ZOOM = viewState.zoom;
+
+        viewState.offsetX = -(bounds.minX + worldW / 2);
+        viewState.offsetY = -(bounds.minZ + worldH / 2);
+
+        render();
+    }
+
+    function drawGrid() {
+        var cw = getCanvasCssWidth();
+        var ch = getCanvasCssHeight();
+        var topLeft = screenToWorld(0, 0);
+        var bottomRight = screenToWorld(cw, ch);
+
+        var gridSpacing = 500;
+        if (viewState.zoom < 0.3) gridSpacing = 2000;
+        else if (viewState.zoom < 0.8) gridSpacing = 1000;
+
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-border').trim() || 'rgba(128,128,128,0.15)';
+        ctx.lineWidth = 0.5;
+        ctx.globalAlpha = 0.3;
+
+        var startX = Math.floor(topLeft.x / gridSpacing) * gridSpacing;
+        var endX = Math.ceil(bottomRight.x / gridSpacing) * gridSpacing;
+        for (var gx = startX; gx <= endX; gx += gridSpacing) {
+            var s = worldToScreen(gx, 0);
+            ctx.beginPath();
+            ctx.moveTo(s.x, 0);
+            ctx.lineTo(s.x, ch);
+            ctx.stroke();
+        }
+
+        var startZ = Math.floor(topLeft.z / gridSpacing) * gridSpacing;
+        var endZ = Math.ceil(bottomRight.z / gridSpacing) * gridSpacing;
+        for (var gz = startZ; gz <= endZ; gz += gridSpacing) {
+            var s2 = worldToScreen(0, gz);
+            ctx.beginPath();
+            ctx.moveTo(0, s2.y);
+            ctx.lineTo(cw, s2.y);
+            ctx.stroke();
+        }
+
+        ctx.globalAlpha = 1;
+    }
+
+    function drawSingleLine(line) {
+        ctx.strokeStyle = line.color;
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
+        var tracks = line.route.filter(function (n) { return n.type === 'track'; });
+        tracks.forEach(function (track) {
+            if (!track.nodes || track.nodes.length < 2) return;
+            ctx.beginPath();
+            var p0 = worldToScreen(track.nodes[0].x, track.nodes[0].z);
+            ctx.moveTo(p0.x, p0.y);
+            for (var i = 1; i < track.nodes.length; i++) {
+                var pi = worldToScreen(track.nodes[i].x, track.nodes[i].z);
+                ctx.lineTo(pi.x, pi.y);
+            }
+            ctx.stroke();
+        });
+    }
+
+    function drawLines() {
+        ctx.save();
+        
+        window.lines.forEach(function (line) {
+            if (line.id.match('-R')) return;
+            if (line.id.startsWith('GX')) {
+                var originalColor = line.color;
+                line.color = '#808080';
+                drawSingleLine(line);
+                line.color = originalColor;
+            }
+        });
+
+        window.lines.forEach(function (line) {
+            if (line.id.match('-R')) return;
+            if (!line.id.startsWith('GX')) {
+                drawSingleLine(line);
+            }
+        });
+
+        ctx.restore();
+    }
+
+    function buildStationCoords() {
+        stationCoordsMap = {};
+        window.lines.forEach(function (line) {
+            if (line.id.match('-R')) return;
+            for (var i = 0; i < line.route.length; i++) {
+                var node = line.route[i];
+                if (node.type === 'station') {
+                    var code = node.code;
+                    if (!stationCoordsMap[code]) {
+                        stationCoordsMap[code] = { x: 0, z: 0, count: 0, lines: [] };
+                    }
+                    stationCoordsMap[code].lines.push(line.id);
+
+                    var prevTrack = null;
+                    var nextTrack = null;
+                    for (var j = i - 1; j >= 0; j--) {
+                        if (line.route[j].type === 'track') { prevTrack = line.route[j]; break; }
+                    }
+                    for (var k = i + 1; k < line.route.length; k++) {
+                        if (line.route[k].type === 'track') { nextTrack = line.route[k]; break; }
+                    }
+
+                    var cx = 0, cz = 0;
+                    if (prevTrack && prevTrack.nodes.length > 0) {
+                        var lastNode = prevTrack.nodes[prevTrack.nodes.length - 1];
+                        cx += lastNode.x;
+                        cz += lastNode.z;
+                        stationCoordsMap[code].count++;
+                    }
+                    if (nextTrack && nextTrack.nodes.length > 0) {
+                        var firstNode = nextTrack.nodes[0];
+                        cx += firstNode.x;
+                        cz += firstNode.z;
+                        stationCoordsMap[code].count++;
+                    }
+                    if (stationCoordsMap[code].count > 0) {
+                        stationCoordsMap[code].x += cx;
+                        stationCoordsMap[code].z += cz;
+                    }
+                }
+            }
+        });
+
+        Object.keys(stationCoordsMap).forEach(function (code) {
+            var s = stationCoordsMap[code];
+            if (s.count > 0) {
+                s.x = s.x / s.count;
+                s.z = s.z / s.count;
+            }
+        });
+    }
+
+    function drawStations() {
+        Object.keys(stationCoordsMap).forEach(function (code) {
+            var station = stationCoordsMap[code];
+            if (station.count === 0) return;
+
+            var pos = worldToScreen(station.x, station.z);
+            var r = STATION_RADIUS;
+
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+            var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background-card-solid').trim() || '#fff';
+            ctx.fillStyle = bgColor;
+            ctx.fill();
+
+            var primaryColor = station.lines.length > 1 ? '#666' : (window.lines.find(function (l) { return l.id === station.lines[0]; }) || {}).color || '#666';
+            ctx.strokeStyle = primaryColor;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            var name = getStationName(code, lang);
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#000';
+            ctx.font = '11px ' + getComputedStyle(document.body).getPropertyValue('--font-family');
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(name, pos.x + r + 6, pos.y);
+        });
+    }
+
+    function drawTrains() {
+        if (!showTrains || !mapTrainsData || !mapTrainsData.trains) return;
+
+        mapTrainsData.trains.forEach(function (train) {
+            if (!train || !train.cars || train.cars.length === 0) return;
+            var car = train.cars[0];
+            if (!car.leading || !car.leading.location) return;
+            var loc = car.leading.location;
+
+            var pos = worldToScreen(loc.x, loc.z);
+            var r = TRAIN_RADIUS;
+
+            var trainInfo = window.trainsInfo ? window.trainsInfo.find(function (t) { return t.name === train.name; }) : null;
+            var trainLine = trainInfo ? trainInfo.line : '';
+            var lineData = window.lines.find(function (l) { return l.id === trainLine; });
+            var color = lineData ? lineData.color : '#e77000';
+
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.85;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '16px "Material Symbols Outlined"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('\ue534', pos.x, pos.y);
+        });
+    }
+
+    function drawCoordinates() {
+        var ch = getCanvasCssHeight();
+        var textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || 'rgba(128,128,128,0.6)';
+        ctx.fillStyle = textColor;
+        ctx.font = '10px ' + getComputedStyle(document.body).getPropertyValue('--font-family');
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        var centerX = getVisibleCenterX();
+        var centerWorld = screenToWorld(centerX, ch / 2);
+        ctx.fillText(
+            'x: ' + Math.round(centerWorld.x) + '  z: ' + Math.round(centerWorld.z),
+            centerX,
+            ch - 20
+        );
+    }
+
+    function render() {
+        if (!canvas || !ctx) return;
+
+        var dpr = window.devicePixelRatio || 1;
+        var rect = container.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        ctx.clearRect(0, 0, rect.width, rect.height);
+
+        var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background').trim() || '#f5f5f5';
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, rect.width, rect.height);
+
+        drawGrid();
+        drawLines();
+        drawStations();
+        drawTrains();
+        drawCoordinates();
+
+        zoomIndicator.textContent = Math.round(viewState.zoom * 100) + '%';
+    }
+
+    function findStationAtScreen(sx, sy) {
+        var bestDist = Infinity;
+        var bestCode = null;
+        var hitRadius = 18;
+
+        Object.keys(stationCoordsMap).forEach(function (code) {
+            var st = stationCoordsMap[code];
+            if (st.count === 0) return;
+            var pos = worldToScreen(st.x, st.z);
+            var dx = pos.x - sx;
+            var dy = pos.y - sy;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < hitRadius && dist < bestDist) {
+                bestDist = dist;
+                bestCode = code;
+            }
+        });
+        return bestCode;
+    }
+
+    function findTrainAtScreen(sx, sy) {
+        if (!mapTrainsData || !mapTrainsData.trains) return null;
+        var bestDist = Infinity;
+        var bestTrain = null;
+        var hitRadius = 16;
+
+        mapTrainsData.trains.forEach(function (train) {
+            if (!train || !train.cars || train.cars.length === 0) return;
+            var car = train.cars[0];
+            if (!car.leading || !car.leading.location) return;
+            var loc = car.leading.location;
+            var pos = worldToScreen(loc.x, loc.z);
+            var dx = pos.x - sx;
+            var dy = pos.y - sy;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < hitRadius && dist < bestDist) {
+                bestDist = dist;
+                bestTrain = train;
+            }
+        });
+        return bestTrain;
+    }
+
+    function showTooltipForStation(code, sx, sy) {
+        var name = getStationName(code, lang);
+        var station = stationCoordsMap[code];
+        var linesHtml = '';
+        station.lines.forEach(function (lid) {
+            var ld = window.lines.find(function (l) { return l.id === lid; });
+            if (ld) {
+                linesHtml += '<span class="line-code" style="margin-inline-end: 4px; --current-color:' + ld.color + '">'+lid+'</span>';
+            }
+        });
+
+        tooltipTitle.innerHTML = name;
+        tooltipBody.innerHTML = linesHtml + '<br>(' + Math.round(station.x) + ', ' + Math.round(station.z) + ')';
+        tooltip.classList.add('visible');
+
+        var tw = tooltip.offsetWidth;
+        var th = tooltip.offsetHeight;
+        var left = sx + 16;
+        var top = sy - th / 2;
+        if (left + tw > container.clientWidth) left = sx - tw - 16;
+        if (top < 0) top = 4;
+        if (top + th > container.clientHeight) top = container.clientHeight - th - 4;
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+
+    function showTooltipForTrain(train, sx, sy) {
+        var trainInfo = window.trainsInfo ? window.trainsInfo.find(function (t) { return t.name === train.name; }) : null;
+        var lineId = trainInfo ? trainInfo.line : '';
+        var lineData = window.lines.find(function (l) { return l.id === lineId; });
+
+        tooltipTitle.innerHTML = '';
+        if (lineData) {
+            var tag = document.createElement('span');
+            tag.className = 'map-tooltip-line-tag';
+            tag.style.background = lineData.color;
+            tooltipTitle.appendChild(tag);
+        }
+        tooltipTitle.appendChild(document.createTextNode(train.name));
+
+        var speed = '';
+        try {
+            var allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+            var td = allTrainsData[train.name];
+            if (td && td.speed !== undefined) {
+                speed = strings.lines_info.speed[lang] + td.speed.toFixed() + 'km/h';
+            }
+        } catch (e) {}
+
+        var loc = train.cars[0].leading.location;
+        tooltipBody.innerHTML =
+            (lineData ? lineData.name[lang] : '') +
+            '<br>(' + Math.round(loc.x) + ', ' + Math.round(loc.z) + ')' +
+            (speed ? '<br>' + speed : '');
+        tooltip.classList.add('visible');
+
+        var tw = tooltip.offsetWidth;
+        var th = tooltip.offsetHeight;
+        var left = sx + 16;
+        var top = sy - th / 2;
+        if (left + tw > container.clientWidth) left = sx - tw - 16;
+        if (top < 0) top = 4;
+        if (top + th > container.clientHeight) top = container.clientHeight - th - 4;
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+
+    function hideTooltip() {
+        tooltip.classList.remove('visible');
+    }
+
+    function setupInteractions() {
+        if (interactionsSetup) return;
+        interactionsSetup = true;
+
+        container.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            viewState.isDragging = true;
+            dragMoved = false;
+            viewState.dragStartX = e.clientX;
+            viewState.dragStartY = e.clientY;
+            viewState.dragOffsetX = viewState.offsetX;
+            viewState.dragOffsetY = viewState.offsetY;
+            container.classList.add('dragging');
+        });
+
+        window.addEventListener('mousemove', function (e) {
+            if (!isOpen) return;
+            if (viewState.isDragging) {
+                var dx = e.clientX - viewState.dragStartX;
+                var dy = e.clientY - viewState.dragStartY;
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+                viewState.offsetX = viewState.dragOffsetX + dx / viewState.zoom;
+                viewState.offsetY = viewState.dragOffsetY + dy / viewState.zoom;
+                render();
+                hideTooltip();
+            } else {
+                var rect = container.getBoundingClientRect();
+                var mx = e.clientX - rect.left;
+                var my = e.clientY - rect.top;
+
+                var stCode = findStationAtScreen(mx, my);
+                if (stCode) {
+                    showTooltipForStation(stCode, mx, my);
+                    container.style.cursor = 'pointer';
+                    return;
+                }
+
+                var train = findTrainAtScreen(mx, my);
+                if (train) {
+                    showTooltipForTrain(train, mx, my);
+                    container.style.cursor = 'pointer';
+                    return;
+                }
+
+                hideTooltip();
+                container.style.cursor = 'grab';
+            }
+        });
+
+        window.addEventListener('mouseup', function () {
+            viewState.isDragging = false;
+            container.classList.remove('dragging');
+        });
+
+        container.addEventListener('wheel', function (e) {
+            e.preventDefault();
+            var rect = container.getBoundingClientRect();
+            var mx = e.clientX - rect.left;
+            var my = e.clientY - rect.top;
+
+            var beforeWorld = screenToWorld(mx, my);
+
+            var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+            var newZoom = viewState.zoom * factor;
+            newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+            viewState.zoom = newZoom;
+
+            var afterScreen = worldToScreen(beforeWorld.x, beforeWorld.z);
+            viewState.offsetX += (mx - afterScreen.x) / viewState.zoom;
+            viewState.offsetY += (my - afterScreen.y) / viewState.zoom;
+
+            render();
+            hideTooltip();
+        }, { passive: false });
+
+        container.addEventListener('click', function (e) {
+            if (dragMoved) return;
+            var rect = container.getBoundingClientRect();
+            var mx = e.clientX - rect.left;
+            var my = e.clientY - rect.top;
+
+            var stCode = findStationAtScreen(mx, my);
+            if (stCode) {
+                loadStationInfo(stCode);
+                return;
+            }
+
+            var train = findTrainAtScreen(mx, my);
+            if (train) {
+                window.open('trains_info.html?q=' + train.name, '_self');
+            }
+        });
+
+        var lastTouchDist = 0;
+        var lastTouchCenter = { x: 0, y: 0 };
+        var touchDragging = false;
+
+        container.addEventListener('touchstart', function (e) {
+            if (e.touches.length === 1) {
+                touchDragging = true;
+                viewState.dragStartX = e.touches[0].clientX;
+                viewState.dragStartY = e.touches[0].clientY;
+                viewState.dragOffsetX = viewState.offsetX;
+                viewState.dragOffsetY = viewState.offsetY;
+            } else if (e.touches.length === 2) {
+                touchDragging = false;
+                var dx = e.touches[0].clientX - e.touches[1].clientX;
+                var dy = e.touches[0].clientY - e.touches[1].clientY;
+                lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+                lastTouchCenter = {
+                    x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                    y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                };
+            }
+        }, { passive: true });
+
+        container.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+            if (e.touches.length === 1 && touchDragging) {
+                var dx = e.touches[0].clientX - viewState.dragStartX;
+                var dy = e.touches[0].clientY - viewState.dragStartY;
+                viewState.offsetX = viewState.dragOffsetX + dx / viewState.zoom;
+                viewState.offsetY = viewState.dragOffsetY + dy / viewState.zoom;
+                render();
+                hideTooltip();
+            } else if (e.touches.length === 2) {
+                var dx2 = e.touches[0].clientX - e.touches[1].clientX;
+                var dy2 = e.touches[0].clientY - e.touches[1].clientY;
+                var dist = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                if (lastTouchDist > 0) {
+                    var rect = container.getBoundingClientRect();
+                    var cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                    var cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                    var beforeWorld = screenToWorld(cx, cy);
+
+                    var factor = dist / lastTouchDist;
+                    viewState.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, viewState.zoom * factor));
+
+                    var afterScreen = worldToScreen(beforeWorld.x, beforeWorld.z);
+                    viewState.offsetX += (cx - afterScreen.x) / viewState.zoom;
+                    viewState.offsetY += (cy - afterScreen.y) / viewState.zoom;
+
+                    render();
+                }
+                lastTouchDist = dist;
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchend', function () {
+            touchDragging = false;
+            lastTouchDist = 0;
+        });
+
+        document.getElementById('map-zoom-in').addEventListener('click', function () {
+            viewState.zoom = Math.min(MAX_ZOOM, viewState.zoom * 1.3);
+            render();
+        });
+
+        document.getElementById('map-zoom-out').addEventListener('click', function () {
+            viewState.zoom = Math.max(MIN_ZOOM, viewState.zoom / 1.3);
+            render();
+        });
+
+        document.getElementById('map-fit-btn').addEventListener('click', function () {
+            fitAll();
+        });
+
+        document.getElementById('map-trains-toggle').addEventListener('click', function () {
+            showTrains = !showTrains;
+            this.classList.toggle('active', showTrains);
+            render();
+        });
+
+        window.addEventListener('resize', function () {
+            if (isOpen) render();
+        });
+    }
+
+    function openMapMode() {
+        overlay = document.getElementById('map-overlay');
+        const mapEntries = document.querySelectorAll('.map-entry');
+        const currentLineEntries = document.querySelectorAll('.line-selector .selection-item.active');
+        canvas = document.getElementById('map-canvas');
+        container = document.getElementById('map-canvas-container');
+        tooltip = document.getElementById('map-tooltip');
+        tooltipTitle = document.getElementById('map-tooltip-title');
+        tooltipBody = document.getElementById('map-tooltip-body');
+        zoomIndicator = document.getElementById('map-zoom-indicator');
+        ctx = canvas.getContext('2d');
+
+        document.getElementById('map-fit-btn').title = strings.lines_info.map_fit_all[lang];
+        document.getElementById('map-trains-toggle').title = strings.lines_info.map_toggle_trains[lang];
+        document.getElementById('map-zoom-in').title = strings.lines_info.map_zoom_in[lang];
+        document.getElementById('map-zoom-out').title = strings.lines_info.map_zoom_out[lang];
+
+        showTrains = true;
+        document.getElementById('map-trains-toggle').classList.add('active');
+
+        buildStationCoords();
+        setupInteractions();
+
+        var sidebar = document.querySelector('.side-bar');
+        if (sidebar && !sidebarObserver) {
+            sidebarObserver = new MutationObserver(function () {
+                if (isOpen) {
+                    fitAll();
+                    render();
+                }
+            });
+            sidebarObserver.observe(sidebar, { attributes: true, attributeFilter: ['class', 'style'] });
+        }
+
+        overlay.classList.add('active');
+        currentLineEntries.forEach(function (entry) {
+            entry.classList.remove('active');
+        });
+        mapEntries.forEach(function (entry) {
+            entry.classList.add('active');
+            entry.setAttribute('style', '--color-primary: var(--color-text);');
+        });
+        isOpen = true;
+
+        setTimeout(function () {
+            fitAll();
+            render();
+        }, 50);
+    }
+
+    function closeMapMode() {
+        overlay.classList.remove('active');
+        isOpen = false;
+        hideTooltip();
+        if (sidebarObserver) {
+            sidebarObserver.disconnect();
+            sidebarObserver = null;
+        }
+    }
+
+    function updateMapTrains(payload) {
+        mapTrainsData = payload;
+        if (isOpen) {
+            render();
+        }
+    }
+
+    return {
+        open: openMapMode,
+        close: closeMapMode,
+        updateTrains: updateMapTrains,
+        isOpen: function () { return isOpen; }
+    };
+})();
+
+function openMapMode() {
+    MapMode.open();
+}
+
+function initMapMode() {
+    if (typeof TrainDataSource !== 'undefined') {
+        TrainDataSource.on('data', function (payload) {
+            MapMode.updateTrains(payload);
+        });
+    }
 }

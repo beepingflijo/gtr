@@ -425,7 +425,7 @@ const PositionUtils = (function() {
                     `https://api.allorigins.win/get?url=${encodeURIComponent(playerDataUrl)}&callback=?`
                 ];
                 
-                fetchProxyData(proxyUrls, 0, playerDataUrl, callback);
+                //fetchProxyData(proxyUrls, 0, playerDataUrl, callback);
             });
     }
     
@@ -1165,6 +1165,265 @@ const PositionUtils = (function() {
     }
     
     // 公共接口
+    function computeTrainDirection(trainName, carPos, isStopped) {
+        let allTrainsData = {};
+        try {
+            const storedData = localStorage.getItem('all_trains_positions');
+            if (storedData) allTrainsData = JSON.parse(storedData);
+        } catch (e) {
+            console.warn('无法解析列车位置数据:', e);
+        }
+
+        let previousTrainData = allTrainsData[trainName] || null;
+        let direction = [0, 0];
+        let speed = 0;
+        const currentTime = Date.now();
+
+        let prevSpeed = previousTrainData && previousTrainData.speed !== undefined ? previousTrainData.speed : 0;
+        let isSpeedLost = previousTrainData && previousTrainData.isSpeedLost;
+        let speedLostTime = previousTrainData && previousTrainData.speedLostTime ? previousTrainData.speedLostTime : 0;
+
+        if (previousTrainData && previousTrainData.timestamp) {
+            const timeDiff = currentTime - previousTrainData.timestamp;
+            const speedLostDuration = currentTime - speedLostTime;
+
+            if (timeDiff > 50 && timeDiff < 3000) {
+                direction = [
+                    carPos.x - previousTrainData.position.x,
+                    carPos.z - previousTrainData.position.z
+                ];
+
+                const distance = Math.sqrt(
+                    Math.pow(carPos.x - previousTrainData.position.x, 2) +
+                    Math.pow(carPos.z - previousTrainData.position.z, 2)
+                );
+
+                speed = (distance / (timeDiff / 1000) * 3.6);
+                if (speed <= 0 && isSpeedLost === false) {
+                    isSpeedLost = true;
+                    speedLostTime = currentTime;
+                } else if (speed > 0) {
+                    isSpeedLost = false;
+                    speedLostTime = 0;
+                }
+            } else if (timeDiff >= 3000) {
+                if (isSpeedLost && speedLostDuration > 10000) {
+                    isSpeedLost = false;
+                    speedLostTime = 0;
+                }
+            }
+        }
+
+        if (!allTrainsData[trainName]) {
+            allTrainsData[trainName] = {};
+        }
+
+        allTrainsData[trainName].position = { x: carPos.x, y: carPos.y, z: carPos.z };
+        allTrainsData[trainName].timestamp = currentTime;
+        allTrainsData[trainName].speed = speed;
+        allTrainsData[trainName].isSpeedLost = isSpeedLost;
+        allTrainsData[trainName].speedLostTime = speedLostTime;
+        allTrainsData[trainName].isStopped = isStopped;
+
+        if (isStopped) {
+            allTrainsData[trainName].speed = 0;
+        }
+
+        try {
+            localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
+        } catch (e) {
+            console.warn('无法存储列车位置数据:', e);
+        }
+
+        return direction;
+    }
+
+    function computeTrackDirection(directionVector, trackDirectionVector) {
+        if (!directionVector || !trackDirectionVector) return 'unknown';
+
+        const magDirection = Math.sqrt(directionVector[0] ** 2 + directionVector[1] ** 2);
+        const magTrackDirection = Math.sqrt(trackDirectionVector[0] ** 2 + trackDirectionVector[1] ** 2);
+
+        if (magDirection === 0 || magTrackDirection === 0) {
+            return 'unknown';
+        }
+
+        const dotProd = directionVector[0] * trackDirectionVector[0] + directionVector[1] * trackDirectionVector[1];
+        const cosAngle = dotProd / (magDirection * magTrackDirection);
+
+        if (cosAngle > 0.1) {
+            return 'down';
+        } else if (cosAngle < -0.1) {
+            return 'up';
+        } else {
+            return 'unknown';
+        }
+    }
+
+    function getInheritedDirection(trainName) {
+        try {
+            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+            const currentTrainData = allTrainsData[trainName];
+            if (currentTrainData && currentTrainData.direction && currentTrainData.direction !== 'unknown') {
+                return currentTrainData.direction;
+            }
+        } catch (e) { }
+        return 'unknown';
+    }
+
+    function saveTrainDirection(trainName, carDirection, trainDirection) {
+        try {
+            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+            if (!allTrainsData[trainName]) allTrainsData[trainName] = {};
+            allTrainsData[trainName].direction = carDirection;
+            allTrainsData[trainName].directionText = trainDirection;
+            localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
+        } catch (e) {
+            console.warn('保存列车方向信息时出错:', e);
+        }
+    }
+
+    function resolveDirectionFromSpeed(trainName, carDirection) {
+        try {
+            const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+            const currentTrainData = allTrainsData[trainName];
+
+            if (currentTrainData && currentTrainData.speed !== undefined && !currentTrainData.isSpeedLost) {
+                if (currentTrainData.speed > 5) {
+                    if (carDirection === 'unknown' && currentTrainData.direction !== 'unknown') {
+                        return currentTrainData.direction;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('使用速度方向确定列车方向时出错:', e);
+        }
+        return carDirection;
+    }
+
+    function applyBackwardsDirection(train, carDirection) {
+        if (train.backwards === 'true' && carDirection !== 'unknown') {
+            return carDirection === 'up' ? 'down' : 'up';
+        }
+        return carDirection;
+    }
+
+    /**
+     * 检测列车是否在车站及确定停靠站台的公共方法
+     *
+     * 核心算法：
+     *   1. 遍历指定线路的所有站点坐标，计算列车位置到每个站点的三维距离
+     *   2. 选出距离最近的站点，若距离 <= atStationThreshold 则判定为"到站"
+     *   3. 从站点坐标名中剥离站点三字码，得到站台编号
+     *   4. 根据列车 stopped 状态格式化站台编号（运行中去除字母后缀并追加 '…'）
+     *
+     * @param {Object} train - 列车对象，需包含 name, stopped, cars 等字段
+     * @param {Object} line - 线路对象，需包含 route 数组（含 type='station' 的节点）
+     * @param {Object} [options] - 配置选项
+     * @param {boolean} [options.checkBothEnds=false] - 是否同时检查头尾两端位置，取更近的一端
+     * @param {number}  [options.atStationThreshold=200] - 判定到站的最大距离（米）
+     * @param {boolean} [options.isGXTrain=false] - 是否为 GX 列车（用于站台显示特殊处理）
+     * @param {boolean} [options.isStationInCurrentLine=false] - GX 列车是否在当前线路站点范围内
+     * @returns {Object} 检测结果
+     * @returns {boolean} result.isAtStation - 是否在车站
+     * @returns {string}  result.stationName - 车站显示名称
+     * @returns {string}  result.stationCode - 车站坐标全名（含站台后缀，如 "ABC1A"）
+     * @returns {string}  result.platform - 格式化后的站台编号
+     * @returns {Object|null} result.actualCarPos - 实际使用的车厢坐标 {x, y, z}
+     * @returns {Object|null} result.stationNode - 匹配到的车站路由节点
+     */
+    function detectTrainAtStation(train, line, options) {
+        const {
+            checkBothEnds = false,
+            atStationThreshold = 200,
+            isGXTrain = false,
+            isStationInCurrentLine = false
+        } = options || {};
+
+        const result = {
+            isAtStation: false,
+            stationName: '',
+            stationCode: '',
+            platform: '',
+            actualCarPos: null,
+            stationNode: null
+        };
+
+        if (!train || !line) return result;
+
+        const cars = train.cars;
+        if (!cars || !Array.isArray(cars) || cars.length === 0) return result;
+
+        const leadingPos = cars[0].leading && cars[0].leading.location;
+        if (!leadingPos) return result;
+
+        const trailingPos = checkBothEnds
+            && cars[cars.length - 1].trailing
+            && cars[cars.length - 1].trailing.location;
+
+        const positions = checkBothEnds && trailingPos
+            ? [
+                { pos: leadingPos, label: 'leading' },
+                { pos: trailingPos, label: 'trailing' }
+            ]
+            : [{ pos: leadingPos, label: 'leading' }];
+
+        const stations = line.route.filter(node => node.type === 'station');
+        let closestDistance = Infinity;
+        let closestCoord = null;
+        let closestNode = null;
+        let closestPosLabel = 'leading';
+
+        for (const positionInfo of positions) {
+            const pos = positionInfo.pos;
+            for (const station of stations) {
+                const stationCoords = findStationCoordinates(station.code);
+                for (const coord of stationCoords) {
+                    if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
+                        continue;
+                    }
+
+                    const distance = Math.sqrt(
+                        Math.pow(pos.x - coord.x, 2) +
+                        Math.pow(pos.y - coord.y, 2) +
+                        Math.pow(pos.z - coord.z, 2)
+                    );
+
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closestCoord = coord;
+                        closestNode = station;
+                        closestPosLabel = positionInfo.label;
+                    }
+                }
+            }
+        }
+
+        if (closestDistance <= atStationThreshold && closestCoord && closestNode) {
+            result.isAtStation = true;
+            result.stationName = getStationName(closestNode.code, lang);
+            result.stationCode = closestCoord.name;
+            result.stationNode = closestNode;
+
+            if (checkBothEnds && trailingPos && closestPosLabel === 'trailing') {
+                result.actualCarPos = trailingPos;
+            } else {
+                result.actualCarPos = leadingPos;
+            }
+
+            if (isGXTrain && !isStationInCurrentLine) {
+                result.platform = '\u2026';
+            } else {
+                result.platform = closestCoord.name.replace(closestNode.code, '');
+                if (train.stopped === 'false') {
+                    result.platform = result.platform.replace(/[A-Za-z]/g, '') + '\u2026';
+                }
+            }
+        }
+
+        return result;
+    }
+
     return {
         init,
         getTrainLimitSpeed,
@@ -1188,6 +1447,13 @@ const PositionUtils = (function() {
         checkAndAddWarningSign,
         checkIfTrainAtAnyStation,
         getTrainDirection,
-        checkTrainApproachingPlayers
+        checkTrainApproachingPlayers,
+        computeTrainDirection,
+        computeTrackDirection,
+        getInheritedDirection,
+        saveTrainDirection,
+        resolveDirectionFromSpeed,
+        applyBackwardsDirection,
+        detectTrainAtStation
     };
 })();

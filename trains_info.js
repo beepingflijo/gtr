@@ -1,44 +1,31 @@
 
-// 页面加载完成后执行初始化函数
 document.addEventListener('DOMContentLoaded', function () {
-    // 加载线路数据
-    fetch('./data/lines.json')
-        .then(response => response.json())
-        .then(data => {
-            window.lines = data.lines;
-            // 加载network.json
-            fetch('./data/network.json')
-                .then(networkResponse => networkResponse.json())
-                .then(networkData => {
-                    window.stationsNetwork = networkData.stations;
-                    fetch('strings.json')
-                        .then(stringsResponse => stringsResponse.json())
-                        .then(stringsData => {
-                            window.strings = stringsData;
-                            // 加载列车信息数据
-                            fetch('./data/trains_info.json')
-                                .then(trainsInfoResponse => trainsInfoResponse.json())
-                                .then(trainsInfoData => {
-                                    window.trainsInfo = trainsInfoData.trains;
-                                    // 初始化PositionUtils模块
-                                    if (typeof PositionUtils !== 'undefined') {
-                                        PositionUtils.init({
-                                            trainsInfo: window.trainsInfo,
-                                            stationsNetwork: window.stationsNetwork,
-                                            lines: window.lines,
-                                            strings: window.strings,
-                                            lang: lang
-                                        });
-                                    }
-                                    init();
-                                })
-                                .catch(error => console.error('Error loading trains info data:', error));
-                        })
-                    .catch(error => console.error('Error loading Language data:', error));
-                })
-                .catch(error => console.error('Error loading network data:', error));
+    const loadLines = fetch('./data/lines.json').then(r => r.json());
+    const loadNetwork = typeof TrainDataSource !== 'undefined'
+        ? TrainDataSource.loadNetworkData()
+        : fetch('./data/network.json').then(r => r.json());
+    const loadStrings = fetch('strings.json').then(r => r.json());
+    const loadTrainsInfo = fetch('./data/trains_info.json').then(r => r.json());
+
+    Promise.all([loadLines, loadNetwork, loadStrings, loadTrainsInfo])
+        .then(([linesData, networkData, stringsData, trainsInfoData]) => {
+            window.lines = linesData.lines;
+            window.stationsNetwork = networkData.stations;
+            window.strings = stringsData;
+            window.trainsInfo = trainsInfoData.trains;
+
+            if (typeof PositionUtils !== 'undefined') {
+                PositionUtils.init({
+                    trainsInfo: window.trainsInfo,
+                    stationsNetwork: window.stationsNetwork,
+                    lines: window.lines,
+                    strings: window.strings,
+                    lang: lang
+                });
+            }
+            init();
         })
-        .catch(error => console.error('Error loading lines data:', error));
+        .catch(error => console.error('Error loading initial data:', error));
 });
 
 // 存储上次列车位置信息用于速度计算
@@ -182,169 +169,104 @@ function init() {
     // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作
 }*/
 
-// 获取列车实时数据
 function fetchTrainData() {
     const mainContainer = document.querySelector('main');
     
-    // 如果是第一次加载，显示加载中状态
     if (mainContainer && (mainContainer.children.length === 0 || mainContainer.querySelector('.loading'))) {
         mainContainer.innerHTML = '';
-        
-        // 显示加载中状态
         const loadingElement = document.createElement('div');
         loadingElement.className = 'loading';
         loadingElement.classList.add('item');
         loadingElement.textContent = strings.lines_info.loading[lang] || 'Loading...';
         mainContainer.appendChild(loadingElement);
     }
-    
-    // 使用EventSource处理Server-Sent Events
-    const eventSource = new EventSource('https://track.nitrogen.hydcraft.cn/api/trains.rt');
-    
-    eventSource.onmessage = function(event) {
+
+    function handleTrainData(data) {
+        const searchInput = document.querySelector('.search-input');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        displayTrains(data.trains, mainContainer);
+
         try {
-            // 解析服务器发送的数据
-            let data = JSON.parse(event.data);
-            
-            // 验证数据结构
-            if (!data || !data.trains || !Array.isArray(data.trains)) {
-                console.error('数据结构无效: trains属性不存在或不是数组', data);
-                handleError(mainContainer, strings.lines_info.invalid_data_format[lang] || 'Invalid data format');
-                return;
-            }
-            
-            // 过滤掉无效的列车数据
-            const originalLength = data.trains.length;
-            data.trains = data.trains.filter(train => {
-                return train && 
-                       typeof train === 'object' && 
-                       train.name && 
-                       train.cars && 
-                       Array.isArray(train.cars) && 
-                       train.cars.length > 0 &&
-                       train.cars[0].leading && 
-                       train.cars[0].leading.location;
-            });
-            //console.log(`过滤前${originalLength}条数据，过滤后${data.trains.length}条数据`);
-            
-            // 保存当前搜索词
-            const searchInput = document.querySelector('.search-input');
-            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-            
-            // 显示列车信息
-            displayTrains(data.trains, mainContainer);
-            
-            // 检查列车是否接近关注的玩家
-            try {
-                // 从localStorage获取关注的玩家列表
-                const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
-                if (prefs.followPlayers && 
-                    typeof PositionUtils !== 'undefined' && typeof PositionUtils.checkTrainApproachingPlayers === 'function') {
-                    console.log('通过SSE检查列车接近玩家');
-                    // 遍历所有列车，逐个检查是否接近玩家
-                    if (Array.isArray(data.trains)) {
-                        data.trains.forEach(train => {
-                            // 确保train是有效对象后再调用
-                            if (train && typeof train === 'object') {
-                                PositionUtils.checkTrainApproachingPlayers(train, prefs.followPlayers);
-                                loadingExampleToastShown = false;
-                                loadingToastShown = false;
-                            }
-                        });
-                    } else {
-                        console.warn('data.trains 不是数组格式:', data.trains);
+            const userPrefs = JSON.parse(localStorage.getItem('preferences') || '{}');
+            if (userPrefs.followPlayers && typeof PositionUtils !== 'undefined' && typeof PositionUtils.checkTrainApproachingPlayers === 'function') {
+                data.trains.forEach(train => {
+                    if (train && typeof train === 'object') {
+                        PositionUtils.checkTrainApproachingPlayers(train, userPrefs.followPlayers);
                     }
-                }
-            } catch (error) {
-                console.error('检查列车接近玩家时出错:', error);
+                });
             }
-            // 数据更新后，重新应用之前的搜索过滤
-            applySearchFilter(searchTerm);
-            loadUpdateTime();
         } catch (error) {
-            console.error('解析列车数据时出错:', error);
-            handleError(mainContainer, strings.lines_info.json_parse_error[lang] || 'JSON parse error');
-        }
-    };
-    
-    eventSource.onerror = function(error) {
-        console.error('SSE连接错误:', error);
-        
-        // 关闭当前连接
-        eventSource.close();
-        
-        // 显示toast提示正在重新连接，但保留现有数据
-        if (mainContainer) {
-            // 检查是否已经存在toast提示，避免重复添加
-            if (loadingToastShown === false) showToast(strings.lines_info.loading[lang] || 'Loading...', 5000);
-            loadingToastShown = true;
+            console.error('检查列车接近玩家时出错:', error);
         }
 
-        // 从./data/trains.json中加载数据
-        fetch('./data/trains.json')
-        .then(response => response.json())
-        .then(data => {
-            console.log('从./data/trains.json加载数据',data);
-            if (loadingExampleToastShown === false) showToast(strings.trains_info.loading_example_data[lang], 5000);
-            loadingExampleToastShown = true;
-            loadingToastShown = true;
-            
-            // 显示列车信息
-            
-            // 过滤掉无效的列车数据
-            const originalLength = data.trains.length;
-            data.trains = data.trains.filter(train => {
-                return train && 
-                       typeof train === 'object' && 
-                       train.name && 
-                       train.cars && 
-                       Array.isArray(train.cars) && 
-                       train.cars.length > 0 &&
-                       train.cars[0].leading && 
-                       train.cars[0].leading.location;
-            });
-            //console.log(`过滤前${originalLength}条数据，过滤后${data.trains.length}条数据`);
-            
-            // 保存当前搜索词
-            const searchInput = document.querySelector('.search-input');
-            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-            
-            // 显示列车信息
-            displayTrains(data.trains, mainContainer);
-            
-            // 检查列车是否接近关注的玩家
-            try {
-                // 从localStorage获取关注的玩家列表
-                const prefs = JSON.parse(localStorage.getItem('preferences') || '{}');
-                if (prefs.followPlayers && 
-                    typeof PositionUtils !== 'undefined' && typeof PositionUtils.checkTrainApproachingPlayers === 'function') {
-                    console.log('通过SSE检查列车接近玩家');
-                    // 遍历所有列车，逐个检查是否接近玩家
-                    if (Array.isArray(data.trains)) {
-                        data.trains.forEach(train => {
-                            // 确保train是有效对象后再调用
-                            if (train && typeof train === 'object') {
-                                PositionUtils.checkTrainApproachingPlayers(train, prefs.followPlayers);
-                            }
-                        });
-                    } else {
-                        console.warn('data.trains 不是数组格式:', data.trains);
-                    }
-                }
-            } catch (error) {
-                console.error('检查列车接近玩家时出错:', error);
+        applySearchFilter(searchTerm);
+        loadUpdateTime();
+    }
+
+    if (typeof TrainDataSource !== 'undefined') {
+        TrainDataSource.on('data', function (payload) {
+            loadingToastShown = false;
+            handleTrainData(payload);
+        });
+
+        TrainDataSource.on('offline', function () {
+            if (!loadingToastShown) {
+                showToast(strings.lines_info.loading[lang] || 'Loading...', 5000);
+                loadingToastShown = true;
             }
-            // 数据更新后，重新应用之前的搜索过滤
-            applySearchFilter(searchTerm);
-            loadUpdateTime();
-        })
+        });
+
+        TrainDataSource.on('fallback_success', function () {
+            if (!loadingExampleToastShown) {
+                showToast(strings.trains_info.loading_example_data[lang], 5000);
+                loadingExampleToastShown = true;
+            }
+        });
+
+        TrainDataSource.start();
+    } else {
+        const eventSource = new EventSource(TrainDataSource ? TrainDataSource.API_URL : 'https://track.nitrogen.hydcraft.cn/api/trains.rt');
         
-        // 5秒后尝试重新连接
-        setTimeout(() => {
-            console.log('正在尝试重新连接SSE...');
-            fetchTrainData();
-        }, 5000);
-    };
+        eventSource.onmessage = function(event) {
+            try {
+                let data = JSON.parse(event.data);
+                if (!data || !data.trains || !Array.isArray(data.trains)) {
+                    console.error('数据结构无效', data);
+                    handleError(mainContainer, strings.lines_info.invalid_data_format[lang] || 'Invalid data format');
+                    return;
+                }
+                data.trains = (data.trains || []).filter(t => t && typeof t === 'object' && t.name && t.cars && Array.isArray(t.cars) && t.cars.length > 0 && t.cars[0].leading && t.cars[0].leading.location);
+                handleTrainData(data);
+            } catch (error) {
+                console.error('解析列车数据时出错:', error);
+                handleError(mainContainer, strings.lines_info.json_parse_error[lang] || 'JSON parse error');
+            }
+        };
+
+        eventSource.onerror = function(error) {
+            eventSource.close();
+            if (!loadingToastShown) {
+                showToast(strings.lines_info.loading[lang] || 'Loading...', 5000);
+                loadingToastShown = true;
+            }
+
+            fetch('./data/trains.json')
+                .then(response => response.json())
+                .then(data => {
+                    if (!loadingExampleToastShown) {
+                        showToast(strings.trains_info.loading_example_data[lang], 5000);
+                        loadingExampleToastShown = true;
+                    }
+                    data.trains = (data.trains || []).filter(t => t && typeof t === 'object' && t.name && t.cars && Array.isArray(t.cars) && t.cars.length > 0 && t.cars[0].leading && t.cars[0].leading.location);
+                    handleTrainData(data);
+                });
+
+            setTimeout(() => {
+                fetchTrainData();
+            }, 5000);
+        };
+    }
 }
 
 // 展示所有列车信息
@@ -476,52 +398,52 @@ function createTrainSection(train) {
     const position = leadingCar.leading.location;
     positionElement.textContent = `(${position.x.toFixed(0)}, ${position.y.toFixed(0)}, ${position.z.toFixed(0)})`;
     
-    // 列车速度信息 (根据位移和时间差计算)
     const speedElement = document.createElement('div');
     speedElement.className = 'train-speed';
     
-    // 计算速度
-    const currentTime = Date.now();
-    let speedText = '';
-    let currentSpeed = 0; // 保存当前速度用于后续计算
-    
-    if (trainPositions.has(train.name)) {
-        const lastPosition = trainPositions.get(train.name);
-        const timeDiff = (currentTime - lastPosition.time) / 1000; // 转换为秒
-        
-        if (timeDiff > 0) {
-            // 计算位移距离
-            const dx = position.x - lastPosition.x;
-            const dy = position.y - lastPosition.y;
-            const dz = position.z - lastPosition.z;
-            const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
-            
-            // 计算速度 (km/h)
-            currentSpeed = distance / timeDiff * 3.6;
-
-            // 获取列车限速
-            const trainSpeedLimit = getTrainLimitSpeed(train.name);
-
-            // 如果计算出超出限速的速度，则认为是异常数据，继承上次速度
-            if (currentSpeed > trainSpeedLimit) {
-                currentSpeed = lastPosition.speed;
+    let isStopped = train.stopped === 'true';
+    if (typeof PositionUtils !== 'undefined') {
+        PositionUtils.computeTrainDirection(train.name, position, isStopped);
+    } else {
+        const currentTime = Date.now();
+        if (trainPositions.has(train.name)) {
+            const lastPosition = trainPositions.get(train.name);
+            const timeDiff = (currentTime - lastPosition.time) / 1000;
+            if (timeDiff > 0) {
+                const distance = Math.sqrt(
+                    Math.pow(position.x - lastPosition.x, 2) +
+                    Math.pow(position.y - lastPosition.y, 2) +
+                    Math.pow(position.z - lastPosition.z, 2)
+                );
+                const speed = distance / timeDiff * 3.6;
+                trainPositions.set(train.name, { x: position.x, y: position.y, z: position.z, time: currentTime, speed: speed });
             }
+        } else {
+            trainPositions.set(train.name, { x: position.x, y: position.y, z: position.z, time: currentTime, speed: 0 });
+        }
+    }
+
+    let speedText = '';
+    let currentSpeed = 0;
+    try {
+        const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+        const currentTrainData = allTrainsData[train.name];
+        if (currentTrainData && currentTrainData.speed !== undefined) {
+            if (currentTrainData.isSpeedLost && currentTrainData.prevSpeed !== undefined) {
+                currentSpeed = currentTrainData.prevSpeed;
+            } else {
+                currentSpeed = currentTrainData.speed;
+            }
+            const trainSpeedLimit = getTrainLimitSpeed(train.name);
+            if (currentSpeed > trainSpeedLimit) currentSpeed = 0;
+            if (isStopped) currentSpeed = 0;
             speedText = `${strings.lines_info.speed[lang] || 'Spd '}${currentSpeed.toFixed(0)} km/h`;
         } else {
-            speedText = `${strings.lines_info.speed[lang] || 'Spd '}0 km/h`;
+            speedText = `${strings.lines_info.speed[lang] || 'Spd '}...`;
         }
-    } else {
+    } catch (e) {
         speedText = `${strings.lines_info.speed[lang] || 'Spd '}...`;
     }
-    
-    // 更新位置缓存
-    trainPositions.set(train.name, {
-        x: position.x,
-        y: position.y,
-        z: position.z,
-        time: currentTime,
-        speed: currentSpeed
-    });
     
     speedElement.textContent = speedText;
     
@@ -639,95 +561,18 @@ function createTrainSection(train) {
         let isAtStation = false;
         let stationName = '';
         let platform = '';
-        let actualCarPos = null; // 记录实际位置
+        let actualCarPos = null;
         
         if (trainLine) {
-            // 检查列车是否在车站
-            // 新逻辑：分别检查列车头尾车厢，选择更靠近站台的一端
-            const leadingPos = train.cars[0].leading.location; // 列车头位置
-            const trailingPos = train.cars[train.cars.length - 1].trailing.location; // 列车尾位置
+            const stationResult = detectTrainAtStation(train, trainLine, {
+                checkBothEnds: true,
+                atStationThreshold: 100
+            });
             
-            let closestLeadingDistance = Infinity;
-            let closestTrailingDistance = Infinity;
-            let leadingStation = null;
-            let trailingStation = null;
-            let leadingCoord = null;
-            let trailingCoord = null;
-            let leadingNode = null;
-            let trailingNode = null;
-            
-            // 查找头车最近的车站
-            for (const node of trainLine.route) {
-                if (node.type === 'station') {
-                    const stationCoords = findStationCoordinates(node.code);
-                    for (const coord of stationCoords) {
-                        // 确保坐标数据存在
-                        if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
-                            continue;
-                        }
-                        
-                        const distance = Math.sqrt(
-                            Math.pow(leadingPos.x - coord.x, 2) + 
-                            Math.pow(leadingPos.y - coord.y, 2) + 
-                            Math.pow(leadingPos.z - coord.z, 2)
-                        );
-                        
-                        if (distance < closestLeadingDistance) {
-                            closestLeadingDistance = distance;
-                            leadingStation = getStationName(node.code, lang);
-                            leadingCoord = coord;
-                            leadingNode = node;
-                        }
-                    }
-                }
-            }
-            
-            // 查找尾车最近的车站
-            for (const node of trainLine.route) {
-                if (node.type === 'station') {
-                    const stationCoords = findStationCoordinates(node.code);
-                    for (const coord of stationCoords) {
-                        // 确保坐标数据存在
-                        if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
-                            continue;
-                        }
-                        
-                        const distance = Math.sqrt(
-                            Math.pow(trailingPos.x - coord.x, 2) + 
-                            Math.pow(trailingPos.y - coord.y, 2) + 
-                            Math.pow(trailingPos.z - coord.z, 2)
-                        );
-                        
-                        if (distance < closestTrailingDistance) {
-                            closestTrailingDistance = distance;
-                            trailingStation = getStationName(node.code, lang);
-                            trailingCoord = coord;
-                            trailingNode = node;
-                        }
-                    }
-                }
-            }
-            
-            // 比较头尾车厢哪个更接近车站（距离小于200）
-            if (closestLeadingDistance <= 200 || closestTrailingDistance <= 200) {
-                isAtStation = true;
-                if (closestLeadingDistance <= closestTrailingDistance) {
-                    // 头车更接近车站
-                    stationName = leadingStation;
-                    platform = leadingCoord.name.replace(leadingNode.code, "");
-                    actualCarPos = leadingPos; // 记录实际位置
-                } else {
-                    // 尾车更接近车站
-                    stationName = trailingStation;
-                    platform = trailingCoord.name.replace(trailingNode.code, "");
-                    actualCarPos = trailingPos; // 记录实际位置
-                }
-                
-                // 如果列车未到站则去除站台编号中的字母
-                if (train.stopped === 'false') {
-                    platform = platform.replace(/[A-Za-z]/g, '') + '…';
-                }
-            }
+            isAtStation = stationResult.isAtStation;
+            stationName = stationResult.stationName;
+            platform = stationResult.platform;
+            actualCarPos = stationResult.actualCarPos;
         }
         
         if (isAtStation) {
@@ -1007,6 +852,20 @@ function calculateDistance(v, w) {
     if (typeof PositionUtils !== 'undefined') {
         return PositionUtils.calculateDistance(v, w);
     }
+}
+
+function detectTrainAtStation(train, line, options) {
+    if (typeof PositionUtils !== 'undefined') {
+        return PositionUtils.detectTrainAtStation(train, line, options);
+    }
+    return {
+        isAtStation: false,
+        stationName: '',
+        stationCode: '',
+        platform: '',
+        actualCarPos: null,
+        stationNode: null
+    };
 }
 
 // 测量线路总长度
@@ -1289,97 +1148,19 @@ function applySearchFilter(searchTerm = '') {
             let isAtStation = false;
             let stationName = '';
             let platform = '';
-            let stationCode = ''; // 添加车站三字码
-            let actualCarPos = null; // 定义 actualCarPos 变量
+            let stationCode = '';
+            let actualCarPos = null;
             if (trainLine) {
-                // 检查列车是否在车站
-                // 新逻辑：分别检查列车头尾车厢，选择更靠近站台的一端
-                const leadingPos = train.cars[0].leading.location; // 列车头位置
-                const trailingPos = train.cars[train.cars.length - 1].trailing.location; // 列车尾位置
+                const stationResult = detectTrainAtStation(train, trainLine, {
+                    checkBothEnds: true,
+                    atStationThreshold: 200
+                });
                 
-                let closestLeadingDistance = Infinity;
-                let closestTrailingDistance = Infinity;
-                let leadingStation = null;
-                let trailingStation = null;
-                let leadingCoord = null;
-                let trailingCoord = null;
-                let leadingNode = null;
-                let trailingNode = null;
-                
-                // 查找头车最近的车站
-                for (const node of trainLine.route) {
-                    if (node.type === 'station') {
-                        const stationCoords = findStationCoordinates(node.code);
-                        for (const coord of stationCoords) {
-                            // 确保坐标数据存在
-                            if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
-                                continue;
-                            }
-                            
-                            const distance = Math.sqrt(
-                                Math.pow(leadingPos.x - coord.x, 2) + 
-                                Math.pow(leadingPos.y - coord.y, 2) + 
-                                Math.pow(leadingPos.z - coord.z, 2)
-                            );
-                            
-                            if (distance < closestLeadingDistance) {
-                                closestLeadingDistance = distance;
-                                leadingStation = getStationName(node.code, lang);
-                                leadingCoord = coord;
-                                leadingNode = node;
-                                stationCode = coord.name; // 保存车站三字码
-                            }
-                        }
-                    }
-                }
-                
-                // 查找尾车最近的车站
-                for (const node of trainLine.route) {
-                    if (node.type === 'station') {
-                        const stationCoords = findStationCoordinates(node.code);
-                        for (const coord of stationCoords) {
-                            // 确保坐标数据存在
-                            if (!coord || coord.x === undefined || coord.y === undefined || coord.z === undefined) {
-                                continue;
-                            }
-                            
-                            const distance = Math.sqrt(
-                                Math.pow(trailingPos.x - coord.x, 2) + 
-                                Math.pow(trailingPos.y - coord.y, 2) + 
-                                Math.pow(trailingPos.z - coord.z, 2)
-                            );
-                            
-                            if (distance < closestTrailingDistance) {
-                                closestTrailingDistance = distance;
-                                trailingStation = getStationName(node.code, lang);
-                                trailingCoord = coord;
-                                trailingNode = node;
-                                stationCode = coord.name; // 保存车站三字码
-                            }
-                        }
-                    }
-                }
-                
-                // 比较头尾车厢哪个更接近车站（距离小于200）
-                if (closestLeadingDistance <= 200 || closestTrailingDistance <= 200) {
-                    isAtStation = true;
-                    if (closestLeadingDistance <= closestTrailingDistance) {
-                        // 头车更接近车站
-                        stationName = leadingStation;
-                        platform = leadingCoord.name.replace(leadingNode.code, "");
-                        actualCarPos = leadingPos; // 记录实际位置
-                    } else {
-                        // 尾车更接近车站
-                        stationName = trailingStation;
-                        platform = trailingCoord.name.replace(trailingNode.code, "");
-                        actualCarPos = trailingPos; // 记录实际位置
-                    }
-                    
-                    // 如果列车未到站则去除站台编号中的字母
-                    if (train.stopped === 'false') {
-                        platform = platform.replace(/[A-Za-z]/g, '') + '…';
-                    }
-                }
+                isAtStation = stationResult.isAtStation;
+                stationName = stationResult.stationName;
+                platform = stationResult.platform;
+                stationCode = stationResult.stationCode;
+                actualCarPos = stationResult.actualCarPos;
             }
             
             if (isAtStation) {

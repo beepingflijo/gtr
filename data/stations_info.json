@@ -348,6 +348,86 @@
         ],
         "cover":"https://assets.wiki.hydcraft.cn/2/23/%E5%B9%B3%E5%AE%89%E9%87%8C%E7%AB%993%E5%8F%B7%E5%8F%A3.png"
     },
+    "GYQ":{
+        "exits":[
+            {
+                "id":"A1","dir":"east","floor":"1F",
+                "desc":"building","desc_dir":"north"
+            },
+            {
+                "id":"A2","dir":"east","floor":"1F",
+                "desc":"building","desc_dir":"south"
+            },
+            {
+                "id":"A3","dir":"south","floor":"1F",
+                "desc":"building","desc_dir":"south"
+            },
+            {
+                "id":"A4","dir":"west","floor":"1F",
+                "desc":"building","desc_dir":"west"
+            },
+            {
+                "id":"A5","dir":"northwest","floor":"1F",
+                "desc":"building","desc_dir":"northwest"
+            },
+            {
+                "id":"A6","dir":"northeast","floor":"1F",
+                "desc":"building","desc_dir":"northeast"
+            },
+            {
+                "id":"C1","dir":"southeast","floor":"B2",
+                "desc":""
+            },
+            {
+                "id":"D1","dir":"northeast","floor":"B1",
+                "desc":""
+            },
+            {
+                "id":"D2","dir":"southeast","floor":"B1",
+                "desc":""
+            },
+            {
+                "id":"D3","dir":"northwest","floor":"B1",
+                "desc":""
+            },
+            {
+                "id":"D4","dir":"southwest","floor":"B1",
+                "desc":""
+            }
+        ],
+        "platforms":[
+            {"id":"13","plat_side":"down","door_side":"right"},
+            {"id":"14","plat_side":"down","door_side":"left"},
+            {"id":"15","plat_side":"up","door_side":"left"},
+            {"id":"16","plat_side":"up","door_side":"right"}
+        ],
+        "facilities":[
+            {
+                "type":"platforms","floor":"2F",
+                "desc":"7/8","lines":["8号线"]
+            },
+            {
+                "type":"platforms","floor":"B1",
+                "desc":"1/2/3/4/5/6","lines":["1号线","3号线","T2线"]
+            },
+            {
+                "type":"platforms","floor":"B3",
+                "desc":"11/12","lines":["2号线"]
+            },
+            {
+                "type":"ticket","floor":"1F",
+                "dir":"west"
+            }
+        ],
+        "floors":[
+            {"id":"2F","type":"transfer"},
+            {"id":"1F","type":"concourse"},
+            {"id":"B1","type":"transfer"},
+            {"id":"B2","type":"concourse"},
+            {"id":"B3","type":"platform"}
+        ],
+        "cover":"https://assets.wiki.hydcraft.cn/6/62/%E5%AE%9C%E6%BA%AA%E6%A1%A5%E7%AB%99%E8%A5%BF%E5%8D%97%E8%A7%92.png"
+    },
     "GYZ":{
         "exits":[
             {
@@ -698,6 +778,32 @@
             {"id":"B1","type":"concourse"}
         ],
         "cover":""
+    },
+    "LBG":{
+        "exits":[
+        ],
+        "platforms":[
+            {"id":"5","plat_side":"down","door_side":"right"},
+            {"id":"6","plat_side":"up","door_side":"right"}
+        ],
+        "facilities":[
+            {
+                "type":"platforms","floor":"3F",
+                "desc":"1/2","lines":["松北城际"]
+            },
+            {
+                "type":"platforms","floor":"B2",
+                "desc":"3/4","lines":["双叶线"]
+            }
+        ],
+        "floors":[
+            {"id":"3F","type":"transfer"},
+            {"id":"2F","type":"concourse"},
+            {"id":"1F","type":"concourse"},
+            {"id":"B1","type":"platform"},
+            {"id":"B2","type":"transfer"}
+        ],
+        "cover":"https://assets.wiki.hydcraft.cn/1/1b/%E6%9D%BE%E5%8C%97%E5%85%AC%E5%9B%AD%E5%9C%B0%E4%B8%8B.png"
     },
     "LMW":{
         "exits":[

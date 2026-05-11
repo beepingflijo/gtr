@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
@@ -60,7 +60,36 @@
 <script src="dialog.js"></script>
 <script src="keyboard.js"></script>
 <script src="position_utils.js"></script>
+<script src="train_data_source.js"></script>
 <script src="lines_info.js" type="module"></script>
+<div class="map-overlay" id="map-overlay">
+    <div class="map-header">
+        <div class="actions map-header-actions">
+            <div class="icon-btn" id="map-fit-btn" title="">
+                <span class="material-symbols-outlined">fit_screen</span>
+            </div>
+            <div class="icon-btn" id="map-trains-toggle" title="">
+                <span class="material-symbols-outlined">directions_subway</span>
+            </div>
+        </div>
+    </div>
+    <div class="map-canvas-container" id="map-canvas-container">
+        <canvas id="map-canvas"></canvas>
+        <div class="map-zoom-indicator" id="map-zoom-indicator">100%</div>
+        <div class="map-controls">
+            <div class="actions icon-btn map-ctrl-btn" id="map-zoom-in" title="">
+                <span class="material-symbols-outlined">add</span>
+            </div>
+            <div class="actions icon-btn map-ctrl-btn" id="map-zoom-out" title="">
+                <span class="material-symbols-outlined">remove</span>
+            </div>
+        </div>
+        <div class="tooltip map-tooltip" id="map-tooltip">
+            <div class="tooltip-title map-tooltip-title" id="map-tooltip-title"></div>
+            <div class="map-tooltip-body" id="map-tooltip-body"></div>
+        </div>
+    </div>
+</div>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </body>
 </html>
