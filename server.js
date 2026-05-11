@@ -832,6 +832,48 @@ setInterval(() => {
 
 
 
+// ==================== 项目版本接口 ====================
+const SCAN_EXTENSIONS = new Set(['.html', '.js', '.css', '.json', '.png', '.jpg', '.svg', '.ico', '.bat', '.sh']);
+const SCAN_EXCLUDE_DIRS = new Set(['node_modules', '.git', '.trae', 'data']);
+
+function scanLastModified(dir) {
+    let latest = 0;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            if (SCAN_EXCLUDE_DIRS.has(entry.name)) continue;
+            const subLatest = scanLastModified(fullPath);
+            if (subLatest > latest) latest = subLatest;
+        } else {
+            const ext = path.extname(entry.name).toLowerCase();
+            if (!SCAN_EXTENSIONS.has(ext)) continue;
+            try {
+                const stat = fs.statSync(fullPath);
+                if (stat.mtimeMs > latest) latest = stat.mtimeMs;
+            } catch (e) { /* skip */ }
+        }
+    }
+    return latest;
+}
+
+let cachedVersion = null;
+let cachedVersionTime = 0;
+const VERSION_CACHE_TTL = 5 * 60 * 1000;
+
+app.get('/api/version', (req, res) => {
+    const now = Date.now();
+    if (!cachedVersion || now - cachedVersionTime > VERSION_CACHE_TTL) {
+        const latestMs = scanLastModified(__dirname);
+        const date = latestMs ? new Date(latestMs) : new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const versionStr = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}`;
+        cachedVersion = versionStr;
+        cachedVersionTime = now;
+    }
+    res.json({ version: cachedVersion, lastModified: cachedVersion });
+});
+
 // ==================== 静态文件服务 ====================
 // 在生产环境中，Express也提供静态文件
 app.use(express.static(path.join(__dirname)));

@@ -850,6 +850,9 @@ async function sendTrainApproachingNotification(trainName, playerName, body) {
 }
 
 function getLineName(lineId) { 
+    if (lineId === 'all') {
+        return strings.lines_info.map_all_lines[lang];
+    }
     return lines.find(line => line.id === lineId)?.name?.[lang] || lineId;
 }
 

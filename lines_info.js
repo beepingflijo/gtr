@@ -100,7 +100,7 @@ function init() {
 
     // 调整所有lineSelector样式
     lineSelectors.forEach(lineSelector => {
-        lineSelector.setAttribute('style', `--color-primary: ${window.lines.find(line => line.id === getActiveLineId()).color}`);
+        lineSelector.setAttribute('style', `--color-primary: ${window.lines.find(line => line.id === getActiveLineId())?.color || '#808080'}`);
     });
     
     const mapBtn = document.querySelector('.map-btn');
@@ -116,7 +116,7 @@ function init() {
     loadSegmentInfo();
     loadUpdateTime();
 
-    displayStations(line);
+    if (line) displayStations(line);
     initDataSource();
 
     initMapMode();
@@ -1040,12 +1040,19 @@ function getActiveLineId () {
             lineId = lines[0].id;
         }
     }
+    if (lineId === 'all') {
+        openMapMode();
+        return 'all';
+    }
     // 保存当前线路为最后访问的线路
     // console.log('Active line id:', lineId);
     return lineId;
 }
 
 function getLineName(lineId = getActiveLineId()) {
+    if (lineId === 'all') {
+        return strings.lines_info.map_all_lines[lang];
+    }
     return lines.find(line => line.id === lineId).name[lang];
 }
 
@@ -2690,6 +2697,7 @@ var MapMode = (function () {
     }
 
     function openMapMode() {
+        recordLastVisitedPage('?line=all');
         overlay = document.getElementById('map-overlay');
         const mapEntries = document.querySelectorAll('.map-entry');
         const currentLineEntries = document.querySelectorAll('.line-selector .selection-item.active');
@@ -2706,8 +2714,10 @@ var MapMode = (function () {
         document.getElementById('map-zoom-in').title = strings.lines_info.map_zoom_in[lang];
         document.getElementById('map-zoom-out').title = strings.lines_info.map_zoom_out[lang];
 
-        showTrains = true;
-        document.getElementById('map-trains-toggle').classList.add('active');
+        if (isOpen === false) {
+            showTrains = true;
+            document.getElementById('map-trains-toggle').classList.add('active');
+        }
 
         buildStationCoords();
         setupInteractions();
@@ -2733,10 +2743,7 @@ var MapMode = (function () {
         });
         isOpen = true;
 
-        setTimeout(function () {
-            fitAll();
-            render();
-        }, 50);
+        render();
     }
 
     function closeMapMode() {

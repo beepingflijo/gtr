@@ -21,7 +21,7 @@ function loadHistory(inDialog = true,lang=window.lang) {
                 case 'lines_info':
                     historyIcon.textContent = 'route';
                     const lineId = params.get('line');
-                    const lineName = getLineName(lineId);
+                    const lineName = getLineName(lineId) || strings.lines_info.map_all_lines[lang];
                     historyTitle.textContent = lineName;
                     break;
                 case 'trains_info':

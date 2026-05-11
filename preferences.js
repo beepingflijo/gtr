@@ -157,11 +157,22 @@ function init() {
     versionPrefContainer.addEventListener('click', () => {
         window.open('https://github.com/beepingflijo/gtr/commits', '_blank');
     });
+
+    const versionDisplay = document.getElementById('version');
+    fetch('/api/version')
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.version) {
+                versionDisplay.textContent = data.version;
+            }
+        })
+        .catch(() => {});
+
     const refreshPref = document.getElementById('refreshPref');
-    refreshPref.textContent = strings.preferences.refresh_all_files[lang];
+    //refreshPref.textContent = strings.preferences.refresh_all_files[lang];
     
     // 添加强制刷新按钮的事件监听器
-    refreshPref.addEventListener('click', forceRefresh);
+    //refreshPref.addEventListener('click', forceRefresh);
 
     // 实现languageHintPref每2秒轮流显示不同语言的功能
     const languageHintContainer = document.getElementById('languageHintPref');
