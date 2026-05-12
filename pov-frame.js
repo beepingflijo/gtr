@@ -25,6 +25,40 @@ const backgroundTypeNames = {
     'capture': '屏幕捕获'
 };
 
+const BLOCKED_URL_PATTERNS = [
+    /^javascript:/i,
+    /^data:text\/html/i,
+    /^vbscript:/i,
+    /localhost/i,
+    /127\.0\.0\.1/i,
+    /0\.0\.0\.0/i,
+    /192\.168\./i,
+    /10\.\d+\.\d+\.\d+/i,
+    /172\.(1[6-9]|2\d|3[01])\./i,
+    /\.onion$/i,
+    /\.local$/i
+];
+
+function isValidBackgroundUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+        const parsed = new URL(url);
+        if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+        for (const pattern of BLOCKED_URL_PATTERNS) {
+            if (pattern.test(url)) return false;
+        }
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function canUseLinkBackground() {
+    const loggedIn = typeof window.auth !== 'undefined' && window.auth.isLoggedIn && window.auth.isLoggedIn();
+    const verified = typeof window.auth !== 'undefined' && window.auth.isVerified && window.auth.isVerified();
+    return loggedIn && verified;
+}
+
 // 设置报站期间的视觉提示（降低不透明度并改变光标）
 function setAnnouncementLockVisual() {
     const lockElements = document.querySelectorAll(
@@ -125,6 +159,7 @@ function startViewOnlyPolling() {
             if (sharerName) {
                 document.title = sharerName + '的分享 - ' + __originalTitle;
             }
+            const isSameLan = data.sameLan !== false;
             if (prog && prog.activeLine) {
                 const prevIndex = activeStepIndex;
                 const prevLineId = activeLineId;
@@ -135,7 +170,8 @@ function startViewOnlyPolling() {
                 playList = prog.playList || [];
                 if (prog.playAnnouncement !== undefined) playAnnouncement = prog.playAnnouncement;
                 if (prog.isShowStationInfo !== undefined) isShowStationInfo = prog.isShowStationInfo;
-                applyBackgroundFromData(prog.bgType, prog.bgContent);
+                const effectiveBgType = (prog.bgType === 'link' && !isSameLan) ? 'transparent' : prog.bgType;
+                applyBackgroundFromData(effectiveBgType, prog.bgContent);
                 const nextIndex = prog.activeStepIndex || 0;
                 if (prevIndex !== nextIndex || prevLineId !== activeLineId) {
                     activeStepIndex = nextIndex;
@@ -192,7 +228,9 @@ document.addEventListener('DOMContentLoaded', async function () {
                         }
                         enterViewOnlyMode();
                         if (prog && prog.bgType) {
-                            applyBackgroundFromData(prog.bgType, prog.bgContent);
+                            const initialSameLan = shareData.sameLan !== false;
+                            const effectiveBgType = (prog.bgType === 'link' && !initialSameLan) ? 'transparent' : prog.bgType;
+                            applyBackgroundFromData(effectiveBgType, prog.bgContent);
                         }
                         const sharerName = shareData.username || '';
                         if (sharerName) {
@@ -466,6 +504,13 @@ function applyBackgroundMode(mode,inputContainer=document) {
             currentBgType = 'video';
             break;
         case 'link':
+            if (!canUseLinkBackground()) {
+                showToast('请先登录并完成审核后再使用URL背景功能', 3000);
+                const transparentItem = inputContainer.querySelector?.('[data-background="transparent"]') 
+                    || document.querySelector('[data-background="transparent"]');
+                if (transparentItem) transparentItem.click();
+                return;
+            }
             elementToHide.style.height = '30px';
             elementToHide.style.opacity = 1;
             elementToHide.style.padding = '4px 12px';
@@ -474,12 +519,15 @@ function applyBackgroundMode(mode,inputContainer=document) {
             linkInput.style.margin = 'unset';
             linkInput.style.padding = '';
             linkInput.style.filter = '';
-            // 监听URL输入事件
             linkInput.oninput = (e) => {
                 const url = e.target.value;
                 currentBgContent = url;
                 if (url) {
-                    // 检测URL类型（图片或视频）
+                    if (!isValidBackgroundUrl(url)) {
+                        previewBackground.style.backgroundImage = 'none';
+                        previewBackground.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;color:#ff6b6b;font-size:14px;">不安全的URL，已被拦截</div>';
+                        return;
+                    }
                     if (isImageUrl(url)) {
                         previewBackground.style.backgroundImage = `url(${url})`;
                         previewBackground.style.backgroundSize = 'cover';
@@ -1564,6 +1612,16 @@ function applyBackgroundFromData(bgType, bgContent) {
             break;
         case 'link':
             if (bgContent) {
+                if (!canUseLinkBackground()) {
+                    currentBgType = 'transparent';
+                    currentBgContent = '';
+                    return;
+                }
+                if (!isValidBackgroundUrl(bgContent)) {
+                    currentBgType = 'transparent';
+                    currentBgContent = '';
+                    return;
+                }
                 currentBgType = 'link';
                 currentBgContent = bgContent;
                 if (isImageUrl(bgContent)) {

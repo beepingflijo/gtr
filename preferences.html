@@ -72,6 +72,26 @@
                 <div class="switch notify-network-warning"></div>
             </div>
         </div>
+        <div class="item pref-list" id="deviceSection" style="display:none;"> 
+            <div class="item-title icon-btn">
+                <span class="material-symbols-outlined">
+                devices
+                </span>
+                <h3 id="deviceManagePref">登录设备管理</h3>
+            </div>
+            <div id="deviceListContainer" style="flex-wrap:wrap;height:auto;gap:4px;">
+                <div class="loading" style="text-align:center;padding:16px;width:100%;">加载中…</div>
+            </div>
+            <div class="pref-item"> 
+                <div class="icon-btn refresh-btn" id="refreshDevicesBtn" style="color:var(--color-primary);display: inline;">
+                    <span id="refreshDevicesText">刷新设备列表</span>
+                </div>
+                <div class="icon-btn" id="viewLoginLogBtn" style="color:var(--color-primary);margin-top:8px;display: inline;">
+                    <span id="viewLoginLogText">查看登录历史</span>
+                </div>
+            </div>
+            
+        </div>
         <div class="item pref-list">
             <div class="item-title icon-btn">
                 <span class="material-symbols-outlined filled">

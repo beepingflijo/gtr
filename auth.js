@@ -2,7 +2,7 @@
 
 // API基础URL（开发环境使用本地服务器，生产环境可配置）
 // 注意：如果要测试本地服务器，确保浏览器访问的是 http://localhost:3000
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.')
     ? 'http://localhost:3000/api' 
     : '/gtr/api'; // 生产环境使用相对路径，由Nginx反向代理处理
 
@@ -835,6 +835,8 @@ async function updateLoginStatusUI() {
             adminLink.style.display = 'none';
         }
     }
+
+    window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { loggedIn: !!user } }));
 }
 
 // 登录按钮点击处理
@@ -883,6 +885,75 @@ function getVerificationStatus() {
     return user.verificationStatus || 'approved';
 }
 
+// 获取当前用户的设备列表
+async function getDevices() {
+    const session = getUserSession();
+    if (!session || !session.token) {
+        return { success: false, message: 'Not logged in' };
+    }
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/devices`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${session.token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        return data;
+    } catch (error) {
+        console.error('Get devices error:', error);
+        return { success: false, message: error.message || 'Network error' };
+    }
+}
+
+// 移除指定设备（远程登出）
+async function removeDevice(deviceId) {
+    const session = getUserSession();
+    if (!session || !session.token) {
+        return { success: false, message: 'Not logged in' };
+    }
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/devices/${encodeURIComponent(deviceId)}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${session.token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        return data;
+    } catch (error) {
+        console.error('Remove device error:', error);
+        return { success: false, message: error.message || 'Network error' };
+    }
+}
+
+// 获取登录历史记录
+async function getLoginLog(limit = 50, offset = 0) {
+    const session = getUserSession();
+    if (!session || !session.token) {
+        return { success: false, message: 'Not logged in' };
+    }
+    try {
+        const response = await fetch(`${API_BASE_URL}/user/login-log?limit=${limit}&offset=${offset}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${session.token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        return data;
+    } catch (error) {
+        console.error('Get login log error:', error);
+        return { success: false, message: error.message || 'Network error' };
+    }
+}
+
 // 导出函数供其他模块使用
 window.auth = {
     isLoggedIn,
@@ -895,5 +966,8 @@ window.auth = {
     register: showRegisterDialog,
     changePassword,
     validateToken,
-    init: initAuth
+    init: initAuth,
+    getDevices,
+    removeDevice,
+    getLoginLog
 };

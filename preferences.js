@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initShowCursorSwitch();
             initReduceMotionSwitch();
             initStorageList();
+            initDeviceSection();
             handleWindowResize();
             
             // 初始化认证系统
@@ -159,7 +160,7 @@ function init() {
     });
 
     const versionDisplay = document.getElementById('version');
-    fetch('/api/version')
+    fetch('./api/version')
         .then(res => res.json())
         .then(data => {
             if (data && data.version) {
@@ -556,6 +557,208 @@ function removeFromStorage(key, element) {
                     return;
                 }
             });
+}
+
+// ==================== 设备管理（独立 pref-list 组件） ====================
+
+function getDeviceIcon(deviceType) {
+    switch (deviceType) {
+        case 'mobile': return 'smartphone';
+        case 'tablet': return 'tablet';
+        default: return 'computer';
+    }
+}
+
+function formatRelativeTime(isoString) {
+    if (!isoString) return '';
+    const ts = new Date(isoString).getTime();
+    const diff = Date.now() - ts;
+    if (diff < 60000) return strings.general.time_just_now[lang] || '刚刚';
+    if (diff < 3600000) return (strings.general.time_minutes_ago[lang] || '{n}分钟前').replace('{n}', Math.floor(diff / 60000));
+    if (diff < 86400000) return (strings.general.time_hours_ago[lang] || '{n}小时前').replace('{n}', Math.floor(diff / 3600000));
+    if (diff < 2592000000) return (strings.general.time_days_ago[lang] || '{n}天前').replace('{n}', Math.floor(diff / 86400000));
+    return new Date(isoString).toLocaleDateString();
+}
+
+function renderDeviceList(container, devices) {
+    container.innerHTML = '';
+    if (!devices || devices.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'pref-item';
+        empty.style.cssText = 'text-align:center;color:var(--color-text-secondary);';
+        empty.textContent = strings.preferences.no_devices[lang] || '暂无设备记录';
+        container.appendChild(empty);
+        return;
+    }
+    devices.forEach(device => {
+        const deviceItem = document.createElement('div');
+        deviceItem.className = 'pref-item';
+        deviceItem.style.cssText = 'flex-wrap:wrap;height:auto;padding:8px 12px;';
+
+        const isCurrent = device.isCurrent;
+        const icon = getDeviceIcon(device.deviceType);
+        const deviceLabel = `${device.os || 'Unknown'} / ${device.browser || 'Unknown'}`;
+
+        deviceItem.innerHTML = `
+            <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
+                <span class="material-symbols-outlined">${icon}</span>
+                <div style="min-width:0;">
+                    <div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${deviceLabel}
+                        ${isCurrent ? '<span style="color:var(--color-primary);font-size:0.8em;margin-left:4px;">(' + (strings.preferences.current_device[lang] || '当前设备') + ')</span>' : ''}
+                    </div>
+                    <div style="font-size:0.8em;color:var(--color-text-secondary);">
+                        IP: ${device.ip || '未知'} · ${formatRelativeTime(device.lastActive)}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (!isCurrent) {
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'icon-btn';
+            removeBtn.style.cssText = 'color:crimson;font-size:0.85em;padding:4px 8px;';
+            removeBtn.textContent = strings.preferences.logout_device[lang] || '登出此设备';
+            removeBtn.addEventListener('click', async () => {
+                const confirmed = await pushDialog(
+                    strings.preferences.confirm_logout_device[lang] || '确定要远程登出该设备吗？',
+                    'confirm-danger'
+                );
+                if (!confirmed) return;
+                const result = await window.auth.removeDevice(device.deviceId);
+                if (result.success) {
+                    showToast(strings.preferences.device_logged_out[lang] || '设备已登出', 2000);
+                    loadDeviceSessions();
+                } else {
+                    showToast(result.message || '操作失败', 3000);
+                }
+            });
+            deviceItem.appendChild(removeBtn);
+        }
+        container.appendChild(deviceItem);
+    });
+}
+
+function renderLoginLog(container, items) {
+    if (!items || items.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'pref-item';
+        empty.style.cssText = 'text-align:center;color:var(--color-text-secondary);';
+        empty.textContent = strings.preferences.no_login_history[lang] || '暂无登录历史';
+        container.appendChild(empty);
+        return;
+    }
+    const list = document.createElement('div');
+    list.className = 'pref-list';
+    list.style.cssText = 'gap:4px;';
+    items.forEach(entry => {
+        const logItem = document.createElement('div');
+        logItem.className = 'pref-item';
+        logItem.style.cssText = 'height:auto;padding:6px 12px;';
+
+        const icon = getDeviceIcon(entry.deviceType);
+        const actionLabel = entry.action === 'register'
+            ? (strings.preferences.action_register[lang] || '注册')
+            : (strings.preferences.action_login[lang] || '登录');
+
+        logItem.innerHTML = `
+            <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                <span class="material-symbols-outlined" style="font-size:1.1em;">${icon}</span>
+                <div style="min-width:0;">
+                    <div style="font-size:0.9em;">
+                        <span style="font-weight:500;">${actionLabel}</span>
+                        <span style="color:var(--color-text-secondary);margin-left:4px;">${entry.browser || ''} / ${entry.os || ''}</span>
+                    </div>
+                    <div style="font-size:0.8em;color:var(--color-text-secondary);">
+                        IP: ${entry.ip || '未知'} · ${formatRelativeTime(entry.timestamp)}
+                    </div>
+                </div>
+            </div>
+        `;
+        list.appendChild(logItem);
+    });
+    container.appendChild(list);
+}
+
+async function showLoginLogDialog() {
+    if (!window.auth || !window.auth.isLoggedIn || !window.auth.isLoggedIn()) {
+        showToast(strings.preferences.not_logged_in[lang] || '请先登录', 2000);
+        return;
+    }
+    const dialogContent = document.createElement('div');
+    dialogContent.innerHTML = '<div style="text-align:center;padding:24px;">加载中…</div>';
+    pushDialog(dialogContent, 'custom', strings.preferences.login_history[lang] || '登录历史');
+
+    const logResult = await window.auth.getLoginLog(100);
+    dialogContent.innerHTML = '';
+    if (logResult.success) {
+        renderLoginLog(dialogContent, logResult.data.items);
+    } else {
+        dialogContent.innerHTML = `<div style="text-align:center;padding:24px;color:var(--color-text-secondary);">${logResult.message || '加载失败'}</div>`;
+    }
+}
+
+async function loadDeviceSessions() {
+    const deviceContainer = document.getElementById('deviceListContainer');
+    if (!deviceContainer) return;
+
+    const loggedIn = window.auth && window.auth.isLoggedIn && window.auth.isLoggedIn();
+    const deviceSection = document.getElementById('deviceSection');
+    if (!loggedIn) {
+        if (deviceSection) deviceSection.style.display = 'none';
+        return;
+    }
+    if (deviceSection) deviceSection.style.display = '';
+
+    const devicesResult = await window.auth.getDevices();
+
+    if (devicesResult.success) {
+        renderDeviceList(deviceContainer, devicesResult.data.devices);
+    } else {
+        deviceContainer.innerHTML = `<div class="pref-item" style="text-align:center;color:var(--color-text-secondary);">${devicesResult.message || '加载失败'}</div>`;
+    }
+}
+
+function initDeviceSection() {
+    const deviceSection = document.getElementById('deviceSection');
+    const refreshBtn = document.getElementById('refreshDevicesBtn');
+    if (!deviceSection) return;
+
+    const refreshText = document.getElementById('refreshDevicesText');
+    if (refreshText) refreshText.textContent = strings.preferences.refresh_devices[lang] || '刷新设备列表';
+
+    const devicePref = document.getElementById('deviceManagePref');
+    if (devicePref) devicePref.textContent = strings.preferences.device_management[lang] || '登录设备管理';
+
+    const viewLogBtn = document.getElementById('viewLoginLogBtn');
+    const viewLogText = document.getElementById('viewLoginLogText');
+    if (viewLogText) viewLogText.textContent = strings.preferences.view_login_history[lang] || '查看登录历史';
+    if (viewLogBtn) {
+        viewLogBtn.addEventListener('click', showLoginLogDialog);
+    }
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            loadDeviceSessions();
+        });
+    }
+
+    window.addEventListener('authStateChanged', (e) => {
+        if (e.detail && e.detail.loggedIn) {
+            deviceSection.style.display = '';
+            loadDeviceSessions();
+        } else {
+            deviceSection.style.display = 'none';
+        }
+    });
+
+    const loggedIn = window.auth && window.auth.isLoggedIn && window.auth.isLoggedIn();
+    if (loggedIn) {
+        deviceSection.style.display = '';
+        loadDeviceSessions();
+    } else {
+        deviceSection.style.display = 'none';
+    }
 }
 
 // 初始化主题选择器

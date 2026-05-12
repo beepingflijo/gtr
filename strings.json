@@ -194,7 +194,20 @@
             "uk": "Синхронізація..."},
         "sync_error": {"zh_hans": "同步失败", "en": "Sync failed", "zh_hant": "同步失敗", "uk": "Синхронізація не вдалася"},
         "cloud_sync": {"zh_hans": "云端同步", "en": "Cloud Sync", "zh_hant": "雲端同步", "uk": "Хмарна синхронізація"},
-        "cloud_sync_desc": {"zh_hans": "登录后自动同步偏好设置、浏览历史和轨道视角进度", "en": "Auto-sync preferences, visited pages and POV progress when logged in", "zh_hant": "登入後自動同步偏好設定、瀏覽歷史和軌道視角進度", "uk": "Автоматична синхронізація налаштувань, відвіданих сторінок та прогресу POV при вході"}
+        "cloud_sync_desc": {"zh_hans": "登录后自动同步偏好设置、浏览历史和轨道视角进度", "en": "Auto-sync preferences, visited pages and POV progress when logged in", "zh_hant": "登入後自動同步偏好設定、瀏覽歷史和軌道視角進度", "uk": "Автоматична синхронізація налаштувань, відвіданих сторінок та прогресу POV при вході"},
+        "device_management": {"zh_hans": "登录设备管理", "en": "Login Device Management", "zh_hant": "登入設備管理", "uk": "Керування пристроями входу"},
+        "active_devices": {"zh_hans": "在线设备", "en": "Active Devices", "zh_hant": "在線設備", "uk": "Активні пристрої"},
+        "no_devices": {"zh_hans": "暂无设备记录", "en": "No device records", "zh_hant": "暫無設備記錄", "uk": "Немає записів пристроїв"},
+        "logout_device": {"zh_hans": "登出此设备", "en": "Log out device", "zh_hant": "登出此設備", "uk": "Вийти з пристрою"},
+        "confirm_logout_device": {"zh_hans": "确定要远程登出该设备吗？", "en": "Are you sure you want to log out this device remotely?", "zh_hant": "確定要遠程登出該設備嗎？", "uk": "Ви впевнені, що хочете вийти з цього пристрою?"},
+        "device_logged_out": {"zh_hans": "设备已登出", "en": "Device logged out", "zh_hant": "設備已登出", "uk": "Пристрій вийшов"},
+        "login_history": {"zh_hans": "登录历史", "en": "Login History", "zh_hant": "登入歷史", "uk": "Історія входів"},
+        "no_login_history": {"zh_hans": "暂无登录历史", "en": "No login history", "zh_hant": "暫無登入歷史", "uk": "Немає історії входів"},
+        "action_register": {"zh_hans": "注册", "en": "Register", "zh_hant": "註冊", "uk": "Реєстрація"},
+        "action_login": {"zh_hans": "登录", "en": "Login", "zh_hant": "登入", "uk": "Вхід"},
+        "current_device": {"zh_hans": "当前设备", "en": "Current Device", "zh_hant": "當前設備", "uk": "Поточний пристрій"},
+        "refresh_devices": {"zh_hans": "刷新设备列表", "en": "Refresh Devices", "zh_hant": "刷新設備列表", "uk": "Оновити список пристроїв"},
+        "view_login_history": {"zh_hans": "查看登录历史", "en": "View Login History", "zh_hant": "查看登入歷史", "uk": "Переглянути історію входів"}
     },
     "storage_descriptions": {
         "preferences":{

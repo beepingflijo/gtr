@@ -68,6 +68,7 @@ function init() {
         mapEntry.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
+            window.location.href = '?line=all';
             openMapMode();
         });
         lineSelector.insertBefore(mapEntry, lineSelector.firstChild);

@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,7 @@ const TOKEN_EXPIRY = '7d'; // Token有效期7天
 
 // 用户数据文件路径
 const USERS_FILE = path.join(__dirname, 'data', 'users.json');
+const LOGIN_LOG_FILE = path.join(__dirname, 'data', 'login_log.json');
 
 // AuthMe API配置
 const AUTHME_API_URL = 'https://api.hydcraft.cn/api/auth/login';
@@ -90,6 +92,146 @@ function saveUsers(users) {
         console.error('Error saving users file:', error);
         throw new Error('Failed to save user data');
     }
+}
+
+// ==================== 登录日志 & 设备管理 ====================
+
+function ensureLoginLogFile() {
+    if (!fs.existsSync(LOGIN_LOG_FILE)) {
+        fs.writeFileSync(LOGIN_LOG_FILE, JSON.stringify([]), 'utf8');
+    }
+}
+
+function readLoginLog() {
+    ensureLoginLogFile();
+    try {
+        const data = fs.readFileSync(LOGIN_LOG_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading login log:', error);
+        return [];
+    }
+}
+
+function saveLoginLog(logs) {
+    ensureLoginLogFile();
+    try {
+        fs.writeFileSync(LOGIN_LOG_FILE, JSON.stringify(logs, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving login log:', error);
+    }
+}
+
+function getClientIp(req) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+        return forwarded.split(',')[0].trim();
+    }
+    return req.socket.remoteAddress || req.ip || '';
+}
+
+function parseSubnet(ip) {
+    const cleanIp = ip.replace(/^::ffff:/, '');
+    const parts = cleanIp.split('.');
+    if (parts.length === 4) {
+        return parts.slice(0, 3).join('.');
+    }
+    return cleanIp;
+}
+
+function isSameLan(ip1, ip2) {
+    const clean1 = ip1.replace(/^::ffff:/, '');
+    const clean2 = ip2.replace(/^::ffff:/, '');
+    if (clean1 === clean2) return true;
+    return parseSubnet(clean1) === parseSubnet(clean2);
+}
+
+function generateDeviceId(req) {
+    const ua = req.headers['user-agent'] || '';
+    const ip = getClientIp(req);
+    const raw = ua + '|' + ip;
+    return crypto.createHash('sha256').update(raw).digest('hex').substring(0, 16);
+}
+
+function detectDeviceType(ua) {
+    if (/mobile|android|iphone|ipad/i.test(ua)) return 'mobile';
+    if (/tablet|ipad/i.test(ua)) return 'tablet';
+    return 'desktop';
+}
+
+function detectBrowser(ua) {
+    if (/edg\//i.test(ua)) return 'Edge';
+    if (/chrome/i.test(ua) && !/edg/i.test(ua)) return 'Chrome';
+    if (/firefox/i.test(ua)) return 'Firefox';
+    if (/safari/i.test(ua) && !/chrome/i.test(ua)) return 'Safari';
+    if (/opera|opr\//i.test(ua)) return 'Opera';
+    return 'Unknown';
+}
+
+function detectOS(ua) {
+    if (/windows nt 10/i.test(ua)) return 'Windows 10/11';
+    if (/windows/i.test(ua)) return 'Windows';
+    if (/mac os x/i.test(ua)) return 'macOS';
+    if (/android/i.test(ua)) return 'Android';
+    if (/iphone|ipad/i.test(ua)) return 'iOS';
+    if (/linux/i.test(ua)) return 'Linux';
+    return 'Unknown';
+}
+
+function recordLoginEvent(userId, username, action, req) {
+    const logs = readLoginLog();
+    const ip = getClientIp(req);
+    const ua = req.headers['user-agent'] || '';
+    const deviceId = generateDeviceId(req);
+    const entry = {
+        id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2),
+        userId,
+        username,
+        action,
+        ip,
+        deviceId,
+        deviceType: detectDeviceType(ua),
+        browser: detectBrowser(ua),
+        os: detectOS(ua),
+        userAgent: ua,
+        timestamp: new Date().toISOString()
+    };
+    logs.push(entry);
+    if (logs.length > 5000) {
+        logs.splice(0, logs.length - 5000);
+    }
+    saveLoginLog(logs);
+    return entry;
+}
+
+function updateDeviceSession(userId, req, token) {
+    const users = readUsers();
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) return;
+    const ua = req.headers['user-agent'] || '';
+    const ip = getClientIp(req);
+    const deviceId = generateDeviceId(req);
+    if (!users[userIndex].devices) {
+        users[userIndex].devices = [];
+    }
+    const existing = users[userIndex].devices.find(d => d.deviceId === deviceId);
+    if (existing) {
+        existing.lastActive = new Date().toISOString();
+        existing.ip = ip;
+        existing.token = token;
+    } else {
+        users[userIndex].devices.push({
+            deviceId,
+            deviceType: detectDeviceType(ua),
+            browser: detectBrowser(ua),
+            os: detectOS(ua),
+            ip,
+            token,
+            loginTime: new Date().toISOString(),
+            lastActive: new Date().toISOString()
+        });
+    }
+    saveUsers(users);
 }
 
 // 验证Token中间件
@@ -342,6 +484,9 @@ app.post('/api/auth/register', async (req, res) => {
         const tokenPayload = { id: newUser.id, username: newUser.username };
         const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
 
+        recordLoginEvent(newUser.id, newUser.username, 'register', req);
+        updateDeviceSession(newUser.id, req, token);
+
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
@@ -422,6 +567,9 @@ app.post('/api/auth/login', async (req, res) => {
             JWT_SECRET,
             { expiresIn: TOKEN_EXPIRY }
         );
+
+        recordLoginEvent(user.id, user.username, 'login', req);
+        updateDeviceSession(user.id, req, token);
 
         console.log('✅ 登录成功，返回用户信息:', {
             id: user.id,
@@ -798,30 +946,6 @@ function generatePovId() {
     return id;
 }
 
-// Create or update a POV session
-app.post('/api/pov/share', (req, res) => {
-    const { sessionId, progress, shared, username } = req.body;
-    let id = sessionId;
-    if (!id || !povSessions.has(id)) {
-        do { id = generatePovId(); } while (povSessions.has(id));
-    }
-    const existing = povSessions.get(id) || { progress: null, shared: true, username: '', created: Date.now() };
-    if (progress !== undefined) existing.progress = progress;
-    if (shared !== undefined) existing.shared = shared;
-    if (username !== undefined && username) existing.username = username;
-    existing.lastUpdate = Date.now();
-    povSessions.set(id, existing);
-    res.json({ success: true, sessionId: id, shared: existing.shared });
-});
-
-// Get a shared POV session
-app.get('/api/pov/share/:id', (req, res) => {
-    const session = povSessions.get(req.params.id);
-    if (!session) return res.status(404).json({ error: 'Session not found' });
-    if (!session.shared) return res.status(403).json({ error: 'Sharing is disabled' });
-    res.json({ success: true, progress: session.progress, username: session.username || '', lastUpdate: session.lastUpdate });
-});
-
 // Cleanup stale sessions every 30 min (sessions older than 6 hours)
 setInterval(() => {
     const cutoff = Date.now() - 6 * 60 * 60 * 1000;
@@ -872,6 +996,118 @@ app.get('/api/version', (req, res) => {
         cachedVersionTime = now;
     }
     res.json({ version: cachedVersion, lastModified: cachedVersion });
+});
+
+// ==================== 设备管理 & 登录日志 ====================
+
+// 获取当前用户的设备列表
+app.get('/api/user/devices', authenticateToken, (req, res) => {
+    const users = readUsers();
+    const user = users.find(u => u.id === req.user.id);
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const devices = (user.devices || []).map(d => ({
+        deviceId: d.deviceId,
+        deviceType: d.deviceType,
+        browser: d.browser,
+        os: d.os,
+        ip: d.ip,
+        loginTime: d.loginTime,
+        lastActive: d.lastActive,
+        isCurrent: d.deviceId === generateDeviceId(req)
+    }));
+    res.json({ success: true, data: { devices } });
+});
+
+// 移除指定设备（远程登出）
+app.delete('/api/user/devices/:deviceId', authenticateToken, (req, res) => {
+    const users = readUsers();
+    const userIndex = users.findIndex(u => u.id === req.user.id);
+    if (userIndex === -1) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const deviceId = req.params.deviceId;
+    const currentDeviceId = generateDeviceId(req);
+    if (deviceId === currentDeviceId) {
+        return res.status(400).json({ success: false, message: 'Cannot remove current device' });
+    }
+    if (!users[userIndex].devices) {
+        return res.status(404).json({ success: false, message: 'Device not found' });
+    }
+    const before = users[userIndex].devices.length;
+    users[userIndex].devices = users[userIndex].devices.filter(d => d.deviceId !== deviceId);
+    if (users[userIndex].devices.length === before) {
+        return res.status(404).json({ success: false, message: 'Device not found' });
+    }
+    saveUsers(users);
+    res.json({ success: true, message: 'Device removed' });
+});
+
+// 获取当前用户的登录日志
+app.get('/api/user/login-log', authenticateToken, (req, res) => {
+    const logs = readLoginLog();
+    const userLogs = logs.filter(l => l.userId === req.user.id);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = parseInt(req.query.offset) || 0;
+    const total = userLogs.length;
+    const items = userLogs.reverse().slice(offset, offset + limit);
+    res.json({ success: true, data: { items, total } });
+});
+
+// 管理员：获取所有登录日志
+app.get('/api/admin/login-log', authenticateToken, (req, res) => {
+    if (req.user.username !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    const logs = readLoginLog();
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const offset = parseInt(req.query.offset) || 0;
+    const username = req.query.username || '';
+    let filtered = logs;
+    if (username) {
+        filtered = logs.filter(l => l.username === username);
+    }
+    const total = filtered.length;
+    const items = filtered.reverse().slice(offset, offset + limit);
+    res.json({ success: true, data: { items, total } });
+});
+
+// ==================== POV 局域网检测 ====================
+
+// 记录 POV 发送端 IP 到会话
+app.post('/api/pov/share', (req, res) => {
+    const { sessionId, progress, shared, username } = req.body;
+    let id = sessionId;
+    if (!id || !povSessions.has(id)) {
+        do { id = generatePovId(); } while (povSessions.has(id));
+    }
+    const existing = povSessions.get(id) || { progress: null, shared: true, username: '', created: Date.now() };
+    if (progress !== undefined) existing.progress = progress;
+    if (shared !== undefined) existing.shared = shared;
+    if (username !== undefined && username) existing.username = username;
+    existing.lastUpdate = Date.now();
+    existing.sharerIp = getClientIp(req);
+    povSessions.set(id, existing);
+    res.json({ success: true, sessionId: id, shared: existing.shared });
+});
+
+// 获取分享会话（含局域网检测）
+app.get('/api/pov/share/:id', (req, res) => {
+    const session = povSessions.get(req.params.id);
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    if (!session.shared) return res.status(403).json({ error: 'Sharing is disabled' });
+    const viewerIp = getClientIp(req);
+    const sameLan = isSameLan(session.sharerIp || '', viewerIp);
+    res.json({
+        success: true,
+        progress: session.progress,
+        username: session.username || '',
+        lastUpdate: session.lastUpdate,
+        sameLan,
+        sharerIp: session.sharerIp || '',
+        viewerIp
+    });
 });
 
 // ==================== 静态文件服务 ====================

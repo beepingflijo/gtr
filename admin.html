@@ -14,11 +14,12 @@
             margin: 0 auto;
             padding: 20px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             padding-top: 6em;
         }
 
-        #adminContent {
+        #adminContent, #loginLogContent {
             width: -webkit-fill-available;
         }
         
@@ -231,12 +232,20 @@
                 <img src="./res/gtr.png" alt="logo">
                 <h1>用户管理</h1>
             </div>
-            <div class="actions"></div>
             <div class="gradient-blur"></div>
         </header>
         
         <main class="admin-container">
+            <div style="margin-bottom:20px;padding:0 30px;">
+                <div class="selection segment no-collapse admin-tabs" style="gap:4px;">
+                    <span class="selection-item active" data-tab="users" onclick="switchAdminTab('users')" style="padding:4px 12px;cursor:pointer;">用户管理</span>
+                    <span class="selection-item" data-tab="loginlog" onclick="switchAdminTab('loginlog')" style="padding:4px 12px;cursor:pointer;">登录日志</span>
+                </div>
+            </div>
             <div id="adminContent">
+                <div class="loading">加载中...</div>
+            </div>
+            <div id="loginLogContent" style="display:none;">
                 <div class="loading">加载中...</div>
             </div>
         </main>
@@ -585,6 +594,106 @@
             pushDialog(content, 'custom', `${username} 的申请说明`);
         }
         
+        function switchAdminTab(tab) {
+            const userContent = document.getElementById('adminContent');
+            const logContent = document.getElementById('loginLogContent');
+            const tabs = document.querySelectorAll('.admin-tabs .selection-item');
+            tabs.forEach(t => t.classList.remove('active'));
+            const selectedTab = document.querySelector(`.admin-tabs .selection-item[data-tab="${tab}"]`);
+            if (selectedTab) selectedTab.classList.add('active');
+            if (tab === 'users') {
+                userContent.style.display = '';
+                logContent.style.display = 'none';
+            } else {
+                userContent.style.display = 'none';
+                logContent.style.display = '';
+                loadLoginLog();
+            }
+        }
+
+        // ==================== 登录日志查看 ====================
+
+        async function loadLoginLog(username = '', limit = 100, offset = 0) {
+            const session = window.auth.getUserSession ? window.auth.getUserSession() : null;
+            if (!session || !session.token) {
+                showErrorMessage('未登录或会话已过期');
+                return;
+            }
+
+            try {
+                let url = `${API_BASE_URL}/admin/login-log?limit=${limit}&offset=${offset}`;
+                if (username) url += `&username=${encodeURIComponent(username)}`;
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${session.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load login log');
+
+                const data = await response.json();
+                if (data.success) {
+                    renderLoginLog(data.data.items, data.data.total, username);
+                } else {
+                    showErrorMessage(data.message || '加载失败');
+                }
+            } catch (error) {
+                console.error('Error loading login log:', error);
+                showErrorMessage('加载登录日志失败，请检查网络连接');
+            }
+        }
+
+        function renderLoginLog(items, total, filterUsername) {
+            const container = document.getElementById('loginLogContent');
+            if (!container) return;
+
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>暂无登录日志</h3><p>还没有登录记录</p></div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="item user-table-container">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:0 16px;">
+                        <input type="text" id="logUsernameFilter" placeholder="按用户名筛选" value="${escapeHtml(filterUsername)}" style="max-width:200px;padding:6px 10px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-bg);color:var(--color-text);">
+                        <div class="icon-btn action-btn" onclick="loadLoginLog(document.getElementById('logUsernameFilter').value)" style="padding:4px 8px;">
+                            <span class="material-symbols-outlined">search</span>筛选
+                        </div>
+                        <span style="color:var(--color-text-secondary);font-size:0.85em;">共 ${total} 条记录</span>
+                    </div>
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>操作类型</th>
+                                <th>IP地址</th>
+                                <th>设备类型</th>
+                                <th>浏览器</th>
+                                <th>操作系统</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(entry => `
+                                <tr>
+                                    <td><strong>${escapeHtml(entry.username)}</strong></td>
+                                    <td><span class="status-badge status-${entry.action === 'register' ? 'pending' : 'approved'}">${entry.action === 'register' ? '注册' : '登录'}</span></td>
+                                    <td><code style="font-size:0.85em;">${escapeHtml(entry.ip || '未知')}</code></td>
+                                    <td>${entry.deviceType === 'mobile' ? '移动端' : entry.deviceType === 'tablet' ? '平板' : '桌面端'}</td>
+                                    <td>${escapeHtml(entry.browser || '未知')}</td>
+                                    <td>${escapeHtml(entry.os || '未知')}</td>
+                                    <td>${formatDate(entry.timestamp)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
         // 页面加载时执行
         document.addEventListener('DOMContentLoaded', async () => {
             const hasAccess = await checkAdminAccess();
