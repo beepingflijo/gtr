@@ -857,7 +857,7 @@ function getLineName(lineId) {
 }
 
 function getLinesForStation(stationCode) { 
-    const linesForSearch = lines.filter(line => !line.id.includes('-R') && !line.id.includes('GX'));
+    const linesForSearch = lines.filter(line => !line.id.match('-R') && !line.id.match('GX'));
     return linesForSearch.filter(line => line.route.some(step => step.code === stationCode));
 }
 

@@ -1946,7 +1946,7 @@ var MapMode = (function () {
         var minX = Infinity, maxX = -Infinity;
         var minZ = Infinity, maxZ = -Infinity;
         window.lines.forEach(function (line) {
-            if (line.id.match('-R')) return;
+            //if (line.id.match('-R')) return;
             line.route.forEach(function (node) {
                 if (node.type === 'track') {
                     node.nodes.forEach(function (pt) {
@@ -2041,6 +2041,9 @@ var MapMode = (function () {
     }
 
     function drawSingleLine(line) {
+        if (line.id.match('-R')) {
+            ctx.globalAlpha = 0.4;
+        }
         ctx.strokeStyle = line.color;
         ctx.lineWidth = 3;
         ctx.lineJoin = 'round';
@@ -2064,7 +2067,6 @@ var MapMode = (function () {
         ctx.save();
         
         window.lines.forEach(function (line) {
-            if (line.id.match('-R')) return;
             if (line.id.startsWith('GX')) {
                 var originalColor = line.color;
                 line.color = '#808080';
@@ -2074,7 +2076,7 @@ var MapMode = (function () {
         });
 
         window.lines.forEach(function (line) {
-            if (line.id.match('-R')) return;
+            //if (line.id.match('-R')) return;
             if (!line.id.startsWith('GX')) {
                 drawSingleLine(line);
             }
@@ -2140,7 +2142,7 @@ var MapMode = (function () {
     function buildMapSegments() {
         mapSegments = [];
         window.lines.forEach(function (line) {
-            if (line.id.match('-R')) return;
+            //if (line.id.match('-R')) return;
             var tracks = line.route.filter(function (n) { return n.type === 'track'; });
             tracks.forEach(function (track) {
                 if (!track.nodes || track.nodes.length < 2) return;
