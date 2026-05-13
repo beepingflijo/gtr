@@ -2344,7 +2344,7 @@ var MapMode = (function () {
             var loc = car.leading.location;
 
             var pos = worldToScreen(loc.x, loc.z);
-            var scale = Math.pow(getElementScale(),0.5);
+            var scale = Math.pow(getElementScale(),0.1);
             var r = Math.max(5, TRAIN_RADIUS * scale);
 
             var trainInfo = window.trainsInfo ? window.trainsInfo.find(function (t) { return t.name === train.name; }) : null;
@@ -2778,7 +2778,27 @@ var MapMode = (function () {
         }
     }
 
+    function init() {
+        overlay = document.getElementById('map-overlay');
+        canvas = document.getElementById('map-canvas');
+        container = document.getElementById('map-canvas-container');
+        tooltip = document.getElementById('map-tooltip');
+        tooltipTitle = document.getElementById('map-tooltip-title');
+        tooltipBody = document.getElementById('map-tooltip-body');
+        zoomIndicator = document.getElementById('map-zoom-indicator');
+        ctx = canvas.getContext('2d');
+
+        buildStationCoords();
+        setupInteractions();
+        fitAll();
+
+        return {
+            initialized: true
+        };
+    }
+
     return {
+        init: init,
         open: openMapMode,
         close: closeMapMode,
         updateTrains: updateMapTrains,
@@ -2795,6 +2815,6 @@ function initMapMode() {
         TrainDataSource.on('data', function (payload) {
             MapMode.updateTrains(payload);
         });
-        mapMode = MapMode.init();
+        MapMode.init();
     }
 }
