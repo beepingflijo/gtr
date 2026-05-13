@@ -69,7 +69,7 @@ function init() {
             e.preventDefault();
             e.stopPropagation();
             window.location.href = '?line=all';
-            openMapMode();
+            //openMapMode();
         });
         lineSelector.insertBefore(mapEntry, lineSelector.firstChild);
     });
@@ -120,13 +120,13 @@ function init() {
     if (line) displayStations(line);
     initDataSource();
 
-    initMapMode();
-
     const shareBtn = document.querySelector('.share-btn');
     shareBtn.title = strings.lines_info.share_route[lang];
     shareBtn.addEventListener('click', function () { 
         shareRouteMap();
     });
+
+    initMapMode();
 }
 
 // 获取偏好设置
@@ -1430,6 +1430,7 @@ function calculateLineTotalTime(lineId) {
 }
 
 function shareRouteMap() {
+    console.log('shareRouteMap');
     if (typeof MapMode !== 'undefined' && MapMode.isOpen()) {
         const sourceCanvas = document.getElementById('map-canvas');
         const container = document.getElementById('map-canvas-container');
@@ -1448,8 +1449,8 @@ function shareRouteMap() {
         if (cropW <= 0 || cropH <= 0) return;
 
         const titleText = strings.lines_info.map_all_lines[lang];
-        const titleFontSize = 32;
-        const titlePadding = 24;
+        const titleFontSize = 48;
+        const titlePadding = 36;
 
         const exportCanvas = document.createElement('canvas');
         exportCanvas.width = cropW;
@@ -1898,7 +1899,7 @@ var MapMode = (function () {
     var mapTrainsData = null;
 
     var MIN_ZOOM = 0.05;
-    var MAX_ZOOM = 8;
+    var MAX_ZOOM = 2;
     var STATION_RADIUS = 6;
     var TRAIN_RADIUS = 10;
     var sidebarObserver = null;
@@ -1940,6 +1941,11 @@ var MapMode = (function () {
         var wx = (sx - centerX) / viewState.zoom - viewState.offsetX;
         var wz = (sy - ch / 2) / viewState.zoom - viewState.offsetY;
         return { x: wx, z: wz };
+    }
+
+    function getElementScale() {
+        return Math.pow(viewState.zoom,0.2) * 2;
+       // return Math.max(0.4, Math.min(4, Math.pow(viewState.zoom, 0.2)));
     }
 
     function computeBounds() {
@@ -2045,7 +2051,7 @@ var MapMode = (function () {
             ctx.globalAlpha = 0.4;
         }
         ctx.strokeStyle = line.color;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = Math.max(1, 3 * getElementScale());
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
@@ -2270,32 +2276,37 @@ var MapMode = (function () {
         var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background-card-solid').trim() || '#fff';
         var textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#000';
         var fontFamily = getComputedStyle(document.body).getPropertyValue('--font-family');
-        ctx.font = '11px ' + fontFamily;
+        var scale = getElementScale();
+        var stationRadius = Math.max(3, STATION_RADIUS * scale);
+        var fontSize = Math.max(8, Math.round(11 * scale));
+        ctx.font = fontSize + 'px ' + fontFamily;
 
-        var STATION_RADIUS_PX = STATION_RADIUS;
-        var GAP = STATION_RADIUS_PX + 6;
+        var GAP = stationRadius + Math.max(3, 6 * scale);
 
+        var stationEntries = [];
         Object.keys(stationCoordsMap).forEach(function (code) {
             var station = stationCoordsMap[code];
             if (station.count === 0) return;
-
             var pos = worldToScreen(station.x, station.z);
+            stationEntries.push({ code: code, station: station, pos: pos });
 
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, STATION_RADIUS_PX, 0, Math.PI * 2);
+            ctx.arc(pos.x, pos.y, stationRadius, 0, Math.PI * 2);
             ctx.fillStyle = bgColor;
             ctx.fill();
 
             var primaryColor = station.lines.length > 1 ? '#666' : (window.lines.find(function (l) { return l.id === station.lines[0]; }) || {}).color || '#666';
             ctx.strokeStyle = primaryColor;
-            ctx.lineWidth = 2.5;
+            ctx.lineWidth = Math.max(1, 2.5 * scale);
             ctx.stroke();
+        });
 
-            var name = getStationName(code, lang);
-            var nameWidth = Math.max(ctx.measureText(name).width, 32);
-            var nameHeight = 14;
+        stationEntries.forEach(function (entry) {
+            var name = getStationName(entry.code, lang);
+            var nameWidth = Math.max(ctx.measureText(name).width, Math.max(20, 32 * scale));
+            var nameHeight = fontSize + 3;
 
-            var candidates = buildCandidatePositions(pos, nameWidth, nameHeight, GAP);
+            var candidates = buildCandidatePositions(entry.pos, nameWidth, nameHeight, GAP);
             var best = null;
 
             for (var i = 0; i < candidates.length; i++) {
@@ -2314,7 +2325,7 @@ var MapMode = (function () {
             ctx.textBaseline = 'middle';
 
             ctx.strokeStyle = bgColor;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = Math.max(2, 3 * scale);
             ctx.lineJoin = 'round';
             ctx.strokeText(name, best.textX, best.textY);
 
@@ -2333,7 +2344,8 @@ var MapMode = (function () {
             var loc = car.leading.location;
 
             var pos = worldToScreen(loc.x, loc.z);
-            var r = TRAIN_RADIUS;
+            var scale = Math.pow(getElementScale(),0.5);
+            var r = Math.max(5, TRAIN_RADIUS * scale);
 
             var trainInfo = window.trainsInfo ? window.trainsInfo.find(function (t) { return t.name === train.name; }) : null;
             var trainLine = trainInfo ? trainInfo.line : '';
@@ -2347,14 +2359,14 @@ var MapMode = (function () {
             ctx.fill();
             ctx.globalAlpha = 1;
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = Math.max(1, 1.5 * scale);
             ctx.stroke();
 
-            ctx.font = '16px "Material Symbols Outlined"';
+            ctx.font = Math.max(10, Math.round(16 * scale)) + 'px "Material Symbols Outlined"';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.strokeStyle = color;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = Math.max(1.5, 3 * scale);
             ctx.lineJoin = 'round';
             ctx.strokeText('\ue534', pos.x, pos.y);
             ctx.fillStyle = '#fff';
@@ -2783,5 +2795,6 @@ function initMapMode() {
         TrainDataSource.on('data', function (payload) {
             MapMode.updateTrains(payload);
         });
+        mapMode = MapMode.init();
     }
 }
