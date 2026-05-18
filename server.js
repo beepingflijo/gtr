@@ -1110,6 +1110,272 @@ app.get('/api/pov/share/:id', (req, res) => {
     });
 });
 
+// ==================== 安全记录管理 API ====================
+const SAFETY_RECORDS_FILE = path.join(__dirname, 'data', 'safety_records.json');
+
+function ensureSafetyRecordsFile() {
+    if (!fs.existsSync(SAFETY_RECORDS_FILE)) {
+        const defaultData = {
+            stats: { accidentFreeDays: 0, delayFreeDays: 0, lastAccidentDate: null, lastDelayDate: null, totalAccidents: 0, totalDelays: 0 },
+            records: [],
+            pendingReviews: []
+        };
+        fs.writeFileSync(SAFETY_RECORDS_FILE, JSON.stringify(defaultData, null, 2), 'utf8');
+    }
+}
+
+function readSafetyRecords() {
+    ensureSafetyRecordsFile();
+    try {
+        const data = fs.readFileSync(SAFETY_RECORDS_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading safety records:', error);
+        return { stats: {}, records: [], pendingReviews: [] };
+    }
+}
+
+function saveSafetyRecords(data) {
+    ensureSafetyRecordsFile();
+    try {
+        fs.writeFileSync(SAFETY_RECORDS_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving safety records:', error);
+        throw error;
+    }
+}
+
+function calculateSafetyStats(data) {
+    const now = new Date();
+    const approvedRecords = data.records || [];
+    const accidents = approvedRecords.filter(r => r.type === 'accident' && r.status === 'approved');
+    const delays = approvedRecords.filter(r => r.type === 'delay' && r.status === 'approved');
+    
+    let accidentFreeDays = 0;
+    let delayFreeDays = 0;
+    let lastAccidentDate = null;
+    let lastDelayDate = null;
+    
+    if (accidents.length > 0) {
+        const lastAccident = accidents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+        lastAccidentDate = lastAccident.timestamp;
+        const diffTime = now - new Date(lastAccidentDate);
+        accidentFreeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    } else {
+        accidentFreeDays = 365;
+    }
+    
+    if (approvedRecords.length > 0) {
+        const lastDelay = approvedRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+        lastDelayDate = lastDelay.timestamp;
+        const diffTime = now - new Date(lastDelayDate);
+        delayFreeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    } else {
+        delayFreeDays = 365;
+    }
+    
+    return {
+        accidentFreeDays,
+        delayFreeDays,
+        lastAccidentDate,
+        lastDelayDate,
+        totalAccidents: accidents.length,
+        totalDelays: delays.length
+    };
+}
+
+app.get('/api/safety/stats', (req, res) => {
+    try {
+        const data = readSafetyRecords();
+        const stats = calculateSafetyStats(data);
+        res.json({ success: true, data: stats });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to load safety stats' });
+    }
+});
+
+app.get('/api/safety/records', (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        let user = null;
+        
+        if (token) {
+            try {
+                jwt.verify(token, JWT_SECRET, (err, decoded) => {
+                    if (!err) user = decoded;
+                });
+            } catch (e) { 
+                user = null; 
+            }
+        }
+        
+        const data = readSafetyRecords();
+        const type = req.query.type || 'all';
+        const status = req.query.status || 'approved';
+        
+        let filteredRecords = data.records || [];
+        if (type !== 'all') {
+            filteredRecords = filteredRecords.filter(r => r.type === type);
+        }
+        if (status === 'pending' && user && user.username === 'admin') {
+            filteredRecords = [...(data.pendingReviews || [])];
+        } else if (status !== 'all') {
+            filteredRecords = filteredRecords.filter(r => r.status === status);
+        }
+        
+        filteredRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        res.json({
+            success: true,
+            data: {
+                records: filteredRecords,
+                total: filteredRecords.length,
+                pendingCount: (data.pendingReviews || []).length
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to load safety records' });
+    }
+});
+
+app.post('/api/safety/report', authenticateToken, requireVerified, async (req, res) => {
+    try {
+        const { type, location, trainInfo, cause, impact, timestamp } = req.body;
+        
+        if (!type || !location || !cause) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: type, location, cause'
+            });
+        }
+        
+        if (!['accident', 'delay'].includes(type)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Type must be "accident" or "delay"'
+            });
+        }
+        
+        let eventTimestamp = new Date().toISOString();
+        
+        if (timestamp) {
+            try {
+                const parsedTimestamp = new Date(timestamp);
+                
+                const now = new Date();
+                if (parsedTimestamp > now) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Event time cannot be in the future'
+                    });
+                }
+                
+                eventTimestamp = parsedTimestamp.toISOString();
+            } catch (e) {
+                console.warn('Invalid timestamp format provided:', timestamp);
+            }
+        }
+        
+        const data = readSafetyRecords();
+        const newRecord = {
+            id: 'rec-' + Date.now().toString(36),
+            type,
+            status: 'pending',
+            timestamp: eventTimestamp,
+            location: {
+                station: location.station || '',
+                line: location.line || '',
+                position: location.position || ''
+            },
+            trainInfo: trainInfo || {},
+            cause,
+            impact: impact || {},
+            reportedBy: req.user.username,
+            createdAt: new Date().toISOString()
+        };
+        
+        data.pendingReviews.push(newRecord);
+        saveSafetyRecords(data);
+        
+        console.log(`📋 新的安全报告已提交: ${newRecord.id} (${type}) by ${req.user.username}`);
+        
+        res.json({
+            success: true,
+            message: 'Report submitted successfully, awaiting admin review',
+            data: newRecord
+        });
+    } catch (error) {
+        console.error('Error submitting safety report:', error);
+        res.status(500).json({ success: false, message: 'Failed to submit report' });
+    }
+});
+
+app.put('/api/safety/review/:id', authenticateToken, (req, res) => {
+    if (req.user.username !== 'admin') {
+        return res.status(403).json({
+            success: false,
+            message: 'Admin access required'
+        });
+    }
+    
+    try {
+        const recordId = req.params.id;
+        const { action, notes } = req.body; // action: 'approve' | 'reject'
+        
+        if (!['approve', 'reject'].includes(action)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Action must be "approve" or "reject"'
+            });
+        }
+        
+        const data = readSafetyRecords();
+        const recordIndex = data.pendingReviews.findIndex(r => r.id === recordId);
+        
+        if (recordIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Record not found in pending reviews'
+            });
+        }
+        
+        const record = data.pendingReviews[recordIndex];
+        record.status = action === 'approve' ? 'approved' : 'rejected';
+        record.reviewedBy = req.user.username;
+        record.reviewedAt = new Date().toISOString();
+        record.reviewNotes = notes || '';
+        
+        if (action === 'approve') {
+            data.records.push(record);
+            
+            if (record.type === 'accident') {
+                data.stats.totalAccidents++;
+                data.stats.accidentFreeDays = 0;
+                data.stats.lastAccidentDate = record.timestamp;
+            } else if (record.type === 'delay') {
+                data.stats.totalDelays++;
+                data.stats.delayFreeDays = 0;
+                data.stats.lastDelayDate = record.timestamp;
+            }
+        }
+        
+        data.pendingReviews.splice(recordIndex, 1);
+        saveSafetyRecords(data);
+        
+        console.log(`🔍 安全记录审核完成: ${recordId} -> ${action} by ${req.user.username}`);
+        
+        res.json({
+            success: true,
+            message: `Record ${action}d successfully`,
+            data: record
+        });
+    } catch (error) {
+        console.error('Error reviewing safety record:', error);
+        res.status(500).json({ success: false, message: 'Failed to review record' });
+    }
+});
+
 // ==================== 静态文件服务 ====================
 // 在生产环境中，Express也提供静态文件
 app.use(express.static(path.join(__dirname)));

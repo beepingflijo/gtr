@@ -1,0 +1,26 @@
+{
+  "records": [
+    {
+      "id": "rec-mp9z7l1q",
+      "type": "accident",
+      "status": "approved",
+      "timestamp": "2026-05-16T14:40:00.000Z",
+      "location": {
+        "station": "GYZ",
+        "line": "GY",
+        "position": "广阳站南咽喉"
+      },
+      "trainInfo": {
+        "trainNumber": "GY02/GY03"
+      },
+      "cause": "两车因信号设置原因发生追尾",
+      "impact": {
+        "description": "工作人员赶到现场时附近已有3辆车等待信号，实时线路图显示平安里站下行站台也有至少3辆列车等待放行，预计造成广蒲线、北环线延误20分钟"
+      },
+      "reportedBy": "admin",
+      "createdAt": "2026-05-17T16:15:04.526Z"
+    }
+  ],
+  "pendingReviews": [
+  ]
+}

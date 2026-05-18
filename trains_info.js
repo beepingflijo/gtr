@@ -121,6 +121,9 @@ function init() {
     // 显示更新时间信息
     loadUpdateTime();
     
+    // 初始化安全计数器
+    initSafetyCounter();
+    
     // 开始获取列车数据（SSE方式，不需要定时器）
     fetchTrainData();
 }
@@ -1352,6 +1355,681 @@ function handleWindowResize() {
         }, 150);
     }
     // 当虚拟键盘打开时(isVirtualKeyboardOpen为true)或输入框聚焦时，不执行任何布局调整操作
+}
+
+// ==================== 安全记录管理功能 ====================
+
+let safetyStatsCache = null;
+
+function initSafetyCounter() {
+    const safetyCounter = document.getElementById('safetyCounter');
+    if (!safetyCounter) return;
+    
+    loadSafetyStats();
+    
+    safetyCounter.addEventListener('click', () => {
+        showSafetyDetails();
+        recordLastVisitedPage('?type=safety', 'trains_info.html');
+    });
+    
+    setTimeout(() => {
+        safetyCounter.style.transition = 'opacity 0.5s ease';
+        safetyCounter.style.opacity = 1;
+    }, 500);
+}
+
+async function loadSafetyStats() {
+    try {
+        const response = await fetch('./api/safety/stats');
+        const result = await response.json();
+        
+        if (result.success) {
+            safetyStatsCache = result.data;
+            updateSafetyCounterUI(result.data);
+        }
+    } catch (error) {
+        console.error('Error loading safety stats:', error);
+    }
+}
+
+function updateSafetyCounterUI(stats) {
+    const safetyDaysEl = document.getElementById('safetyDays');
+    const safetyLabelEl = document.querySelector('.safety-label');
+    
+    if (safetyDaysEl && stats.accidentFreeDays !== undefined) {
+        animateNumber(safetyDaysEl, stats.accidentFreeDays);
+    }
+}
+
+function animateNumber(element, targetNumber) {
+    const duration = 1000;
+    const start = 0;
+    const startTime = performance.now();
+    
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        const current = Math.floor(start + (targetNumber - start) * easeOutQuart);
+        
+        element.textContent = current;
+        
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        } else {
+            element.textContent = targetNumber;
+        }
+    }
+    
+    requestAnimationFrame(update);
+}
+
+async function showSafetyDetails() {
+    if (!safetyStatsCache) {
+        await loadSafetyStats();
+    }
+    
+    const token = getAuthToken();
+    const isAdmin = token ? await checkIsAdmin(token) : false;
+    
+    const container = createSafetyDetailsContainer(safetyStatsCache, isAdmin);
+    pushDialog(container, 'custom', strings.safety?.title?.[lang] || '安全记录', '', '');
+    
+    if (prefs.openInContent === true) {
+        //window.open('content.html?type=safety', '_self');
+    } else {
+    }
+}
+
+async function checkIsAdmin(token) {
+    try {
+        const response = await fetch('./api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+        
+        if (!result.success || !result.data) return false;
+        
+        const username = result.data.username || result.data.user?.username;
+        console.log('🔍 检查管理员权限:', { username, isAdmin: username === 'admin' });
+        
+        return username === 'admin';
+    } catch (error) {
+        console.error('❌ 检查管理员权限失败:', error);
+        return false;
+    }
+}
+
+function createSafetyDetailsContainer(stats, isAdmin) {
+    const container = document.createElement('div');
+    container.classList.add('safety-details-container');
+    
+    const statsSection = document.createElement('div');
+    statsSection.classList.add('safety-stats-section');
+    
+    const accidentFreeCard = createStatCard(
+        'verified_user',
+        stats.accidentFreeDays || 0,
+        strings.safety?.accident_free_days?.[lang] || '天无事故',
+        '#4caf50'
+    );
+    const delayFreeCard = createStatCard(
+        'schedule',
+        stats.delayFreeDays || 0,
+        strings.safety?.delay_free_days?.[lang] || '天无延误',
+        '#ff9800'
+    );
+    
+    statsSection.appendChild(accidentFreeCard);
+    statsSection.appendChild(delayFreeCard);
+    container.appendChild(statsSection);
+    
+    const recordsSection = document.createElement('div');
+    recordsSection.classList.add('safety-records-section');
+    
+    const recordsTitle = document.createElement('h3');
+    recordsTitle.textContent = strings.safety?.records_title?.[lang] || '事故及延误记录';
+    recordsSection.appendChild(recordsTitle);
+    
+    const recordsList = document.createElement('div');
+    recordsList.classList.add('safety-records-list');
+    recordsList.id = 'safetyRecordsList';
+    recordsList.innerHTML = '<div class="loading-spinner"></div>';
+    recordsSection.appendChild(recordsList);
+    
+    container.appendChild(recordsSection);
+    
+    if (isAdmin) {
+        const adminSection = createAdminPanel();
+        container.appendChild(adminSection);
+    }
+    const reportBtn = document.createElement('button');
+    reportBtn.classList.add('btn', 'active');
+    reportBtn.textContent = strings.safety?.report_btn?.[lang] || '上报事件';
+    reportBtn.addEventListener('click', showReportForm);
+    container.appendChild(reportBtn);
+    
+    setTimeout(() => loadSafetyRecords(), 100);
+    
+    return container;
+}
+
+function createStatCard(icon, value, label, color) {
+    const card = document.createElement('div');
+    card.classList.add('stats-container');
+    const item = document.createElement('div');
+    item.classList.add('stats-item');
+    
+    const iconSpan = document.createElement('span');
+    iconSpan.classList.add('material-symbols-outlined');
+    iconSpan.textContent = icon;
+    iconSpan.style.color = color;
+    
+    const valueDiv = document.createElement('div');
+    valueDiv.classList.add('stats-num');
+    valueDiv.textContent = value;
+    
+    const labelDiv = document.createElement('div');
+    labelDiv.classList.add('stats-desc');
+    labelDiv.textContent = label;
+    
+    item.appendChild(iconSpan);
+    item.appendChild(valueDiv);
+    item.appendChild(labelDiv);
+
+    card.appendChild(item);
+    
+    return card;
+}
+
+async function loadSafetyRecords(type = 'all') {
+    const token = getAuthToken();
+    const recordsListEl = document.getElementById('safetyRecordsList');
+    if (!recordsListEl) return;
+    
+    try {
+        let url = './api/safety/records?type=' + type;
+        if (token) url += '&status=all';
+        
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        
+        const response = await fetch(url, { headers });
+        const result = await response.json();
+        
+        if (result.success) {
+            renderRecordsList(recordsListEl, result.data.records);
+            
+            const pendingCount = result.data.pendingCount || 0;
+            if (pendingCount > 0 && document.querySelector('.pending-badge')) {
+                document.querySelector('.pending-badge').textContent = pendingCount;
+                document.querySelector('.pending-badge').style.display = 'inline-flex';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading safety records:', error);
+        recordsListEl.innerHTML = '<p class="error-message">加载失败</p>';
+    }
+}
+
+function renderRecordsList(container, records) {
+    container.innerHTML = '';
+    
+    if (!records || records.length === 0) {
+        container.innerHTML = `<p class="empty-message">${strings.safety?.no_records?.[lang] || '暂无记录'}</p>`;
+        return;
+    }
+    
+    records.forEach(record => {
+        const recordItem = createRecordItem(record);
+        container.appendChild(recordItem);
+    });
+}
+
+function createRecordItem(record) {
+    const item = document.createElement('div');
+    item.classList.add('record-item');
+    item.dataset.id = record.id;
+    
+    const typeBadge = document.createElement('span');
+    typeBadge.classList.add('record-type-badge', record.type === 'accident' ? 'badge-accident' : 'badge-delay');
+    typeBadge.textContent = record.type === 'accident' ? 
+        (strings.safety?.type_accident?.[lang] || '事故') : 
+        (strings.safety?.type_delay?.[lang] || '延误');
+    
+    const header = document.createElement('div');
+    header.classList.add('record-header');
+    header.appendChild(typeBadge);
+    
+    const timeEl = document.createElement('span');
+    timeEl.classList.add('record-time');
+    timeEl.textContent = formatDateTime(record.timestamp);
+    header.appendChild(timeEl);
+    
+    item.appendChild(header);
+    
+    const details = document.createElement('div');
+    details.classList.add('record-details');
+
+    // 如果全大写查找站名
+    const stationName = record.location.station.match(/[A-Z]+/)? getStationName(record.location.station) : record.location.station;
+    
+    details.innerHTML += `
+        <div class="detail-row">
+            <span class="detail-label">${strings.safety?.location?.[lang] || '位置'}:</span>
+            <span class="detail-value">${stationName} - ${record.location.position}</span>
+        </div>
+    `;
+    
+    if (record.location.x_coordinate !== undefined && record.location.z_coordinate !== undefined) {
+        details.innerHTML += `
+            <div class="detail-row coordinate-info">
+                <span class="detail-label">${strings.safety?.coordinates?.[lang] || '坐标'}:</span>
+                <span class="detail-value">X: ${Number(record.location.x_coordinate).toFixed(2)} | Z: ${Number(record.location.z_coordinate).toFixed(2)}</span>
+            </div>
+        `;
+    }
+    
+    details.innerHTML += `
+        <div class="detail-row">
+            <span class="detail-label">${strings.safety?.train_info?.[lang] || '列车'}:</span>
+            <span class="detail-value">${record.trainInfo.trainNumber || '-'}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">${strings.safety?.cause?.[lang] || '原因'}:</span>
+            <span class="detail-value">${record.cause}</span>
+        </div>
+    `;
+    
+    if (record.impact && (record.impact.delayMinutes || record.impact.description)) {
+        details.innerHTML += `
+            <div class="detail-row impact-info">
+                <span class="detail-label">${strings.safety?.impact?.[lang] || '影响'}:</span>
+                ${record.impact.delayMinutes ? `<span class="detail-value">延误 ${record.impact.delayMinutes} 分钟</span>` : ''}
+                ${record.impact.description ? `<span class="detail-value">${record.impact.description}</span>` : ''}
+            </div>
+        `;
+    }
+    
+    const statusBadge = document.createElement('span');
+    statusBadge.classList.add('status-badge', record.status === 'approved' ? 'status-approved' : 
+        record.status === 'rejected' ? 'status-rejected' : 'status-pending');
+    statusBadge.textContent = record.status === 'approved' ? 
+        (strings.safety?.status_approved?.[lang] || '已审核') :
+        record.status === 'rejected' ?
+        (strings.safety?.status_rejected?.[lang] || '已拒绝') :
+        (strings.safety?.status_pending?.[lang] || '待审核');
+    
+    const footer = document.createElement('div');
+    footer.classList.add('record-footer');
+    footer.appendChild(statusBadge);
+    
+    if (record.reportedBy) {
+        const reporter = document.createElement('span');
+        reporter.classList.add('reporter');
+        reporter.textContent = `${strings.safety?.reported_by?.[lang] || '上报人'}: ${record.reportedBy}`;
+        footer.appendChild(reporter);
+    }
+    
+    item.appendChild(details);
+    item.appendChild(footer);
+    
+    return item;
+}
+
+function formatDateTime(isoString) {
+    if (!isoString) return '-';
+    const date = new Date(isoString);
+    return date.toLocaleString(lang.includes('zh') ? 'zh-CN' : 'en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function showReportForm() {
+    const formContainer = document.createElement('div');
+    formContainer.classList.add('report-form-container');
+    
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5);
+    
+    formContainer.innerHTML = `
+        <form id="safetyReportForm" class="safety-report-form">
+            <div class="form-group">
+                <label>${strings.safety?.event_type?.[lang] || '事件类型'}:</label>
+                <select name="type" required>
+                    <option value="delay">${strings.safety?.type_delay?.[lang] || '延误'}</option>
+                    <option value="accident">${strings.safety?.type_accident?.[lang] || '事故'}</option>
+                </select>
+            </div>
+            <div class="form-group datetime-group">
+                <label>${strings.safety?.event_time?.[lang] || '事件发生时间'}:</label>
+                <div class="datetime-inputs">
+                    <input type="date" name="eventDate" value="${currentDate}" max="${currentDate}" required>
+                    <input type="time" name="eventTime" value="${currentTime}" required>
+                </div>
+                <small class="form-hint">${strings.safety?.time_hint?.[lang] || '不能选择未来时间'}</small>
+            </div>
+            <div class="form-group">
+                <label>${strings.safety?.station?.[lang] || '车站'}:</label>
+                <input type="text" name="station" placeholder="${strings.safety?.station_placeholder?.[lang] || '输入车站代码或名称'}" required>
+            </div>
+            <div class="form-group">
+                <label>${strings.safety?.line?.[lang] || '线路'}:</label>
+                <input type="text" name="line" placeholder="${strings.safety?.line_placeholder?.[lang] || '输入线路编号'}">
+            </div>
+            <div class="form-group">
+                <label>${strings.safety?.position?.[lang] || '位置详情'}:</label>
+                <input type="text" name="position" placeholder="${strings.safety?.position_placeholder?.[lang] || '如：站台3、区间K12+500'}">
+            </div>
+            <div class="form-group">
+                <label>${strings.safety?.train_number?.[lang] || '车号'}:</label>
+                <input type="text" name="trainNumber" placeholder="${strings.safety?.train_placeholder?.[lang] || '输入车号（可选）'}">
+            </div>
+            <div class="form-group">
+                <label>${strings.safety?.cause_label?.[lang] || '原因分析'}:</label>
+                <textarea name="cause" rows="3" placeholder="${strings.safety?.cause_placeholder?.[lang] || '详细描述事件原因'}" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>${strings.safety?.impact_label?.[lang] || '影响评估'}:</label>
+                <textarea name="impactDesc" rows="2" placeholder="${strings.safety?.impact_placeholder?.[lang] || '描述影响范围和程度（可选）'}"></textarea>
+            </div>
+            <button type="submit" class="btn active">${strings.safety?.submit_btn?.[lang] || '提交上报'}</button>
+        </form>
+    `;
+    
+    pushDialog(formContainer, 'custom', strings.safety?.report_title?.[lang] || '上报安全事件', '', '');
+    
+    const dateInput = formContainer.querySelector('input[name="eventDate"]');
+    const timeInput = formContainer.querySelector('input[name="eventTime"]');
+    
+    dateInput.addEventListener('change', function() {
+        validateDateTime(dateInput, timeInput);
+    });
+    
+    timeInput.addEventListener('change', function() {
+        validateDateTime(dateInput, timeInput);
+    });
+    
+    document.getElementById('safetyReportForm').addEventListener('submit', handleReportSubmit);
+}
+
+function validateDateTime(dateInput, timeInput) {
+    if (!dateInput.value || !timeInput.value) return true;
+    
+    const selectedDate = dateInput.value;
+    const selectedTime = timeInput.value;
+    const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
+    const now = new Date();
+    
+    if (selectedDateTime > now) {
+        dateInput.setCustomValidity(strings.safety?.future_time_error?.[lang] || '不能选择未来时间');
+        timeInput.setCustomValidity(strings.safety?.future_time_error?.[lang] || '不能选择未来时间');
+        
+        const hintEl = document.querySelector('.form-hint');
+        if (hintEl) {
+            hintEl.textContent = strings.safety?.future_time_error?.[lang] || '不能选择未来时间';
+            hintEl.style.color = '#f44336';
+        }
+        
+        return false;
+    } else {
+        dateInput.setCustomValidity('');
+        timeInput.setCustomValidity('');
+        
+        const hintEl = document.querySelector('.form-hint');
+        if (hintEl) {
+            hintEl.textContent = strings.safety?.time_hint?.[lang] || '不能选择未来时间';
+            hintEl.style.color = '';
+        }
+        
+        return true;
+    }
+}
+
+function formatEventTime(dateStr, timeStr) {
+    if (!dateStr || !timeStr) return new Date().toISOString();
+    return `${dateStr} ${timeStr}`;
+}
+
+function getAuthToken() {
+    try {
+        const session = localStorage.getItem('userSession');
+        if (session) {
+            const parsedSession = JSON.parse(session);
+            return parsedSession.token || null;
+        }
+    } catch (e) {
+        console.error('Error getting auth token:', e);
+    }
+    return null;
+}
+
+function isLoggedIn() {
+    return !!getAuthToken();
+}
+
+async function handleReportSubmit(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const token = getAuthToken();
+    
+    if (!token) {
+        showToast(strings.safety?.login_required?.[lang] || '请先登录');
+        return;
+    }
+    
+    const eventDate = formData.get('eventDate');
+    const eventTime = formData.get('eventTime');
+    
+    if (!eventDate || !eventTime) {
+        showToast(strings.safety?.time_required?.[lang] || '请选择事件发生时间');
+        return;
+    }
+    
+    const dateInput = e.target.querySelector('input[name="eventDate"]');
+    const timeInput = e.target.querySelector('input[name="eventTime"]');
+    
+    if (!validateDateTime(dateInput, timeInput)) {
+        showToast(strings.safety?.future_time_error?.[lang] || '不能选择未来时间');
+        return;
+    }
+    
+    const eventTimestamp = formatEventTime(eventDate, eventTime);
+    
+    const payload = {
+        type: formData.get('type'),
+        timestamp: eventTimestamp,
+        location: {
+            station: formData.get('station'),
+            line: formData.get('line'),
+            position: formData.get('position')
+        },
+        trainInfo: {
+            trainNumber: formData.get('trainNumber')
+        },
+        cause: formData.get('cause'),
+        impact: {
+            description: formData.get('impactDesc')
+        }
+    };
+    
+    try {
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = strings.safety?.submitting?.[lang] || '提交中...';
+        
+        const response = await fetch('./api/safety/report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(strings.safety?.submit_success?.[lang] || '提交成功，等待管理员审核');
+            
+            const dialogs = document.querySelectorAll('.modal-overlay');
+            dialogs.forEach(d => d.remove());
+            
+            await loadSafetyRecords();
+        } else {
+            showToast(result.message || strings.safety?.submit_failed?.[lang] || '提交失败');
+            submitBtn.disabled = false;
+            submitBtn.textContent = strings.safety?.submit_btn?.[lang] || '提交上报';
+        }
+    } catch (error) {
+        console.error('Error submitting report:', error);
+        showToast(strings.safety?.submit_error?.[lang] || '网络错误，请重试');
+        submitBtn.disabled = false;
+        submitBtn.textContent = strings.safety?.submit_btn?.[lang] || '提交上报';
+    }
+}
+
+function createAdminPanel() {
+    const panel = document.createElement('div');
+    panel.classList.add('admin-review-panel');
+    
+    panel.innerHTML = `
+        <h3 class="panel-title">
+            ${strings.safety?.admin_panel?.[lang] || '管理面板'}
+            <span class="pending-badge" style="display:none;">0</span>
+        </h3>
+        <div id="pendingReviewsList" class="pending-reviews-list"></div>
+    `;
+    
+    setTimeout(() => loadPendingReviews(), 200);
+    
+    return panel;
+}
+
+async function loadPendingReviews() {
+    const token = getAuthToken();
+    const listEl = document.getElementById('pendingReviewsList');
+    if (!listEl || !token) return;
+    
+    try {
+        const response = await fetch('./api/safety/records?status=pending&type=all', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            renderPendingReviews(listEl, result.data.records);
+        }
+    } catch (error) {
+        console.error('Error loading pending reviews:', error);
+    }
+}
+
+function renderPendingReviews(container, reviews) {
+    container.innerHTML = '';
+    
+    if (!reviews || reviews.length === 0) {
+        container.innerHTML = `<p class="empty-message">${strings.safety?.no_pending?.[lang] || '暂无待审核记录'}</p>`;
+        return;
+    }
+    
+    reviews.forEach(review => {
+        const reviewItem = document.createElement('div');
+        reviewItem.classList.add('review-item');
+        
+        reviewItem.innerHTML = `
+            <div class="review-header">
+                <span class="review-type ${review.type}">${review.type === 'accident' ? 
+                    (strings.safety?.type_accident?.[lang] || '事故') : 
+                    (strings.safety?.type_delay?.[lang] || '延误')}</span>
+                <span class="review-time">${formatDateTime(review.createdAt)}</span>
+            </div>
+            <div class="review-content">
+                <p><strong>${strings.safety?.location?.[lang] || '位置'}:</strong> ${review.location.station} - ${review.location.position}</p>
+                <p><strong>${strings.safety?.cause?.[lang] || '原因'}:</strong> ${review.cause}</p>
+                <p><strong>${strings.safety?.reported_by?.[lang] || '上报人'}:</strong> ${review.reportedBy}</p>
+            </div>
+            <div class="review-actions">
+                <button class="btn btn-success approve-btn" data-id="${review.id}">
+                    ${strings.safety?.approve_btn?.[lang] || '通过'}
+                </button>
+                <button class="btn btn-danger reject-btn" data-id="${review.id}">
+                    ${strings.safety?.reject_btn?.[lang] || '拒绝'}
+                </button>
+            </div>
+        `;
+        
+        reviewItem.querySelector('.approve-btn').addEventListener('click', () => {
+            handleReviewAction(review.id, 'approve');
+        });
+        
+        reviewItem.querySelector('.reject-btn').addEventListener('click', () => {
+            handleReviewAction(review.id, 'reject');
+        });
+        
+        container.appendChild(reviewItem);
+    });
+}
+
+async function handleReviewAction(recordId, action) {
+    const token = getAuthToken();
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`./api/safety/review/${recordId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ action })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(action === 'approve' ? 
+                (strings.safety?.approve_success?.[lang] || '已通过审核') : 
+                (strings.safety?.reject_success?.[lang] || '已拒绝'));
+            
+            await loadPendingReviews();
+            await loadSafetyRecords();
+            await loadSafetyStats();
+        } else {
+            showToast(result.message || strings.safety?.review_error?.[lang] || '操作失败');
+        }
+    } catch (error) {
+        console.error('Error reviewing record:', error);
+        showToast(strings.safety?.review_error?.[lang] || '网络错误，请重试');
+    }
+}
+
+function recordLastVisitedPage(params, page) {
+    const history = JSON.parse(localStorage.getItem('visitedPages') || '[]');
+    const existingIndex = history.findIndex(p => p.page === page && p.params === params);
+    
+    if (existingIndex > -1) {
+        history.splice(existingIndex, 1);
+    }
+    
+    history.unshift({
+        page,
+        params,
+        timestamp: Date.now()
+    });
+    
+    if (history.length > 50) {
+        history.pop();
+    }
+    
+    localStorage.setItem('visitedPages', JSON.stringify(history));
 }
 
 window.handleWindowResize = handleWindowResize;

@@ -3,10 +3,23 @@ function loadHistory(inDialog = true,lang=window.lang) {
     if (history) {
         const historyList = document.createElement('div');
         historyList.classList.add('history-list');
-        const visitedPages = JSON.parse(history);
+        let visitedPages;
+        try {
+            visitedPages = JSON.parse(history);
+        } catch (e) {
+            console.error('Error parsing history:', e);
+            visitedPages = [];
+        }
+        
+        if (!Array.isArray(visitedPages)) {
+            visitedPages = [];
+        }
+        
         // 按timestamp排序
-        visitedPages.sort((a, b) => b.timestamp - a.timestamp);
+        visitedPages.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         visitedPages.forEach(page => {
+            if (!page || !page.page) return;
+            
             const historyItem = document.createElement('div');
             historyItem.classList.add('history-item');
             const historyIcon = document.createElement('span');
@@ -15,8 +28,10 @@ function loadHistory(inDialog = true,lang=window.lang) {
             historyIcon.classList.add('material-symbols-outlined');
             const historyTitle = document.createElement('div');
             historyTitle.classList.add('history-title');
-            const pageName = page.page.split('.')[0];
-            const params = new URLSearchParams(page.params);
+            
+            const pageName = (page.page || '').split('.')[0] || '';
+            const safeParams = page.params || '';
+            const params = new URLSearchParams(safeParams);
             switch (pageName) {
                 case 'lines_info':
                     historyIcon.textContent = 'route';
