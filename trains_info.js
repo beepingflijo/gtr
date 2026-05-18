@@ -91,11 +91,39 @@ function init() {
 
     const prefBtns = document.querySelectorAll('.preferences-btn');
     prefBtns.forEach(prefBtn => {
-        const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
-        if (prefBtnText) {
-            prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
-        } else {
-            prefBtn.title = strings.preferences.page_title[lang];
+        try {
+            if (typeof getCurrentUser === 'function') {
+                const user = getCurrentUser();
+                if (user && user.username) {
+                    const authmeUsername = user.authmeUsername || 'MHF_Steve';
+                    const avatarUrl = `https://mc-heads.hydcraft.cn/avatar/${authmeUsername}/24.png`;
+                    const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
+                    if (prefBtnText) {
+                        prefBtnText.textContent = user.username;
+                    }
+                    prefBtn.title = strings.preferences.page_title[lang];
+                } else {
+                    const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
+                    if (prefBtnText) {
+                        prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+                    } else {
+                        prefBtn.title = strings.preferences.page_title[lang];
+                    }
+                }
+            } else {
+                const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
+                if (prefBtnText) {
+                    prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+                } else {
+                    prefBtn.title = strings.preferences.page_title[lang];
+                }
+            }
+        } catch (error) {
+            console.error('更新偏好按钮用户信息时出错:', error);
+            const prefBtnText = prefBtn.querySelector('span:not(.material-symbols-outlined)');
+            if (prefBtnText) {
+                prefBtnText.textContent = strings.preferences[prefBtnText.classList.contains('tab-text')?'page_title_short':'page_title'][lang];
+            }
         }
         prefBtn.addEventListener('click', () => { 
             window.open(`preferences.html`, '_self');
@@ -220,6 +248,7 @@ function fetchTrainData() {
             if (!loadingToastShown) {
                 showToast(strings.lines_info.loading[lang] || 'Loading...', 5000);
                 loadingToastShown = true;
+                loadingExampleToastShown = true;
             }
         });
 
@@ -227,6 +256,7 @@ function fetchTrainData() {
             if (!loadingExampleToastShown) {
                 showToast(strings.trains_info.loading_example_data[lang], 5000);
                 loadingExampleToastShown = true;
+                loadingToastShown = true;
             }
         });
 
@@ -1505,7 +1535,7 @@ function createSafetyDetailsContainer(stats, isAdmin) {
         container.appendChild(adminSection);
     }
     const reportBtn = document.createElement('button');
-    reportBtn.classList.add('btn', 'active');
+    reportBtn.classList.add('report-btn', 'active');
     reportBtn.textContent = strings.safety?.report_btn?.[lang] || '上报事件';
     reportBtn.addEventListener('click', showReportForm);
     container.appendChild(reportBtn);
@@ -1613,7 +1643,7 @@ function createRecordItem(record) {
     details.classList.add('record-details');
 
     // 如果全大写查找站名
-    const stationName = record.location.station.match(/[A-Z]+/)? getStationName(record.location.station) : record.location.station;
+    const stationName = record.location.station.match(/[A-Z]+/)? getStationName(record.location.station, lang) : record.location.station;
     
     details.innerHTML += `
         <div class="detail-row">
@@ -1691,6 +1721,17 @@ function formatDateTime(isoString) {
 }
 
 function showReportForm() {
+    const loggedIn = typeof window.auth !== 'undefined' && window.auth.isLoggedIn && window.auth.isLoggedIn();
+    if (!loggedIn) {
+        showToast(strings.safety?.login_required?.[lang] || '请先登录后再上报事件', 3000);
+        if (window.auth && window.auth.login) {
+            const loginResult = window.auth.login();
+            if (!loginResult) return;
+        } else {
+            return;
+        }
+    }
+
     const formContainer = document.createElement('div');
     formContainer.classList.add('report-form-container');
     
@@ -1726,6 +1767,11 @@ function showReportForm() {
             <div class="form-group">
                 <label>${strings.safety?.position?.[lang] || '位置详情'}:</label>
                 <input type="text" name="position" placeholder="${strings.safety?.position_placeholder?.[lang] || '如：站台3、区间K12+500'}">
+            </div>
+            <div class="form-group">
+                <label>${strings.safety?.coordinates?.[lang] || '坐标'}:</label>
+                <input type="number" name="coordinates-x" placeholder="${strings.safety?.x_coordinate?.[lang] || 'X坐标'}">
+                <input type="number" name="coordinates-z" placeholder="${strings.safety?.z_coordinate?.[lang] || 'Z坐标'}">
             </div>
             <div class="form-group">
                 <label>${strings.safety?.train_number?.[lang] || '车号'}:</label>
@@ -1849,7 +1895,9 @@ async function handleReportSubmit(e) {
         location: {
             station: formData.get('station'),
             line: formData.get('line'),
-            position: formData.get('position')
+            position: formData.get('position'),
+            x_coordinate: formData.get('coordinates-x'),
+            z_coordinate: formData.get('coordinates-z')
         },
         trainInfo: {
             trainNumber: formData.get('trainNumber')

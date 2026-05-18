@@ -1897,6 +1897,10 @@ var MapMode = (function () {
 
     var stationCoordsMap = {};
     var mapTrainsData = null;
+    var mapPlayersData = [];
+    var playerAvatars = {};
+    var playerRefreshTimer = null;
+    var storageListener = null;
 
     var MIN_ZOOM = 0.05;
     var MAX_ZOOM = 2;
@@ -2374,6 +2378,216 @@ var MapMode = (function () {
         });
     }
 
+    function isShowPlayers() {
+        var prefs = getPreferences();
+        return prefs.showPlayers === true;
+    }
+
+    function loadPlayerAvatar(playerName) {
+        if (playerAvatars[playerName]) return playerAvatars[playerName];
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = 'https://mc-heads.hydcraft.cn/avatar/' + encodeURIComponent(playerName) + '/24.png';
+        img.onload = function () {
+            if (isOpen) render();
+        };
+        img.onerror = function () {
+            playerAvatars[playerName] = 'error';
+        };
+        playerAvatars[playerName] = img;
+        return img;
+    }
+
+    function fetchPlayersData() {
+        if (!isShowPlayers()) {
+            mapPlayersData = [];
+            return;
+        }
+        var timestamp = Date.now();
+        var playerDataUrl = 'https://map.nitrogen.hydcraft.cn/up/world/world/' + timestamp;
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function () { controller.abort(); }, 5000);
+
+        fetch(playerDataUrl, {
+            signal: controller.signal,
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(function (response) {
+                clearTimeout(timeoutId);
+                if (!response.ok) throw new Error('HTTP error: ' + response.status);
+                return response.json();
+            })
+            .then(function (data) {
+                if (data.players && data.players.length > 0) {
+                    mapPlayersData = data.players;
+                    data.players.forEach(function (p) { loadPlayerAvatar(p.name); });
+                    if (isOpen) render();
+                } else {
+                    mapPlayersData = [];
+                    if (isOpen) render();
+                }
+            })
+            .catch(function () {
+                clearTimeout(timeoutId);
+            });
+    }
+
+    function startPlayersRefresh() {
+        fetchPlayersData();
+        playerRefreshTimer = setInterval(fetchPlayersData, 15000);
+    }
+
+    function stopPlayersRefresh() {
+        if (playerRefreshTimer) {
+            clearInterval(playerRefreshTimer);
+            playerRefreshTimer = null;
+        }
+        mapPlayersData = [];
+    }
+
+    function drawRoundedRect(x, y, w, h, r) {
+        if (w < r * 2) r = w / 2;
+        if (h < r * 2) r = h / 2;
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.arcTo(x + w, y, x + w, y + r, r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+        ctx.lineTo(x + r, y + h);
+        ctx.arcTo(x, y + h, x, y + h - r, r);
+        ctx.lineTo(x, y + r);
+        ctx.arcTo(x, y, x + r, y, r);
+        ctx.closePath();
+    }
+
+    function drawPlayers() {
+        if (!isShowPlayers() || !mapPlayersData || mapPlayersData.length === 0) return;
+
+        var scale = Math.pow(getElementScale(), 0.1);
+        var size = Math.max(12, Math.round(18 * scale));
+        var half = size / 2;
+        var cr = Math.max(3, Math.round(size / 6));
+
+        mapPlayersData.forEach(function (player) {
+            if (!player || player.x === undefined || player.z === undefined) return;
+            var pos = worldToScreen(player.x, player.z);
+            var avatar = playerAvatars[player.name];
+            var loaded = avatar && avatar !== 'error' && avatar.complete && avatar.naturalWidth > 0;
+
+            ctx.save();
+
+            drawRoundedRect(pos.x - half - 1.5, pos.y - half - 1.5, size + 3, size + 3, cr + 1);
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = Math.max(1, 1.5 * scale);
+            ctx.stroke();
+
+            ctx.beginPath();
+            drawRoundedRect(pos.x - half, pos.y - half, size, size, cr);
+            ctx.clip();
+
+            if (loaded) {
+                ctx.drawImage(avatar, pos.x - half, pos.y - half, size, size);
+            } else {
+                ctx.fillStyle = '#888';
+                ctx.fillRect(pos.x - half, pos.y - half, size, size);
+                ctx.font = Math.max(8, Math.round(10 * scale)) + 'px "Material Symbols Outlined"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fff';
+                ctx.fillText('\ue7fd', pos.x, pos.y);
+            }
+            ctx.restore();
+        });
+    }
+
+    function findPlayerAtScreen(sx, sy) {
+        if (!isShowPlayers() || !mapPlayersData || mapPlayersData.length === 0) return null;
+        var bestDist = Infinity;
+        var bestPlayer = null;
+        var scale = Math.pow(getElementScale(), 0.1);
+        var hitRadius = Math.max(10, Math.round(14 * scale));
+
+        mapPlayersData.forEach(function (player) {
+            if (!player || player.x === undefined || player.z === undefined) return;
+            var pos = worldToScreen(player.x, player.z);
+            var dx = pos.x - sx;
+            var dy = pos.y - sy;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < hitRadius && dist < bestDist) {
+                bestDist = dist;
+                bestPlayer = player;
+            }
+        });
+        return bestPlayer;
+    }
+
+    function findNearestStationForPlayer(px, pz) {
+        var bestDist = Infinity;
+        var bestCode = null;
+
+        Object.keys(stationCoordsMap).forEach(function (code) {
+            var st = stationCoordsMap[code];
+            if (st.count === 0) return;
+            var dx = px - st.x;
+            var dz = pz - st.z;
+            var dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestCode = code;
+            }
+        });
+
+        return bestDist <= 200 ? { code: bestCode, distance: bestDist } : null;
+    }
+
+    function showTooltipForPlayer(player, sx, sy) {
+        tooltipTitle.innerHTML = '';
+        var avatar = playerAvatars[player.name];
+        var loaded = avatar && avatar !== 'error' && avatar.complete && avatar.naturalWidth > 0;
+        if (loaded) {
+            var imgEl = document.createElement('img');
+            imgEl.src = 'https://mc-heads.hydcraft.cn/avatar/' + encodeURIComponent(player.name) + '/24.png';
+            imgEl.style.width = '18px';
+            imgEl.style.height = '18px';
+            imgEl.style.borderRadius = '3px';
+            imgEl.style.verticalAlign = 'middle';
+            tooltipTitle.appendChild(imgEl);
+        }
+        tooltipTitle.appendChild(document.createTextNode(player.name));
+
+        var nearest = findNearestStationForPlayer(player.x, player.z);
+        var bodyHtml = '(' + Math.round(player.x) + ', ' + Math.round(player.z) + ')';
+        if (nearest) {
+            bodyHtml = getStationName(nearest.code, lang) + '<br>' + bodyHtml;
+        }
+        tooltipBody.innerHTML = bodyHtml;
+        tooltip.classList.add('visible');
+
+        var tw = tooltip.offsetWidth;
+        var th = tooltip.offsetHeight;
+        var left = sx + 16;
+        var top = sy - th / 2;
+        if (left + tw > container.clientWidth) left = sx - tw - 16;
+        if (top < 0) top = 4;
+        if (top + th > container.clientHeight) top = container.clientHeight - th - 4;
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+
+    function showCopyFeedback(screenX, screenY, playerName) {
+        var feedback = document.createElement('div');
+        feedback.className = 'player-copy-feedback';
+        feedback.textContent = playerName;
+        var rect = container.getBoundingClientRect();
+        feedback.style.left = screenX + 'px';
+        feedback.style.top = (screenY - 36) + 'px';
+        container.appendChild(feedback);
+        setTimeout(function () { feedback.remove(); }, 1500);
+    }
+
     function drawCoordinates() {
         var ch = getCanvasCssHeight();
         var textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || 'rgba(128,128,128,0.6)';
@@ -2414,6 +2628,7 @@ var MapMode = (function () {
         drawLines();
         drawStations();
         drawTrains();
+        drawPlayers();
         drawCoordinates();
 
         zoomIndicator.textContent = Math.round(viewState.zoom * 100) + '%';
@@ -2577,6 +2792,13 @@ var MapMode = (function () {
                     return;
                 }
 
+                var player = findPlayerAtScreen(mx, my);
+                if (player) {
+                    showTooltipForPlayer(player, mx, my);
+                    container.style.cursor = 'pointer';
+                    return;
+                }
+
                 hideTooltip();
                 container.style.cursor = 'grab';
             }
@@ -2623,6 +2845,24 @@ var MapMode = (function () {
             var train = findTrainAtScreen(mx, my);
             if (train) {
                 window.open('trains_info.html?q=' + train.name, '_self');
+                return;
+            }
+
+            var player = findPlayerAtScreen(mx, my);
+            if (player) {
+                navigator.clipboard.writeText(player.name).then(function () {
+                    showCopyFeedback(mx, my, player.name);
+                }).catch(function () {
+                    var ta = document.createElement('textarea');
+                    ta.value = player.name;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showCopyFeedback(mx, my, player.name);
+                });
             }
         });
 
@@ -2758,6 +2998,18 @@ var MapMode = (function () {
         });
         isOpen = true;
 
+        startPlayersRefresh();
+
+        storageListener = function (e) {
+            if (e.key === 'preferences') {
+                if (!isShowPlayers()) {
+                    mapPlayersData = [];
+                }
+                render();
+            }
+        };
+        window.addEventListener('storage', storageListener);
+
         render();
     }
 
@@ -2765,6 +3017,11 @@ var MapMode = (function () {
         overlay.classList.remove('active');
         isOpen = false;
         hideTooltip();
+        stopPlayersRefresh();
+        if (storageListener) {
+            window.removeEventListener('storage', storageListener);
+            storageListener = null;
+        }
         if (sidebarObserver) {
             sidebarObserver.disconnect();
             sidebarObserver = null;
@@ -2802,7 +3059,14 @@ var MapMode = (function () {
         open: openMapMode,
         close: closeMapMode,
         updateTrains: updateMapTrains,
-        isOpen: function () { return isOpen; }
+        isOpen: function () { return isOpen; },
+        refreshPlayers: fetchPlayersData,
+        onPlayerPrefChange: function () {
+            if (!isShowPlayers()) {
+                mapPlayersData = [];
+            }
+            if (isOpen) render();
+        }
     };
 })();
 

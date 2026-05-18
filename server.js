@@ -1286,7 +1286,9 @@ app.post('/api/safety/report', authenticateToken, requireVerified, async (req, r
             location: {
                 station: location.station || '',
                 line: location.line || '',
-                position: location.position || ''
+                position: location.position || '',
+                x_coordinate: location.x_coordinate || null,
+                z_coordinate: location.z_coordinate || null
             },
             trainInfo: trainInfo || {},
             cause,
@@ -1345,6 +1347,10 @@ app.put('/api/safety/review/:id', authenticateToken, (req, res) => {
         record.reviewedBy = req.user.username;
         record.reviewedAt = new Date().toISOString();
         record.reviewNotes = notes || '';
+
+        if (!data.stats) {
+            data.stats = { accidentFreeDays: 0, delayFreeDays: 0, lastAccidentDate: null, lastDelayDate: null, totalAccidents: 0, totalDelays: 0 };
+        }
         
         if (action === 'approve') {
             data.records.push(record);

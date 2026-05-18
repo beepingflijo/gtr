@@ -589,6 +589,8 @@
         "type_accident":{"zh_hans":"事故", "en": "Accident", "zh_hant":"事故", "uk": "Аварія"},
         "type_delay":{"zh_hans":"延误", "en": "Delay", "zh_hant":"延誤", "uk": "Затримка"},
         "location":{"zh_hans":"位置", "en": "Location", "zh_hant":"位置", "uk": "Місце"},
+        "x_coordinate":{"zh_hans":"X坐标", "en": "X Coordinate", "zh_hant":"X坐標", "uk": "X-координата"},
+        "z_coordinate":{"zh_hans":"Z坐标", "en": "Z Coordinate", "zh_hant":"Z坐標", "uk": "Z-координата"},
         "coordinates":{"zh_hans":"坐标", "en": "Coordinates", "zh_hant":"坐標", "uk": "Координати"},
         "train_info":{"zh_hans":"列车", "en": "Train", "zh_hant":"列車", "uk": "Потяг"},
         "cause":{"zh_hans":"原因", "en": "Cause", "zh_hant":"原因", "uk": "Причина"},

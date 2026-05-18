@@ -494,3 +494,24 @@
 .map-station-dot {
     cursor: pointer;
 }
+
+.player-copy-feedback {
+    position: absolute;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--color-background-card);
+    backdrop-filter: var(--background-filter-transparent);
+    font-size: 12px;
+    color: var(--color-text);
+    z-index: 25;
+    pointer-events: none;
+    transform: translateX(-50%);
+    animation: copyFeedbackFade 1.5s ease-out forwards;
+    white-space: nowrap;
+}
+
+@keyframes copyFeedbackFade {
+    0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    70% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+}

@@ -254,8 +254,6 @@ main .item {
 }
 
 .coordinate-info .detail-value {
-    color: #2196f3;
-    font-family: 'Courier New', monospace;
     font-size: 12px;
 }
 
@@ -293,6 +291,10 @@ main .item {
 .reporter {
     font-size: 11px;
     color: var(--color-text-secondary, rgba(255, 255, 255, 0.5));
+}
+
+.report-btn {
+    margin-block: 18px;
 }
 
 /* 上报表单 */
@@ -424,8 +426,6 @@ main .item {
 
 .review-content p {
     font-size: 13px;
-    line-height: 1.4;
-    color: var(--color-text-primary, #fff);
 }
 
 .review-content strong {
