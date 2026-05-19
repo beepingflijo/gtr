@@ -1396,6 +1396,8 @@ function initSafetyCounter() {
     if (!safetyCounter) return;
     
     loadSafetyStats();
+
+    safetyCounter.title = strings.safety.title[lang];
     
     safetyCounter.addEventListener('click', () => {
         showSafetyDetails();
@@ -1426,8 +1428,8 @@ function updateSafetyCounterUI(stats) {
     const safetyDaysEl = document.getElementById('safetyDays');
     const safetyLabelEl = document.querySelector('.safety-label');
     
-    if (safetyDaysEl && stats.accidentFreeDays !== undefined) {
-        animateNumber(safetyDaysEl, stats.accidentFreeDays);
+    if (safetyDaysEl && stats.delayFreeDays !== undefined) {
+        animateNumber(safetyDaysEl, Math.floor(stats.delayFreeDays));
     }
 }
 
@@ -1449,6 +1451,22 @@ function animateNumber(element, targetNumber) {
             requestAnimationFrame(update);
         } else {
             element.textContent = targetNumber;
+        }
+
+        const icon = element.parentElement.querySelector('.material-symbols-outlined');
+
+        if (targetNumber < 1) {
+            element.parentElement.style.color = 'crimson';
+            element.parentElement.style.fontWeight = 'bold';
+            element.style.display = 'none';
+            icon.style.transform = 'translateX(2px)'
+            icon.textContent = 'railway_alert';
+        } else {
+            element.parentElement.style.color = '';
+            element.parentElement.style.fontWeight = '';
+            icon.textContent = '';
+            element.style.display = '';
+            icon.style.transform = ''
         }
     }
     
@@ -1510,9 +1528,16 @@ function createSafetyDetailsContainer(stats, isAdmin) {
         strings.safety?.delay_free_days?.[lang] || '天无延误',
         '#ff9800'
     );
+    const maxDelayFreeCard = createStatCard(
+        'award_star',
+        stats.maxDelayFreeDays || 0,
+        strings.safety?.max_delay_free_days?.[lang] || '最长无延误天数',
+        'gold'
+    );
     
     statsSection.appendChild(accidentFreeCard);
     statsSection.appendChild(delayFreeCard);
+    statsSection.appendChild(maxDelayFreeCard);
     container.appendChild(statsSection);
     
     const recordsSection = document.createElement('div');
@@ -1550,16 +1575,36 @@ function createStatCard(icon, value, label, color) {
     card.classList.add('stats-container');
     const item = document.createElement('div');
     item.classList.add('stats-item');
-    
+
     const iconSpan = document.createElement('span');
     iconSpan.classList.add('material-symbols-outlined');
     iconSpan.textContent = icon;
     iconSpan.style.color = color;
-    
+
     const valueDiv = document.createElement('div');
     valueDiv.classList.add('stats-num');
-    valueDiv.textContent = value;
-    
+
+    const daysValue = parseFloat(value) || 0;
+    let displayValue, unit;
+
+    if (daysValue <= 0) {
+        displayValue = 0;
+        unit = strings.ticket_calculator.hours[lang];
+    } else if (daysValue < 3) {
+        displayValue = Math.round(daysValue * 24);
+        unit = strings.ticket_calculator.hours[lang];
+    } else {
+        displayValue = Math.floor(daysValue);
+        unit = strings.ticket_calculator.days[lang];
+    }
+
+    valueDiv.textContent = displayValue;
+
+    const unitSmall = document.createElement('small');
+    unitSmall.classList.add('stats-unit');
+    unitSmall.textContent = unit;
+    valueDiv.appendChild(unitSmall);
+
     const labelDiv = document.createElement('div');
     labelDiv.classList.add('stats-desc');
     labelDiv.textContent = label;

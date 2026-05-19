@@ -40,6 +40,7 @@
     --mask-image-overflow-y-top: linear-gradient(white 95%, transparent 99%);
     --mask-image-overflow-y-bottom: linear-gradient(transparent 1%, white 5%);
     --font-family: "Rubik", "MiSans Latin", "Helvetica Neue", "Helvetica", "Roboto", "BlinkMacSystemFont", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    hyphens: auto;
 }
 
 * { 
@@ -947,6 +948,10 @@ header * {
     overflow: hidden;
     align-items: center;
     position: relative;
+}
+
+.tabs .tab-text { 
+    white-space: nowrap;
 }
 
 .tabs,.side-bar,.selection,.tooltip{

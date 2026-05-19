@@ -240,7 +240,8 @@ main .item {
 
 .detail-label {
     color: var(--color-text-secondary, rgba(255, 255, 255, 0.6));
-    min-width: 56px;
+    width: 4em;
+    min-width: min-content;
     flex-shrink: 0;
 }
 

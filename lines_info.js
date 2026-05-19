@@ -1900,6 +1900,9 @@ var MapMode = (function () {
     var mapPlayersData = [];
     var playerAvatars = {};
     var playerRefreshTimer = null;
+    var playerFetchController = null;
+    var playerFetchInFlight = false;
+    var avatarRenderTimer = null;
     var storageListener = null;
 
     var MIN_ZOOM = 0.05;
@@ -2014,6 +2017,7 @@ var MapMode = (function () {
     }
 
     function drawGrid() {
+        ctx.save();
         var cw = getCanvasCssWidth();
         var ch = getCanvasCssHeight();
         var topLeft = screenToWorld(0, 0);
@@ -2048,9 +2052,11 @@ var MapMode = (function () {
         }
 
         ctx.globalAlpha = 1;
+        ctx.restore();
     }
 
     function drawSingleLine(line) {
+        ctx.save();
         if (line.id.match('-R')) {
             ctx.globalAlpha = 0.4;
         }
@@ -2071,6 +2077,7 @@ var MapMode = (function () {
             }
             ctx.stroke();
         });
+        ctx.restore();
     }
 
     function drawLines() {
@@ -2274,6 +2281,7 @@ var MapMode = (function () {
     }
 
     function drawStations() {
+        ctx.save();
         buildMapSegments();
         placedLabels = [];
 
@@ -2336,10 +2344,12 @@ var MapMode = (function () {
             ctx.fillStyle = textColor;
             ctx.fillText(name, best.textX, best.textY);
         });
+        ctx.restore();
     }
 
     function drawTrains() {
         if (!showTrains || !mapTrainsData || !mapTrainsData.trains) return;
+        ctx.save();
 
         mapTrainsData.trains.forEach(function (train) {
             if (!train || !train.cars || train.cars.length === 0) return;
@@ -2376,6 +2386,7 @@ var MapMode = (function () {
             ctx.fillStyle = '#fff';
             ctx.fillText('\ue534', pos.x, pos.y);
         });
+        ctx.restore();
     }
 
     function isShowPlayers() {
@@ -2384,15 +2395,25 @@ var MapMode = (function () {
     }
 
     function loadPlayerAvatar(playerName) {
-        if (playerAvatars[playerName]) return playerAvatars[playerName];
+        if (playerAvatars[playerName]) {
+            if (playerAvatars[playerName] === 'error') return null;
+            return playerAvatars[playerName];
+        }
         var img = new Image();
         img.crossOrigin = 'anonymous';
         img.src = 'https://mc-heads.hydcraft.cn/avatar/' + encodeURIComponent(playerName) + '/24.png';
         img.onload = function () {
-            if (isOpen) render();
+            if (avatarRenderTimer) clearTimeout(avatarRenderTimer);
+            avatarRenderTimer = setTimeout(function () {
+                avatarRenderTimer = null;
+                if (isOpen) render();
+            }, 80);
         };
         img.onerror = function () {
             playerAvatars[playerName] = 'error';
+            setTimeout(function () {
+                if (playerAvatars[playerName] === 'error') delete playerAvatars[playerName];
+            }, 120000);
         };
         playerAvatars[playerName] = img;
         return img;
@@ -2403,9 +2424,14 @@ var MapMode = (function () {
             mapPlayersData = [];
             return;
         }
+        if (playerFetchInFlight) {
+            if (playerFetchController) playerFetchController.abort();
+        }
+        playerFetchInFlight = true;
         var timestamp = Date.now();
         var playerDataUrl = 'https://map.nitrogen.hydcraft.cn/up/world/world/' + timestamp;
-        var controller = new AbortController();
+        playerFetchController = new AbortController();
+        var controller = playerFetchController;
         var timeoutId = setTimeout(function () { controller.abort(); }, 5000);
 
         fetch(playerDataUrl, {
@@ -2419,6 +2445,8 @@ var MapMode = (function () {
                 return response.json();
             })
             .then(function (data) {
+                playerFetchInFlight = false;
+                playerFetchController = null;
                 if (data.players && data.players.length > 0) {
                     mapPlayersData = data.players;
                     data.players.forEach(function (p) { loadPlayerAvatar(p.name); });
@@ -2430,6 +2458,8 @@ var MapMode = (function () {
             })
             .catch(function () {
                 clearTimeout(timeoutId);
+                playerFetchInFlight = false;
+                playerFetchController = null;
             });
     }
 
@@ -2443,6 +2473,11 @@ var MapMode = (function () {
             clearInterval(playerRefreshTimer);
             playerRefreshTimer = null;
         }
+        if (playerFetchController) {
+            playerFetchController.abort();
+            playerFetchController = null;
+        }
+        playerFetchInFlight = false;
         mapPlayersData = [];
     }
 
@@ -2484,6 +2519,9 @@ var MapMode = (function () {
             ctx.lineWidth = Math.max(1, 1.5 * scale);
             ctx.stroke();
 
+            ctx.fillStyle = 'rgba(255,255,255,0)';
+            ctx.strokeStyle = 'rgba(0,0,0,0)';
+
             ctx.beginPath();
             drawRoundedRect(pos.x - half, pos.y - half, size, size, cr);
             ctx.clip();
@@ -2499,6 +2537,8 @@ var MapMode = (function () {
                 ctx.fillStyle = '#fff';
                 ctx.fillText('\ue7fd', pos.x, pos.y);
             }
+            ctx.fillStyle = 'rgba(255,2555,255,0)';
+            ctx.strokeStyle = 'rgba(0,0,0,0)';
             ctx.restore();
         });
     }
@@ -2589,6 +2629,7 @@ var MapMode = (function () {
     }
 
     function drawCoordinates() {
+        ctx.save();
         var ch = getCanvasCssHeight();
         var textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || 'rgba(128,128,128,0.6)';
         var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background').trim() || '#f5f5f5';
@@ -2605,6 +2646,7 @@ var MapMode = (function () {
         ctx.strokeText(coordText, centerX, ch - 20);
         ctx.fillStyle = textColor;
         ctx.fillText(coordText, centerX, ch - 20);
+        ctx.restore();
     }
 
     function render() {
@@ -2628,8 +2670,8 @@ var MapMode = (function () {
         drawLines();
         drawStations();
         drawTrains();
-        drawPlayers();
         drawCoordinates();
+        drawPlayers();
 
         zoomIndicator.textContent = Math.round(viewState.zoom * 100) + '%';
     }
@@ -2800,7 +2842,7 @@ var MapMode = (function () {
                 }
 
                 hideTooltip();
-                container.style.cursor = 'grab';
+                container.style.cursor = '';
             }
         });
 

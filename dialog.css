@@ -253,7 +253,7 @@
 .stats-container { 
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     justify-content: flex-start;
     gap: 1em;
     margin-bottom: 2em;

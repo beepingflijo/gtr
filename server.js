@@ -1150,37 +1150,71 @@ function calculateSafetyStats(data) {
     const approvedRecords = data.records || [];
     const accidents = approvedRecords.filter(r => r.type === 'accident' && r.status === 'approved');
     const delays = approvedRecords.filter(r => r.type === 'delay' && r.status === 'approved');
-    
+
     let accidentFreeDays = 0;
     let delayFreeDays = 0;
     let lastAccidentDate = null;
     let lastDelayDate = null;
-    
+    let maxDelayFreeDays = 0;
+    let maxDelayFreeRange = [null, null];
+
     if (accidents.length > 0) {
         const lastAccident = accidents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
         lastAccidentDate = lastAccident.timestamp;
         const diffTime = now - new Date(lastAccidentDate);
-        accidentFreeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        accidentFreeDays = diffTime / (1000 * 60 * 60 * 24);
     } else {
         accidentFreeDays = 365;
     }
-    
+
     if (approvedRecords.length > 0) {
         const lastDelay = approvedRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
         lastDelayDate = lastDelay.timestamp;
         const diffTime = now - new Date(lastDelayDate);
-        delayFreeDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        delayFreeDays = diffTime / (1000 * 60 * 60 * 24);
+
+        const sortedRecords = [...approvedRecords].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        let currentStart = null;
+        sortedRecords.forEach(record => {
+            if (currentStart !== null) {
+                const start = new Date(currentStart);
+                const end = new Date(record.timestamp);
+                const duration = (end - start) / (1000 * 60 * 60 * 24);
+                if (duration > maxDelayFreeDays) {
+                    maxDelayFreeDays = duration;
+                    maxDelayFreeRange = [currentStart, record.timestamp];
+                }
+            }
+            currentStart = record.timestamp;
+        });
+
+        if (currentStart !== null && approvedRecords.length > 1) {
+            const start = new Date(currentStart);
+            const end = now;
+            const duration = (end - start) / (1000 * 60 * 60 * 24);
+            if (duration > maxDelayFreeDays) {
+                maxDelayFreeDays = duration;
+                maxDelayFreeRange = [currentStart, now.toISOString()];
+            }
+        } else if (currentStart !== null && approvedRecords.length === 1) {
+            const start = new Date(currentStart);
+            const end = now;
+            maxDelayFreeDays = (end - start) / (1000 * 60 * 60 * 24);
+            maxDelayFreeRange = [currentStart, now.toISOString()];
+        }
     } else {
         delayFreeDays = 365;
     }
-    
+
     return {
-        accidentFreeDays,
-        delayFreeDays,
+        accidentFreeDays: Math.round(accidentFreeDays * 100) / 100,
+        delayFreeDays: Math.round(delayFreeDays * 100) / 100,
+        maxDelayFreeDays: Math.round(maxDelayFreeDays * 100) / 100,
         lastAccidentDate,
         lastDelayDate,
         totalAccidents: accidents.length,
-        totalDelays: delays.length
+        totalDelays: delays.length,
+        maxDelayFreeRange
     };
 }
 
@@ -1349,7 +1383,7 @@ app.put('/api/safety/review/:id', authenticateToken, (req, res) => {
         record.reviewNotes = notes || '';
 
         if (!data.stats) {
-            data.stats = { accidentFreeDays: 0, delayFreeDays: 0, lastAccidentDate: null, lastDelayDate: null, totalAccidents: 0, totalDelays: 0 };
+            data.stats = { accidentFreeDays: 0, delayFreeDays: 0, maxDelayFreeDays: 0, maxDelayFreeRange: [null, null], lastAccidentDate: null, lastDelayDate: null, totalAccidents: 0, totalDelays: 0 };
         }
         
         if (action === 'approve') {
