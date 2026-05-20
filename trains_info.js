@@ -1052,7 +1052,7 @@ function handleSearch(event) {
 
 // 应用搜索过滤条件
 function applySearchFilter(searchTerm = '') {
-    if (visitedPageRecorded === false) recordLastVisitedPage(`?q=${searchTerm}`);
+    if (visitedPageRecorded === false) recordLastVisitedPage(`?q=${searchTerm}`,'trains_info.html');
     visitedPageRecorded = true;
     //console.log('应用搜索过滤条件:', searchTerm);
     const trainElements = document.querySelectorAll('.train-info.item');
@@ -1514,6 +1514,7 @@ function createSafetyDetailsContainer(stats, isAdmin) {
     container.classList.add('safety-details-container');
     
     const statsSection = document.createElement('div');
+    statsSection.classList.add('stats-container');
     statsSection.classList.add('safety-stats-section');
     
     const accidentFreeCard = createStatCard(
@@ -1571,8 +1572,6 @@ function createSafetyDetailsContainer(stats, isAdmin) {
 }
 
 function createStatCard(icon, value, label, color) {
-    const card = document.createElement('div');
-    card.classList.add('stats-container');
     const item = document.createElement('div');
     item.classList.add('stats-item');
 
@@ -1612,10 +1611,8 @@ function createStatCard(icon, value, label, color) {
     item.appendChild(iconSpan);
     item.appendChild(valueDiv);
     item.appendChild(labelDiv);
-
-    card.appendChild(item);
     
-    return card;
+    return item;
 }
 
 async function loadSafetyRecords(type = 'all') {

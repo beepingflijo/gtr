@@ -251,8 +251,8 @@
 }
 
 .stats-container { 
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(6em, 1fr));
     align-items: flex-start;
     justify-content: flex-start;
     gap: 1em;
