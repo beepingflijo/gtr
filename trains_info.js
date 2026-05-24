@@ -1464,7 +1464,7 @@ function animateNumber(element, targetNumber) {
         } else {
             element.parentElement.style.color = '';
             element.parentElement.style.fontWeight = '';
-            icon.textContent = '';
+            icon.textContent = 'verified';
             element.style.display = '';
             icon.style.transform = ''
         }

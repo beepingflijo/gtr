@@ -312,6 +312,18 @@
         "X":{"zh_hans": "新屿都{addr}", "en": "{addr}, Xinyu Metropolis", "zh_hant": "新嶼都{addr}", "uk": "{addr}, метрополія Сїньюй"},
         "Y":{"zh_hans":"颐恒县{addr}","en": "{addr}, Yiheng County", "zh_hant": "頤恆縣{addr}", "uk": "{addr}, Округ Їхен"}
     },
+    "district_names_short":{
+        "A":{"zh_hans": "阿提米丝", "en": "Artemis", "zh_hant": "阿提米絲", "uk": "Артеміс"},
+        "G":{"zh_hans":"广阳","en": "Guangyang", "zh_hant": "廣陽", "uk": "Ґуанъян"},
+        "J":{"zh_hans":"旧巷","en": "Jiuxiang", "zh_hant": "舊巷", "uk": "Цзюсян"},
+        "L":{"zh_hans":"龙门","en": "Longmen", "zh_hant": "龍門", "uk": "Лунмень"},
+        "N":{"zh_hans":"莒南","en": "Junan", "zh_hant": "莒南", "uk": "Цзюйнань"},
+        "Q":{"zh_hans":"沁京","en": "Qinjing", "zh_hant": "沁京", "uk": "Цїньцзїн"},
+        "S":{"zh_hans":"静见","en": "Shizumi", "zh_hant": "靜見", "uk": "Шідзумі"},
+        "W":{"zh_hans":"新欧文","en": "Owen State", "zh_hant": "新歐文", "uk": "Штат Оуен"},
+        "X":{"zh_hans": "新屿", "en": "Xinyu", "zh_hant": "新嶼", "uk": "Сїньюй"},
+        "Y":{"zh_hans":"颐恒","en": "Yiheng", "zh_hant": "頤恆", "uk": "Їхен"}
+    },
     "station_names":{
         "AFN":{"original": "船橋", "zh_hans": "船桥", "en": "Funabashi", "zh_hant": "船橋", "uk": "Фунабаші"},
         "AGS":{"zh_hans": "格林布希","en": "Greenbush", "zh_hant": "格林布希","uk":"Грінбуш"},
@@ -492,7 +504,7 @@
         "additional_fare": {"zh_hans":"加快费","en":"Additional fare", "zh_hant":"加快費", "uk": "Додаткова ціна"},
         "first_class_addition": {"zh_hans":"一等座附加费", "en": "First class addition", "zh_hant": "一等座附加費", "uk": "Додаткова ціна для першого класу"},
         "premium_class_addition": {"zh_hans":"商务座附加费", "en": "Premium class addition", "zh_hant": "商務座附加費", "uk": "Додаткова ціна для преміум класу"},
-        "price_rounding": {"zh_hans":"舍分", "en":"Round to nearest", "zh_hant":"捨分", "uk":"Округлення до найближчого"},
+        "price_rounding": {"zh_hans":"舍分", "en":"Round to nearest", "zh_hant":"捨分", "uk":"округлення до найближчого"},
         "to_": {"zh_hans": "{dir}方向", "en": " to {dir}", "zh_hant": "{dir}方向", "uk": "до {dir}"}
     },
     "trains_info": {

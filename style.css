@@ -1590,6 +1590,7 @@ footer .search-bar.collapsed {
     background-color: var(--color-background-card-transparent);
     box-shadow: var(--item-shadow-inset-hover);
     margin: 0 2vw;
+    min-width: none;
 }
 
 .effect-reduced .dialog-container .content-container.cover .dialog-content{

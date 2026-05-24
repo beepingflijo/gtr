@@ -1487,8 +1487,9 @@ function renderSearchResults(routes, container) {
             const line = window.lines.find(l => l.id === segment.line);
             const onStationIndex = line.route.findIndex(step => step.type === 'station' && step.code === route.segments[segIndex].stations[0]);
             const offStationIndex = line.route.findIndex(step => step.type === 'station' && step.code === route.segments[segIndex].stations[route.segments[segIndex].stations.length - 1]);
-            const isUpwards = onStationIndex < offStationIndex;
+            const isUpwards = onStationIndex > offStationIndex;
             const terminal = isUpwards ? line.route[0].code : line.route[line.route.length - 1].code;
+            const terminalAddr = strings.district_names_short[terminal[0]][lang];
             console.log(line,onStationIndex,offStationIndex);
             if (line) {
                 // 如果是第一段，添加上车站信息
@@ -1511,7 +1512,7 @@ function renderSearchResults(routes, container) {
                                 >${line.name[lang]}</a>
                             <span>${strings.ticket_calculator.to_[lang].replace(
                                 '{dir}',
-                                getStationName(terminal,lang)
+                                terminalAddr
                             )}</span>
                             <br />
                             <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]},</span>

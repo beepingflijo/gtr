@@ -375,7 +375,15 @@
                 "desc":"building","desc_dir":"northeast"
             },
             {
+                "id":"B1","dir":"west","floor":"2F",
+                "desc":"road","desc_dir":"west"
+            },
+            {
                 "id":"C1","dir":"southeast","floor":"B2",
+                "desc":""
+            },
+            {
+                "id":"C2","dir":"northeast","floor":"B2",
                 "desc":""
             },
             {

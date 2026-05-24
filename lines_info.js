@@ -163,8 +163,67 @@ function displayStations(line) {
         ul.classList.add('GX');
     }
 
+    // ... 原有代码 ...
     const rapidLine = (!line.id.startsWith('GX'))?window.lines.find(ln => ln.id === line.id+'-R'):null;
-    const rapidStations = rapidLine ? rapidLine.route.filter(node => node.type === 'station') : [];
+    
+    let rapidStations = [];
+    if (rapidLine) {
+        // 1. 获取快速线的所有车站节点
+        const allRapidNodes = rapidLine.route.filter(node => node.type === 'station');
+        
+        // 2. 统计每个车站代码出现的次数
+        const stationCounts = {};
+        allRapidNodes.forEach(node => {
+            stationCounts[node.code] = (stationCounts[node.code] || 0) + 1;
+        });
+
+        // 3. 找出所有重复出现（出现次数 > 1）的车站代码
+        const duplicatedCodes = new Set();
+        for (const code in stationCounts) {
+            if (stationCounts[code] > 1) {
+                duplicatedCodes.add(code);
+            }
+        }
+
+        // 4. 过滤车站：跳过重复车站第一次出现后、第二次出现前的所有车站，并去重
+        const seenStations = new Set(); // 用于最终去重
+        const skipUntil = {}; // 记录需要跳过的车站代码 { code: true }
+
+        rapidStations = allRapidNodes.filter(node => {
+            const code = node.code;
+
+            // 如果当前车站是重复车站之一
+            if (duplicatedCodes.has(code)) {
+                // 如果正处于“跳过模式”且遇到了目标车站（第二次出现）
+                if (skipUntil[code]) {
+                    delete skipUntil[code]; // 结束跳过模式
+                    return true; 
+                } 
+                // 如果是第一次遇到重复车站
+                else if (!seenStations.has(code)) {
+                    seenStations.add(code); // 标记为已见
+                    skipUntil[code] = true; // 开启跳过模式，直到下次遇到它
+                    return false; // 第一次出现也要去掉（根据需求“去掉重复的车站”）
+                }
+            }
+
+            // 如果处于任何车站的跳过模式中，则忽略当前车站
+            for (const skipCode in skipUntil) {
+                if (skipUntil[skipCode]) {
+                    return false;
+                }
+            }
+
+            // 正常车站或不在跳过范围内的车站，进行常规去重
+            if (seenStations.has(code)) {
+                return false;
+            }
+            
+            seenStations.add(code);
+            return true;
+        });
+    }
+    // ... 原有代码 ...
 
     // 遍历线路中的每个节点，筛选出车站并创建列表项
     line.route.filter(node => node.type === 'station').forEach(station => {
@@ -2082,6 +2141,12 @@ var MapMode = (function () {
 
     function drawLines() {
         ctx.save();
+
+        window.lines.forEach(function (line) {
+            if (line.id.match('-R')) {
+                drawSingleLine(line);
+            }
+        });
         
         window.lines.forEach(function (line) {
             if (line.id.startsWith('GX')) {
@@ -2093,8 +2158,7 @@ var MapMode = (function () {
         });
 
         window.lines.forEach(function (line) {
-            //if (line.id.match('-R')) return;
-            if (!line.id.startsWith('GX')) {
+            if (!line.id.startsWith('GX')&& !line.id.match('-R')) {
                 drawSingleLine(line);
             }
         });
