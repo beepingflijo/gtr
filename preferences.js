@@ -1207,7 +1207,10 @@ function handleWindowResize() {
         item.style.justifyContent = 'space-between';
         item.style.height = '30px';
 
-        item.querySelector('*').style.width = 'fit-content';
+        const firstChild = item.querySelector('*');
+        if (firstChild) {
+            firstChild.style.width = 'fit-content';
+        }
         let itemTotalWidth = 0;
         let itemTotalHeight = 0;
         Array.from(item.children).forEach(child => { 
@@ -1221,7 +1224,9 @@ function handleWindowResize() {
             item.style.alignItems = 'flex-end';
             item.style.justifyContent = 'flex-start';
             item.style.height = itemTotalHeight + 8 + 'px';
-            item.querySelector('*').style.width = '-webkit-fill-available';
+            if (firstChild) {
+                firstChild.style.width = '-webkit-fill-available';
+            }
         }
         // 如果item的子元素有#followPlayers
         if (item.querySelector('#followPlayers')) { 

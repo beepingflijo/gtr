@@ -243,40 +243,86 @@ function authenticateToken(req, res, next) {
         console.log('❌ Token验证失败：未提供token');
         return res.status(401).json({ 
             success: false, 
-            message: 'Access token required' 
+            message: 'Access token required',
+            errorCode: 'TOKEN_MISSING',
+            requiresReLogin: true
         });
     }
 
     console.log('🔍 收到Token验证请求');
     console.log('   - Token前20字符:', token.substring(0, 20) + '...');
-    
-    // 先解码token看看payload是什么
-    try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-            console.log('   - Token Payload (解码):', payload);
-        }
-    } catch(e) {
-        console.log('   - Token解码失败:', e.message);
-    }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) {
-            console.log('❌ Token验证失败：', err.message);
-            return res.status(403).json({ 
+            let errorCode = 'TOKEN_INVALID';
+            let statusCode = 403;
+            let message = 'Invalid token';
+
+            if (err.name === 'TokenExpiredError') {
+                errorCode = 'TOKEN_EXPIRED';
+                statusCode = 401;
+                message = 'Token has expired, please login again';
+                console.log('❌ Token验证失败：Token已过期', {
+                    expiredAt: err.expiredAt
+                });
+            } else if (err.name === 'JsonWebTokenError') {
+                errorCode = 'TOKEN_MALFORMED';
+                statusCode = 401;
+                message = 'Token is malformed or invalid';
+                console.log('❌ Token验证失败：Token格式无效', err.message);
+            } else if (err.name === 'NotBeforeError') {
+                errorCode = 'TOKEN_NOT_ACTIVE';
+                statusCode = 401;
+                message = 'Token is not yet active';
+                console.log('❌ Token验证失败：Token尚未生效', err.date);
+            } else {
+                console.log('❌ Token验证失败：', err.message);
+            }
+
+            return res.status(statusCode).json({ 
                 success: false, 
-                message: 'Invalid or expired token' 
+                message: message,
+                errorCode: errorCode,
+                requiresReLogin: true
             });
         }
-        
+
+        const users = readUsers();
+        const userExists = users.find(u => u.id === decoded.id && u.username === decoded.username);
+
+        if (!userExists) {
+            console.log('❌ Token验证失败：用户不存在或已被删除', {
+                id: decoded.id,
+                username: decoded.username
+            });
+            return res.status(401).json({ 
+                success: false, 
+                message: 'User account no longer exists, please login again',
+                errorCode: 'USER_NOT_FOUND',
+                requiresReLogin: true
+            });
+        }
+
+        if (userExists.verificationStatus === 'rejected') {
+            console.log('❌ Token验证失败：用户已被拒绝', {
+                id: decoded.id,
+                username: decoded.username
+            });
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Your account has been rejected',
+                errorCode: 'ACCOUNT_REJECTED',
+                requiresReLogin: false
+            });
+        }
+
         console.log('✅ JWT.verify 成功，解析结果:', {
-            id: user.id,
-            username: user.username,
-            iat: user.iat,
-            exp: user.exp
+            id: decoded.id,
+            username: decoded.username,
+            iat: decoded.iat,
+            exp: decoded.exp
         });
-        req.user = user;
+        req.user = decoded;
         next();
     });
 }

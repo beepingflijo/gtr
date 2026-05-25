@@ -1464,7 +1464,7 @@ function animateNumber(element, targetNumber) {
         } else {
             element.parentElement.style.color = '';
             element.parentElement.style.fontWeight = '';
-            icon.textContent = 'verified';
+            icon.textContent = 'verified_user';
             element.style.display = '';
             icon.style.transform = ''
         }
@@ -1482,7 +1482,9 @@ async function showSafetyDetails() {
     const isAdmin = token ? await checkIsAdmin(token) : false;
     
     const container = createSafetyDetailsContainer(safetyStatsCache, isAdmin);
-    pushDialog(container, 'custom', strings.safety?.title?.[lang] || '安全记录', '', '');
+    const reportBtn = container.querySelector('.report-btn');
+    reportBtn.remove();
+    pushDialog(container, 'custom', strings.safety?.title?.[lang] || '安全记录', '', '',reportBtn);
     
     if (prefs.openInContent === true) {
         //window.open('content.html?type=safety', '_self');
@@ -1532,7 +1534,8 @@ function createSafetyDetailsContainer(stats, isAdmin) {
     const maxDelayFreeCard = createStatCard(
         'award_star',
         stats.maxDelayFreeDays || 0,
-        strings.safety?.max_delay_free_days?.[lang] || '最长无延误天数',
+        (strings.safety?.max_delay_free_days?.[lang] || '最长无延误天数')+
+        '\n'+formatDateRange(stats.maxDelayFreeRange[0], stats.maxDelayFreeRange[1]),
         'gold'
     );
     
@@ -1760,6 +1763,49 @@ function formatDateTime(isoString) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+
+/**
+ * 格式化日期范围
+ * 如果两个时间在同一年则只取月日，如果两个时间不在同一年则只取年月日
+ * @param {string|Date} startDate - 开始时间
+ * @param {string|Date} endDate - 结束时间
+ * @returns {string} 格式化后的日期范围字符串
+ */
+function formatDateRange(startDate, endDate) {
+    if (!startDate || !endDate) return '-';
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // 检查日期是否有效
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return '-';
+
+    const currentYear = new Date().getFullYear();
+    const isSameYear = start.getFullYear() === end.getFullYear();
+    
+    // 定义格式选项
+    const yearMonthDayOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    const monthDayOptions = { month: '2-digit', day: '2-digit' };
+
+    // 确定语言环境
+    const locale = lang.includes('zh') ? 'zh-CN' : 'en-US';
+
+    let startStr, endStr;
+
+    if (isSameYear && start.getFullYear() === currentYear) {
+        // 同一年：只显示月日
+        // 注意：为了美观，通常开始日期也显示月日，或者根据具体UI需求调整
+        // 这里假设两端都只显示月日，例如 "05-01 - 05-10"
+        startStr = start.toLocaleDateString(locale, monthDayOptions);
+        endStr = end.toLocaleDateString(locale, monthDayOptions);
+    } else {
+        // 不同年：显示年月日
+        startStr = start.toLocaleDateString(locale, yearMonthDayOptions);
+        endStr = end.toLocaleDateString(locale, yearMonthDayOptions);
+    }
+
+    return `${startStr} - ${endStr}`;
 }
 
 function showReportForm() {
