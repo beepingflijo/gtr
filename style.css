@@ -682,7 +682,7 @@ header * {
     justify-content: flex-start;
     width: 90%;
     max-width: 480px;
-    max-height: 80dvh;
+    max-height: 75dvh;
     transition: all 0.2s ease-in-out;
     margin: 0 18px;
     padding: 8px 4px;
@@ -1618,8 +1618,8 @@ footer .search-bar.collapsed {
 .dialog-container .content-container:not(.cover) .dialog-cover{ 
     filter: blur(12px);
     opacity: 0;
-    height: 6em;
-    transform: translateY(2em);
+    height: 20dvh;
+    transform: translateY(3em);
 }
 
 .effect-reduced .dialog-container .content-container > * { 
