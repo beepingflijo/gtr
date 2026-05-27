@@ -682,7 +682,7 @@ header * {
     justify-content: flex-start;
     width: 90%;
     max-width: 480px;
-    max-height: 60dvh;
+    max-height: 80dvh;
     transition: all 0.2s ease-in-out;
     margin: 0 18px;
     padding: 8px 4px;
@@ -1582,6 +1582,7 @@ footer .search-bar.collapsed {
     z-index: 0;
     width: -webkit-fill-available;
     white-space: pre-line;
+    min-height: fit-content;
 }
 
 .dialog-container .content-container.cover .dialog-content{
