@@ -451,7 +451,14 @@ function createTrainSection(train) {
                     Math.pow(position.y - lastPosition.y, 2) +
                     Math.pow(position.z - lastPosition.z, 2)
                 );
-                const speed = distance / timeDiff * 3.6;
+                const COORD_CHANGE_THRESHOLD = 0.1;
+                const isCoordinateChanged = distance > COORD_CHANGE_THRESHOLD;
+                let speed = distance / timeDiff * 3.6;
+                
+                if (speed <= 0 && isCoordinateChanged && lastPosition.speed > 0) {
+                    speed = lastPosition.speed;
+                }
+                
                 trainPositions.set(train.name, { x: position.x, y: position.y, z: position.z, time: currentTime, speed: speed });
             }
         } else {
@@ -471,7 +478,7 @@ function createTrainSection(train) {
                 currentSpeed = currentTrainData.speed;
             }
             const trainSpeedLimit = getTrainLimitSpeed(train.name);
-            if (currentSpeed > trainSpeedLimit) currentSpeed = 0;
+            if (currentSpeed > trainSpeedLimit) currentSpeed = trainSpeedLimit;
             if (isStopped) currentSpeed = 0;
             speedText = `${strings.lines_info.speed[lang] || 'Spd '}${currentSpeed.toFixed(0)} km/h`;
         } else {
@@ -511,37 +518,40 @@ function createTrainSection(train) {
     directionElement.style.fontSize = '0.9em';
     directionElement.style.color = 'var(--color-text-secondary)';
     
-    // 列车警告信息
     const warningElement = document.createElement('div');
     warningElement.className = 'train-warning';
     
     try {
-        // 检查并更新列车的警告状态
         checkAndUpdateTrainWarnings(train, position);
         
         const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
         const currentTrainData = allTrainsData[train.name];
         
         if (currentTrainData && currentTrainData.warningReasons && currentTrainData.warningReasons.length > 0) {
-            let warningText = '! ';
-            currentTrainData.warningReasons.forEach(reason => {
-                switch (reason) {
-                    case 'long_stop':
-                        warningText += strings.lines_info.warning_long_stop[lang] + '; ';
-                        break;
-                    case 'zero_speed':
-                        warningText += strings.lines_info.warning_zero_speed[lang] + '; ';
-                        break;
-                    case 'platform_conflict':
-                        warningText += strings.lines_info.warning_platform_conflict[lang] + '; ';
-                        break;
+            if (typeof WarningManager !== 'undefined') {
+                const warningEl = WarningManager.createWarningElement(
+                    currentTrainData.warningReasons.map(type => ({ type, level: WarningManager.CONFIG.WARNING_LEVELS[type] || 'warning' })),
+                    strings, lang
+                );
+                if (warningEl) {
+                    warningElement.textContent = warningEl.textContent;
+                    warningElement.style.color = warningEl.style.color;
+                    warningElement.style.fontWeight = warningEl.style.fontWeight;
+                    warningElement.style.display = 'block';
+                } else {
+                    warningElement.style.display = 'none';
                 }
-            });
-            
-            // 移除末尾的分号和空格
-            warningText = warningText.slice(0, -2);
-            warningElement.textContent = warningText;
-            warningElement.style.display = warningText ? 'block' : 'none';
+            } else {
+                let warningText = '! ';
+                currentTrainData.warningReasons.forEach(reason => {
+                    const stringKey = `warning_${reason}`;
+                    if (strings.lines_info[stringKey]) {
+                        warningText += strings.lines_info[stringKey][lang] + '; ';
+                    }
+                });
+                warningElement.textContent = warningText.slice(0, -2);
+                warningElement.style.display = 'block';
+            }
         } else {
             warningElement.style.display = 'none';
         }
@@ -567,10 +577,11 @@ function createTrainSection(train) {
     
     // 查找列车所在的线路和下一站
     try {
-        // 获取列车方向
+        // 获取列车方向和历史位置
         const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
         const currentTrainData = allTrainsData[train.name];
         const trainDirection = currentTrainData && currentTrainData.direction ? currentTrainData.direction : 'unknown';
+        const prevPosition = currentTrainData && currentTrainData.position ? currentTrainData.position : null;
         
         // 查找列车所在的线路
         let trainLine = null;
@@ -623,7 +634,7 @@ function createTrainSection(train) {
             if (trainLine && trainDirection !== 'unknown') {
                 // 查找列车当前所在的车站或轨道位置
                 const currentPosition = position;
-                const closestStation = findClosestStation(trainLine, currentPosition, trainDirection);
+                const closestStation = findClosestStation(trainLine, currentPosition, trainDirection, prevPosition);
                 
                 if (closestStation) {
                     // 根据列车方向查找下一站
@@ -632,65 +643,52 @@ function createTrainSection(train) {
                     if (nextStation) {
                         nextStationElement.textContent = strings.trains_info.approaching[lang] + getStationName(nextStation.code, lang);
                         
-                        // 计算到下一站的距离
-                        const distanceToNext = calculateDistanceToStation(currentPosition, nextStation);
+                        // 计算到下一站的距离（优先使用轨道距离）
+                        let distanceToNext = Infinity;
+                        if (typeof PositionUtils !== 'undefined' && trainLine) {
+                            distanceToNext = PositionUtils.calculateTrackDistanceToStation(trainLine, currentPosition, nextStation, trainDirection);
+                        }
+                        if (!isFinite(distanceToNext) || distanceToNext <= 0) {
+                            distanceToNext = calculateDistanceToStation(currentPosition, nextStation, trainDirection);
+                        }
+                        
                         distanceElement.textContent = `${(distanceToNext / 1000).toFixed(1) + strings.trains_info.km_to[lang] + getStationName(nextStation.code, lang) + strings.ticket_calculator._station[lang]}`;
                         distanceElement.style.fontSize = '0.9em';
                         distanceElement.style.color = 'var(--color-text-secondary)';
                         
                         // 计算预计到达时间
                         if (currentSpeed > 0 && distanceToNext > 0) {
-                            // 假设以0.3m/s²的加速度减速到0
-                            // 使用运动学公式: v² = u² + 2as
-                            // 其中 v = 0 (最终速度), u = currentSpeed (初始速度), a = -0.3 (减速度), s = distanceToNext (距离)
-                            // 解得: s = u² / (2a)
-                            // 如果 distanceToNext > s, 则列车需要先匀速行驶一段距离再减速
-                            // 如果 distanceToNext <= s, 则列车需要减速行驶全程
+                            const DECEL_RATE = 0.3; // 减速度 m/s²
+                            const CRUISE_DECEL_RATE = 0.5; // 进站减速 m/s²
                             
-                            // 将速度从 km/h 转换为 m/s
                             const speedMps = currentSpeed * 1000 / 3600;
-                            
-                            // 计算减速到0所需的距离 (m)
-                            const decelDistance = (speedMps * speedMps) / (2 * 0.3);
-
-                            // 从本地的data/trains.json获取列车限速信息
                             const trainLimitSpeed = getTrainLimitSpeed(train.name);
-
-                            // 计算从列车限速减速到0的距离
-                            const decelDistanceFromLimit = (trainLimitSpeed * 1000 / 3600) ** 2 / (2 * 0.3);
+                            const limitSpeedMps = trainLimitSpeed * 1000 / 3600;
                             
-                            let totalTime = 0; // 总时间（秒）
+                            const decelDistanceFromCurrent = (speedMps * speedMps) / (2 * DECEL_RATE);
                             
-                            if (distanceToNext > decelDistanceFromLimit) {
-                                // 需要匀速行驶一段距离再减速
-                                const cruiseDistance = distanceToNext - decelDistance; // 匀速行驶距离 (m)
-                                const cruiseTime = cruiseDistance / speedMps; // 匀速行驶时间 (秒)
-                                
-                                // 减速时间 (从当前速度减到0的时间)
-                                const decelTime = speedMps / 0.3;
-                                
+                            let totalTime = 0;
+                            
+                            if (distanceToNext > decelDistanceFromCurrent) {
+                                const cruiseDistance = distanceToNext - decelDistanceFromCurrent;
+                                const avgCruiseSpeed = Math.min(speedMps, limitSpeedMps);
+                                const cruiseTime = cruiseDistance / avgCruiseSpeed;
+                                const decelTime = speedMps / DECEL_RATE;
                                 totalTime = cruiseTime + decelTime;
                             } else {
-                                // 全程减速行驶
-                                // 使用公式: s = ut + (1/2)at² 来计算时间
-                                // 由于我们已知 s 和 a，需要求解 t
-                                // 0.5 * a * t² + u * t - s = 0
-                                // 使用二次方程求解: t = (-u ± √(u² + 2as)) / a
-                                // 因为我们知道最终速度为0，所以使用 t = u / a
-                                totalTime = speedMps / 0.3;
+                                totalTime = speedMps / DECEL_RATE;
                             }
                             
-                            // 将时间转换为分钟和秒
+                            totalTime = Math.max(totalTime, 30);
+                            
                             const totalSeconds = Math.round(totalTime);
                             const minutes = Math.floor(totalSeconds / 60);
-                            const seconds = totalSeconds % 60;
                             
                             if (minutes > 0) {
                                 etaElement.textContent = minutes + strings.trains_info.min_to_arrival[lang];
                             } else {
                                 etaElement.textContent = strings.trains_info.arriving[lang];
                             }
-                            //etaElement.textContent += getStationName(nextStation.code, lang) + strings.ticket_calculator._station[lang];
                         } else if (currentSpeed === 0) {
                             etaElement.textContent = strings.trains_info.stopped[lang];
                         } else {
@@ -841,11 +839,11 @@ function distanceFromSegment(p, v, w) {
     }
 }
 
-// 查找线路上最近的车站
-function findClosestStation(line, position, direction = null) {
+// 查找线路上最近的车站（支持方向感知）
+function findClosestStation(line, position, direction = null, prevPosition = null) {
     // 使用PositionUtils模块
     if (typeof PositionUtils !== 'undefined') {
-        return PositionUtils.findClosestStation(line, position, direction);
+        return PositionUtils.findClosestStation(line, position, direction, prevPosition);
     }
 }
 
@@ -954,27 +952,24 @@ function handleError(container, message) {
     container.appendChild(errorElement);
 }
 
-// 检查并更新列车警告状态的函数
 function checkAndUpdateTrainWarnings(train, position) {
-    // 使用PositionUtils模块
+    if (typeof WarningManager !== 'undefined') {
+        WarningManager.updateWarningStateForTrainsInfo(train, position, strings, lang);
+        return;
+    }
+    
     if (typeof PositionUtils !== 'undefined') {
         PositionUtils.checkAndUpdateTrainWarnings(train, position);
         return;
     }
     
-    // 降级处理：如果PositionUtils不可用，使用原有实现
     try {
-        // 从localStorage获取列车数据
         const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
         const currentTrainData = allTrainsData[train.name];
-        
-        // 检查是否需要添加警告标志
         let shouldShowWarning = false;
         let warningReasons = [];
         
-        // 条件1: 列车在轨道上的车速为0且不在任何车站
         if (currentTrainData && currentTrainData.speed === 0) {
-            // 检查列车是否在任何车站
             const isAtStation = checkIfTrainAtStation(train.name, position);
             if (!isAtStation) {
                 shouldShowWarning = true;
@@ -982,18 +977,14 @@ function checkAndUpdateTrainWarnings(train, position) {
             }
         }
         
-        // 条件2: 列车长时间停止（超过3分钟）
         if (currentTrainData && currentTrainData.timestamp) {
-            const currentTime = Date.now();
-            const timeSinceUpdate = currentTime - currentTrainData.timestamp;
-            // 3分钟 = 180000毫秒
+            const timeSinceUpdate = Date.now() - currentTrainData.timestamp;
             if (timeSinceUpdate > 180000) {
                 shouldShowWarning = true;
                 warningReasons.push('long_stop');
             }
         }
         
-        // 更新localStorage中的警告信息
         if (!allTrainsData[train.name]) {
             allTrainsData[train.name] = {};
         }
@@ -1226,28 +1217,24 @@ function applySearchFilter(searchTerm = '') {
             console.warn('获取列车车站和站台信息时出错:', e);
         }
 
-        // 添加警告信息
         try {
-            const position = train.cars[0].leading.location; // 定义 position 变量
+            const position = train.cars[0].leading.location;
             checkAndUpdateTrainWarnings(train, position);
             
             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
             const currentTrainData = allTrainsData[train.name];
             
             if (currentTrainData && currentTrainData.warningReasons && currentTrainData.warningReasons.length > 0) {
-                currentTrainData.warningReasons.forEach(reason => {
-                    switch (reason) {
-                        case 'long_stop':
-                            searchText += ` ${(strings.lines_info.warning_long_stop[lang] || 'Long stop').toLowerCase()}`;
-                            break;
-                        case 'zero_speed':
-                            searchText += ` ${(strings.lines_info.warning_zero_speed[lang] || 'Zero speed').toLowerCase()}`;
-                            break;
-                        case 'platform_conflict':
-                            searchText += ` ${(strings.lines_info.warning_platform_conflict[lang] || 'Platform conflict').toLowerCase()}`;
-                            break;
-                    }
-                });
+                if (typeof WarningManager !== 'undefined') {
+                    searchText += ` ${WarningManager.getWarningReasonsText(currentTrainData.warningReasons, strings, lang).toLowerCase()}`;
+                } else {
+                    currentTrainData.warningReasons.forEach(reason => {
+                        const stringKey = `warning_${reason}`;
+                        if (strings.lines_info[stringKey]) {
+                            searchText += ` ${strings.lines_info[stringKey][lang].toLowerCase()}`;
+                        }
+                    });
+                }
             }
         } catch (e) {
             console.warn('获取警告信息时出错:', e);
@@ -2088,7 +2075,8 @@ function renderPendingReviews(container, reviews) {
                 <span class="review-time">${formatDateTime(review.createdAt)}</span>
             </div>
             <div class="review-content">
-                <p><strong>${strings.safety?.location?.[lang] || '位置'}:</strong> ${review.location.station} - ${review.location.position}</p>
+                <p><strong>${strings.safety?.train_number?.[lang] || '列车编号'}:</strong> ${review.trainInfo.trainNumber}</p>
+                <p><strong>${strings.safety?.location?.[lang] || '位置'}:</strong> ${review.location.station} - ${review.location.position} (${review.location.x_coordinate}, ${review.location.z_coordinate})</p>
                 <p><strong>${strings.safety?.cause?.[lang] || '原因'}:</strong> ${review.cause}</p>
                 <p><strong>${strings.safety?.reported_by?.[lang] || '上报人'}:</strong> ${review.reportedBy}</p>
             </div>

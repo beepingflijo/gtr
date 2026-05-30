@@ -1462,6 +1462,250 @@ app.put('/api/safety/review/:id', authenticateToken, (req, res) => {
     }
 });
 
+// ==================== 列车警告事件管理 API ====================
+const WARNING_EVENTS_FILE = path.join(__dirname, 'data', 'warning_events.json');
+
+function ensureWarningEventsFile() {
+    if (!fs.existsSync(WARNING_EVENTS_FILE)) {
+        const defaultData = { activeWarnings: {}, warningHistory: [] };
+        fs.writeFileSync(WARNING_EVENTS_FILE, JSON.stringify(defaultData, null, 2), 'utf8');
+    }
+}
+
+function readWarningEvents() {
+    ensureWarningEventsFile();
+    try {
+        const data = fs.readFileSync(WARNING_EVENTS_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading warning events:', error);
+        return { activeWarnings: {}, warningHistory: [] };
+    }
+}
+
+function saveWarningEvents(data) {
+    ensureWarningEventsFile();
+    try {
+        fs.writeFileSync(WARNING_EVENTS_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving warning events:', error);
+        throw error;
+    }
+}
+
+const WARNING_TYPE_CAUSE_MAP = {
+    zero_speed: '列车速度为0且不在站台区域，疑似临时停车',
+    long_stop: '列车长时间未移动，疑似滞留',
+    platform_conflict: '多列车停靠同一站台，疑似站台冲突或机外停车'
+};
+
+app.post('/api/warning/report', (req, res) => {
+    try {
+        const { trainId, warningType, warningParams, position, locationInfo, timestamp } = req.body;
+
+        if (!trainId || !warningType) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: trainId, warningType'
+            });
+        }
+
+        const validWarningTypes = ['zero_speed', 'long_stop', 'platform_conflict'];
+        if (!validWarningTypes.includes(warningType)) {
+            return res.status(400).json({
+                success: false,
+                message: `Invalid warning type. Must be one of: ${validWarningTypes.join(', ')}`
+            });
+        }
+
+        const data = readWarningEvents();
+
+        const existingActive = data.activeWarnings[trainId];
+        if (existingActive) {
+            const duplicate = existingActive.find(w => w.warningType === warningType && w.status === 'active');
+            if (duplicate) {
+                return res.json({
+                    success: true,
+                    message: 'Active warning already exists',
+                    data: duplicate
+                });
+            }
+        }
+
+        const warningId = `warn-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`;
+        const eventTimestamp = timestamp || new Date().toISOString();
+
+        const warningEvent = {
+            id: warningId,
+            trainId,
+            warningType,
+            warningParams: warningParams || {},
+            position: position || null,
+            locationInfo: locationInfo || null,
+            status: 'active',
+            reportedBy: 'system',
+            reportedAt: eventTimestamp,
+            resolvedAt: null,
+            resolvedBy: null,
+            resolveReason: null
+        };
+
+        data.activeWarnings[trainId] = data.activeWarnings[trainId] || [];
+        data.activeWarnings[trainId].push(warningEvent);
+        data.warningHistory.push(warningEvent);
+        saveWarningEvents(data);
+
+        try {
+            const safetyData = readSafetyRecords();
+            const resolvedLocation = locationInfo || {};
+            const pendingRecord = {
+                id: 'rec-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 6),
+                type: 'warning',
+                status: 'pending',
+                timestamp: eventTimestamp,
+                location: {
+                    station: resolvedLocation.station || '',
+                    line: resolvedLocation.line || '',
+                    position: resolvedLocation.position || '',
+                    x_coordinate: resolvedLocation.x_coordinate || (position ? position.x : null),
+                    z_coordinate: resolvedLocation.z_coordinate || (position ? position.z : null)
+                },
+                trainInfo: {
+                    trainNumber: trainId
+                },
+                cause: WARNING_TYPE_CAUSE_MAP[warningType] || warningType,
+                impact: {
+                    description: `列车 ${trainId} 触发 ${warningType} 类型警告`,
+                    warningParams: warningParams || {},
+                    warningEventId: warningId
+                },
+                reportedBy: 'system',
+                createdAt: new Date().toISOString()
+            };
+            safetyData.pendingReviews.push(pendingRecord);
+            saveSafetyRecords(safetyData);
+            console.log(`⚠️ 警告已推送至待审核列表: ${pendingRecord.id} (${trainId} - ${warningType})`);
+        } catch (safetyError) {
+            console.error('推送警告至待审核列表失败:', safetyError);
+        }
+
+        console.log(`⚠️ 列车警告已上报: ${warningId} - ${trainId} (${warningType})`);
+
+        res.json({
+            success: true,
+            message: 'Warning event reported successfully',
+            data: warningEvent
+        });
+    } catch (error) {
+        console.error('Error reporting warning event:', error);
+        res.status(500).json({ success: false, message: 'Failed to report warning event' });
+    }
+});
+
+app.post('/api/warning/resolve', (req, res) => {
+    try {
+        const { trainId, warningType, resolveReason, timestamp } = req.body;
+
+        if (!trainId || !warningType) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: trainId, warningType'
+            });
+        }
+
+        const data = readWarningEvents();
+        const resolveTimestamp = timestamp || new Date().toISOString();
+
+        if (data.activeWarnings[trainId]) {
+            const warningIndex = data.activeWarnings[trainId].findIndex(
+                w => w.warningType === warningType && w.status === 'active'
+            );
+
+            if (warningIndex !== -1) {
+                const warning = data.activeWarnings[trainId][warningIndex];
+                warning.status = 'resolved';
+                warning.resolvedAt = resolveTimestamp;
+                warning.resolvedBy = 'system';
+                warning.resolveReason = resolveReason || 'Warning condition cleared';
+
+                data.activeWarnings[trainId].splice(warningIndex, 1);
+                if (data.activeWarnings[trainId].length === 0) {
+                    delete data.activeWarnings[trainId];
+                }
+
+                const historyIndex = data.warningHistory.findIndex(h => h.id === warning.id);
+                if (historyIndex !== -1) {
+                    data.warningHistory[historyIndex] = warning;
+                }
+
+                saveWarningEvents(data);
+
+                try {
+                    const safetyData = readSafetyRecords();
+                    const pendingIndex = safetyData.pendingReviews.findIndex(
+                        r => r.impact && r.impact.warningEventId === warning.id
+                    );
+                    if (pendingIndex !== -1) {
+                        safetyData.pendingReviews.splice(pendingIndex, 1);
+                        saveSafetyRecords(safetyData);
+                        console.log(`🗑️ 已同步删除待审核记录: warningEventId=${warning.id}`);
+                    }
+                } catch (safetyError) {
+                    console.error('同步删除待审核记录失败:', safetyError);
+                }
+
+                console.log(`✅ 列车警告已撤回: ${warning.id} - ${trainId} (${warningType})`);
+
+                return res.json({
+                    success: true,
+                    message: 'Warning resolved successfully',
+                    data: warning
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: 'No active warning found to resolve',
+            data: null
+        });
+    } catch (error) {
+        console.error('Error resolving warning event:', error);
+        res.status(500).json({ success: false, message: 'Failed to resolve warning event' });
+    }
+});
+
+app.get('/api/warning/active', (req, res) => {
+    try {
+        const data = readWarningEvents();
+        const allActive = [];
+        for (const trainId in data.activeWarnings) {
+            allActive.push(...data.activeWarnings[trainId]);
+        }
+        res.json({ success: true, data: { warnings: allActive, total: allActive.length } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to load active warnings' });
+    }
+});
+
+app.get('/api/warning/history', (req, res) => {
+    try {
+        const data = readWarningEvents();
+        const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+        const offset = parseInt(req.query.offset) || 0;
+        const trainId = req.query.trainId || '';
+        let filtered = data.warningHistory || [];
+        if (trainId) {
+            filtered = filtered.filter(w => w.trainId === trainId);
+        }
+        const total = filtered.length;
+        const items = filtered.reverse().slice(offset, offset + limit);
+        res.json({ success: true, data: { items, total } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to load warning history' });
+    }
+});
+
 // ==================== 静态文件服务 ====================
 // 在生产环境中，Express也提供静态文件
 app.use(express.static(path.join(__dirname)));

@@ -203,7 +203,8 @@
 }
 
 .train-item .material-symbols-outlined, .player-count-container .material-symbols-outlined {
-    font-size: 18px;
+    font-size: 14px;
+    font-variation-settings: 'FILL' 1;
     z-index: 1;
 }
 

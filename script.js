@@ -174,7 +174,7 @@ function recordLastVisitedPage(paramsString,page) {
 
 function getLastVisitedParams(page) { 
     if (prefs.resumeOnLoading === false) return null;
-    console.log('Getting last visited params for page:', page);
+    //console.log('Getting last visited params for page:', page);
     const currentPage = window.location.pathname.split('/').pop();
     page = page || currentPage;
     let latestParams = null;

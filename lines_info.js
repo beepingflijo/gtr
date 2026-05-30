@@ -113,6 +113,9 @@ function init() {
     const lineId = getActiveLineId();
     // 获取lineId对应的线路数据、
     const line = window.lines.find(line => line.id === lineId);
+    if (lineId === 'all') {
+        openMapMode();
+    }
 
     loadSegmentInfo();
     loadUpdateTime();
@@ -634,7 +637,7 @@ function processTrainsData(data) {
     document.querySelectorAll('.train-item').forEach(item => {
         const trainName = item.querySelector('.train-name').textContent;
         const trainInfo = window.trainsInfo.find(t => t.name === trainName);
-        if (!trainInfo || (trainInfo && trainInfo.line !== activeLineId)) {
+        if (!trainInfo || (trainInfo && trainInfo.line !== activeLineId && trainInfo.line !== (activeLineId + '-R'))) {
             const iconElement = item.querySelector('.train-icon');
             const nameElement = item.querySelector('.train-name');
             const platformElement = item.querySelector('.platform');
@@ -1007,7 +1010,6 @@ function updateExistingTooltips(trainData) {
             console.warn('获取列车速度时出错:', e);
         }
         
-        // 添加警告原因信息
         try {
             const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
             const currentTrainData = allTrainsData[train.name];
@@ -1015,26 +1017,29 @@ function updateExistingTooltips(trainData) {
             if (currentTrainData && currentTrainData.warningReasons && currentTrainData.warningReasons.length > 0) {
                 const warningReasonsElement = document.createElement("div");
                 warningReasonsElement.className = "warning-reasons";
-                warningReasonsElement.style.color = 'crimson';
-                warningReasonsElement.style.fontWeight = 'bold';
                 
-                let reasonsText = '! ';
-                currentTrainData.warningReasons.forEach(reason => {
-                    switch (reason) {
-                        case 'long_stop':
-                            reasonsText += strings.lines_info.warning_long_stop[lang] + '; ';
-                            break;
-                        case 'zero_speed':
-                            reasonsText += strings.lines_info.warning_zero_speed[lang] + '; ';
-                            break;
-                        case 'platform_conflict':
-                            reasonsText += strings.lines_info.warning_platform_conflict[lang] + '; ';
-                    }
-                });
+                if (typeof WarningManager !== 'undefined') {
+                    const warnings = currentTrainData.warningReasons.map(type => ({
+                        type,
+                        level: WarningManager.CONFIG.WARNING_LEVELS[type] || 'warning'
+                    }));
+                    const highestLevel = warnings.some(w => w.level === 'critical') ? 'critical' : 'warning';
+                    warningReasonsElement.style.color = WarningManager.getWarningColor(highestLevel);
+                    warningReasonsElement.style.fontWeight = 'bold';
+                    warningReasonsElement.textContent = WarningManager.getWarningReasonsText(currentTrainData.warningReasons, strings, lang);
+                } else {
+                    warningReasonsElement.style.color = 'crimson';
+                    warningReasonsElement.style.fontWeight = 'bold';
+                    let reasonsText = '! ';
+                    currentTrainData.warningReasons.forEach(reason => {
+                        const stringKey = `warning_${reason}`;
+                        if (strings.lines_info[stringKey]) {
+                            reasonsText += strings.lines_info[stringKey][lang] + '; ';
+                        }
+                    });
+                    warningReasonsElement.textContent = reasonsText.slice(0, -2);
+                }
                 
-                // 移除末尾的分号和空格
-                reasonsText = reasonsText.slice(0, -2);
-                warningReasonsElement.textContent = reasonsText;
                 tooltip.appendChild(warningReasonsElement);
             }
         } catch (e) {
@@ -1100,10 +1105,6 @@ function getActiveLineId () {
             lineId = lines[0].id;
         }
     }
-    if (lineId === 'all') {
-        openMapMode();
-        return 'all';
-    }
     // 保存当前线路为最后访问的线路
     // console.log('Active line id:', lineId);
     return lineId;
@@ -1148,8 +1149,8 @@ function getDirection(trainName, carPos, isStopped) {
         const speedLostDuration = currentTime - speedLostTime;
 
         // 只有当时间差在合理范围内时才计算（避免数据更新不及时导致的异常值）
-        // 合理范围：50ms 到 3s
-        if (timeDiff > 50 && timeDiff < 3000) {
+        // 合理范围：50ms 到 5s
+        if (timeDiff > 50 && timeDiff < 5000) {
             direction = [
                 carPos.x - previousTrainData.position.x,
                 carPos.z - previousTrainData.position.z
@@ -1161,32 +1162,48 @@ function getDirection(trainName, carPos, isStopped) {
                 Math.pow(carPos.z - previousTrainData.position.z, 2)
             );
             
-            // 添加调试日志
-            /*console.log(`列车 ${trainName} 位置变化:`, {
-                currentTime: currentTime,
-                previousTime: previousTrainData.timestamp,
-                timeDiff: timeDiff,
-                oldPosition: previousTrainData.position,
-                newPosition: carPos,
-                direction: direction,
-                distance: distance
-            });*/
+            const COORD_CHANGE_THRESHOLD = 0.1;
+            const isCoordinateChanged = distance > COORD_CHANGE_THRESHOLD;
             
             // 计算速度（假设距离单位是米，时间是毫秒，则结果为 m/s，转换为 km/h 需要乘以 3.6）
             // 注意：这里的时间单位是毫秒，所以需要除以1000转换为秒
             speed = (distance / (timeDiff / 1000) * 3.6);
-            if (speed <= 0 && isSpeedLost === false) {
-                if (prevSpeed !== 0) speedLostTime = currentTime; else speed = 0;
-                isSpeedLost = prevSpeed !== 0;
-            } else isSpeedLost = false;
+            
+            if (speed <= 0) {
+                if (isCoordinateChanged && prevSpeed > 0) {
+                    speed = prevSpeed;
+                    isSpeedLost = false;
+                    speedLostTime = 0;
+                } else if (!isSpeedLost) {
+                    if (prevSpeed !== 0) speedLostTime = currentTime; else speed = 0;
+                    isSpeedLost = prevSpeed !== 0;
+                }
+            } else {
+                isSpeedLost = false;
+                speedLostTime = 0;
+            }
             
             // 增加速度上限保护（假设列车最高速度不超过 360 km/h）
-            if (speed > 360 || speed === 0) {
+            if (speed > 360) {
+                speed = prevSpeed;
+            }
+        } else if (timeDiff >= 5000) {
+            const distance = Math.sqrt(
+                Math.pow(carPos.x - previousTrainData.position.x, 2) +
+                Math.pow(carPos.z - previousTrainData.position.z, 2)
+            );
+            const COORD_CHANGE_THRESHOLD = 0.1;
+            const isCoordinateChanged = distance > COORD_CHANGE_THRESHOLD;
+
+            if (isCoordinateChanged && prevSpeed > 0) {
+                speed = prevSpeed;
+                isSpeedLost = false;
+                speedLostTime = 0;
+            } else {
                 speed = prevSpeed;
             }
         } else {
             speed = prevSpeed;
-            //console.log(`列车 ${trainName} 时间差不在合理范围内: ${timeDiff}ms`);
         }
 
         if (speedLostDuration > 5000 && isSpeedLost) speed = 0;
@@ -1751,39 +1768,32 @@ function updateTrainDirectionArrows() {
     });
 }
 
-// 添加检查并添加警告标志的函数
 function checkAndAddWarningSign(train, trainItem, isAtStation) {
-    // 使用PositionUtils模块
+    if (typeof WarningManager !== 'undefined') {
+        WarningManager.updateWarningState(train, trainItem, isAtStation, strings, lang);
+        return;
+    }
+    
     if (typeof PositionUtils !== 'undefined') {
         PositionUtils.checkAndAddWarningSign(train, trainItem, isAtStation);
         return;
     }
     
-    // 降级处理：如果PositionUtils不可用，使用原有实现
-    // 从localStorage获取列车数据
     try {
         const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
         const currentTrainData = allTrainsData[train.name];
-        
-        // 检查是否需要添加警告标志
         let shouldShowWarning = false;
         let warningReasons = [];
         
-        // 条件1: 列车在车站内停靠超过3分钟
         if (isAtStation && currentTrainData && currentTrainData.timestamp) {
-            const currentTime = Date.now();
-            const timeInStation = currentTime - currentTrainData.timestamp;
-            // 3分钟 = 180000毫秒
+            const timeInStation = Date.now() - currentTrainData.timestamp;
             if (timeInStation > 180000) {
                 shouldShowWarning = true;
                 warningReasons.push('long_stop');
             }
         }
         
-        // 条件2: 列车在轨道上的车速为0
-        // 修改条件：只有当列车不在任何车站时才显示警告
         if (currentTrainData && currentTrainData.speed === 0) {
-            // 检查列车是否在任何车站
             const isAtAnyStation = checkIfTrainAtAnyStation(train.name);
             if (!isAtAnyStation) {
                 shouldShowWarning = true;
@@ -1791,15 +1801,11 @@ function checkAndAddWarningSign(train, trainItem, isAtStation) {
             }
         }
         
-        // 条件3: 有多于一辆列车停靠在同一站台（不考虑AB后缀）且该列车不是离站台最近的列车
         if (isAtStation) {
-            // 获取当前列车所在站台（去除AB后缀）
             const platformElement = trainItem.querySelector('.platform');
             if (platformElement) {
                 const platformText = platformElement.textContent.trim();
                 const platformNumber = platformText.replace(/[A-Za-z]/g, '');
-                
-                // 获取当前列车所在的车站名称
                 let currentStationName = '';
                 const stationListItem = trainItem.closest('.station-list-item');
                 if (stationListItem) {
@@ -1808,12 +1814,9 @@ function checkAndAddWarningSign(train, trainItem, isAtStation) {
                         currentStationName = stationNameElement.textContent.trim();
                     }
                 }
-                
-                // 查找同一车站内相同站台编号的其他列车
                 const samePlatformTrains = [];
                 document.querySelectorAll('.station-list-item').forEach(stationElement => {
                     const stationNameElement = stationElement.querySelector('.station-name');
-                    // 确保是同一个车站
                     if (stationNameElement && stationNameElement.textContent.trim() === currentStationName) {
                         const trainContainer = stationElement.querySelector('.train-container');
                         if (trainContainer) {
@@ -1837,10 +1840,7 @@ function checkAndAddWarningSign(train, trainItem, isAtStation) {
                         }
                     }
                 });
-                
-                // 如果有多于一辆列车在同一站台
                 if (samePlatformTrains.length > 1) {
-                    // 获取所有列车的坐标数据
                     const trainPositions = [];
                     samePlatformTrains.forEach(trainObj => {
                         const trainData = allTrainsData[trainObj.trainName];
@@ -1852,12 +1852,8 @@ function checkAndAddWarningSign(train, trainItem, isAtStation) {
                             });
                         }
                     });
-                    
-                    // 简化处理：如果有多个列车在同一站台，除了第一个，其他都显示警告
                     if (trainPositions.length > 1) {
-                        // 找到当前列车在数组中的位置
                         const currentIndex = trainPositions.findIndex(pos => pos.name === train.name);
-                        // 如果不是第一个（最靠近的），则显示警告
                         if (currentIndex > 0) {
                             shouldShowWarning = true;
                             warningReasons.push('platform_conflict');
@@ -1867,10 +1863,8 @@ function checkAndAddWarningSign(train, trainItem, isAtStation) {
             }
         }
         
-        // 根据检查结果添加或移除警告标志
         const existingWarning = trainItem.querySelector('.warning');
         if (shouldShowWarning && !existingWarning) {
-            // 添加警告标志
             const warningSpan = document.createElement('span');
             warningSpan.className = 'warning';
             warningSpan.style.color = 'crimson';
@@ -1879,18 +1873,14 @@ function checkAndAddWarningSign(train, trainItem, isAtStation) {
             trainItem.appendChild(warningSpan);
             trainItem.style.color = 'crimson';
             
-            // 保存警告原因到localStorage
             if (!allTrainsData[train.name]) {
                 allTrainsData[train.name] = {};
             }
             allTrainsData[train.name].warningReasons = warningReasons;
             localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));
         } else if (!shouldShowWarning && existingWarning) {
-            // 移除警告标志
             existingWarning.remove();
-            trainItem.style.color = ''; // 恢复默认颜色
-            
-            // 清除localStorage中的警告原因
+            trainItem.style.color = '';
             if (allTrainsData[train.name]) {
                 delete allTrainsData[train.name].warningReasons;
                 localStorage.setItem('all_trains_positions', JSON.stringify(allTrainsData));

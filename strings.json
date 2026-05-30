@@ -515,7 +515,7 @@
         "cars":{"zh_hans":"编", "en": "-car", "zh_hant":"輌", "uk": "-сіль"},
         "km_to":{"zh_hans":"km后到达", "en": "km to ", "zh_hant":"km後到達", "uk": " км до "},
         "platform":{"zh_hans":"站台", "en": "Platform ", "zh_hant":"月臺", "uk": "Платформа "},
-        "min_to_arrival":{"zh_hans":"分钟", "en": "min", "zh_hant":"分鐘", "uk": " хвилин"},
+        "min_to_arrival":{"zh_hans":"分钟", "en": "min", "zh_hant":"分鐘", "uk": " хв."},
         "arriving":{"zh_hans":"即将到达", "en": "Arriving", "zh_hant":"即將到達", "uk": "Прибуває"},
         "approaching":{"zh_hans":"前往", "en": "Approaching ", "zh_hant":"前往", "uk": "Приближається "},
         "arrived_at":{"zh_hans":"已到达", "en": "Arrived at ", "zh_hant":"已到達", "uk": "Прибув в "},

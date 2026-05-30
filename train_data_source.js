@@ -15,6 +15,7 @@ const TrainDataSource = (function () {
     let currentSource = 'none';
     let listeners = {};
     let trainPositionHistory = new Map();
+    let trainStore = new Map();
 
     function on(eventName, callback) {
         if (!listeners[eventName]) listeners[eventName] = [];
@@ -52,9 +53,22 @@ const TrainDataSource = (function () {
             train.cars[0].leading.location;
     }
 
+    // 列车名称过滤规则：
+    // 1. 过滤掉名称以"TC"开头的列车（TC表示测试列车）
+    // 2. 过滤掉名称以"SL"开头的列车（SL表示临时列车）
+    // 3. 过滤掉名称为"未命名列车"的列车（未命名列车）
+    function shouldFilterTrain(train) {
+        if (!train || !train.name) return false;
+        const name = train.name;
+        return name.startsWith('TC') || 
+               name.startsWith('SL') || 
+               name === '未命名列车';
+    }
+
     function filterValidTrains(trains) {
         if (!Array.isArray(trains)) return [];
-        return trains.filter(isValidTrain);
+        // 先过滤结构无效的列车，再过滤名称不符合规则的列车
+        return trains.filter(train => isValidTrain(train) && !shouldFilterTrain(train));
     }
 
     function updatePositionHistory(trains) {
@@ -120,6 +134,26 @@ const TrainDataSource = (function () {
         return trainPositionHistory.get(trainName) || null;
     }
 
+    function isPatchData(data) {
+        return data && data.type === 'patch' && Array.isArray(data.upsert);
+    }
+
+    function applyPatch(patchData) {
+        if (Array.isArray(patchData.upsert)) {
+            patchData.upsert.forEach(train => {
+                if (train && train.id) {
+                    trainStore.set(train.id, train);
+                }
+            });
+        }
+        if (Array.isArray(patchData.remove)) {
+            patchData.remove.forEach(id => {
+                trainStore.delete(id);
+            });
+        }
+        return { trains: Array.from(trainStore.values()) };
+    }
+
     function connectSSE() {
         if (eventSource) {
             eventSource.close();
@@ -131,14 +165,17 @@ const TrainDataSource = (function () {
         eventSource.onmessage = function (event) {
             try {
                 let data = JSON.parse(event.data);
+
+                if (isPatchData(data)) {
+                    data = applyPatch(data);
+                }
+
                 if (!isValidTrainData(data)) {
-                    console.warn('SSE 数据结构无效');
                     return;
                 }
 
                 const validTrains = filterValidTrains(data.trains);
                 if (validTrains.length === 0) {
-                    console.warn('SSE 返回的列车数据全部无效');
                     return;
                 }
 
@@ -243,6 +280,7 @@ const TrainDataSource = (function () {
             clearTimeout(reconnectTimer);
             reconnectTimer = null;
         }
+        trainStore.clear();
         isOnline = false;
         currentSource = 'none';
     }
@@ -263,6 +301,7 @@ const TrainDataSource = (function () {
         isDataSourceOnline,
         filterValidTrains,
         isValidTrain,
+        shouldFilterTrain,
         API_URL,
         FALLBACK_URL,
         NETWORK_URL
