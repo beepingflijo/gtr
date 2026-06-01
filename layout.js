@@ -981,3 +981,268 @@ function closeDialog(modalOverlay, callback) {
         }
     }, 300); 
 }
+
+// 自适应显示逻辑：处理 actions 中包含 more-btn 的元素
+function initActionsOverflow() {
+    // 获取所有包含 more-btn 的 actions 元素
+    const actionsWithMoreBtn = document.querySelectorAll('.actions:has(.more-btn)');
+    
+    actionsWithMoreBtn.forEach(actions => {
+        // 设置最大宽度为 -webkit-fill-available
+        actions.style.maxWidth = 'max-content';
+        actions.style.width = '-webkit-fill-available';
+        actions.style.minWidth = '30px';
+        
+        // 初始化 more-btn 的点击交互
+        initMoreBtnInteraction(actions);
+    });
+    
+    // 首次执行自适应判定
+    handleActionsOverflow();
+}
+
+// 初始化 more-btn 的点击交互
+function initMoreBtnInteraction(actions) {
+    const moreBtn = actions.querySelector('.more-btn');
+    if (!moreBtn) return;
+    
+    // 移除之前的事件监听器（避免重复绑定）
+    moreBtn.removeEventListener('click', handleMoreBtnClick);
+    
+    // 添加点击事件
+    moreBtn.addEventListener('click', handleMoreBtnClick);
+}
+
+// more-btn 点击事件处理函数
+function handleMoreBtnClick(e) {
+    e.stopPropagation();
+    const moreBtn = e.currentTarget;
+    
+    // 移除现有的下拉菜单
+    const existingDropdown = document.querySelector('.more-btn-dropdown');
+    if (existingDropdown) {
+        existingDropdown.remove();
+        // 如果点击的是同一个按钮，直接返回
+        if (existingDropdown.dataset.triggerId === moreBtn.dataset.moreBtnId) return;
+    }
+    
+    // 创建下拉菜单
+    const dropdown = createMoreBtnDropdown(moreBtn);
+    document.body.appendChild(dropdown);
+    
+    // 计算并设置位置
+    positionDropdown(dropdown, moreBtn);
+    
+    // 显示下拉菜单
+    requestAnimationFrame(() => {
+        dropdown.classList.remove('collapsed');
+    });
+}
+
+// 计算下拉菜单位置，确保不超出视口
+function positionDropdown(dropdown, triggerBtn) {
+    const btnRect = triggerBtn.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const padding = 24;
+    
+    // 先设置为可见以获取实际尺寸
+    dropdown.style.visibility = 'hidden';
+    dropdown.classList.remove('collapsed');
+    const dropdownWidth = dropdown.offsetWidth;
+    const dropdownHeight = dropdown.offsetHeight;
+    dropdown.classList.add('collapsed');
+    dropdown.style.visibility = '';
+    
+    // 计算水平位置（右对齐）
+    let left = btnRect.right - dropdownWidth;
+    // 确保不超出左边界
+    if (left < padding) left = padding;
+    // 确保不超出右边界
+    if (left + dropdownWidth > viewportWidth - padding) {
+        left = viewportWidth - dropdownWidth - padding;
+    }
+    
+    // 计算垂直位置（优先向下）
+    let top = btnRect.bottom + 4;
+    // 如果下方空间不足，则向上弹出
+    if (top + dropdownHeight > viewportHeight - padding) {
+        top = btnRect.top - dropdownHeight - 4;
+    }
+    // 确保不超出顶部
+    if (top < padding) top = padding;
+    
+    dropdown.style.left = `${left}px`;
+    dropdown.style.top = `${top}px`;
+}
+
+// 创建 more-btn 下拉菜单
+function createMoreBtnDropdown(moreBtn) {
+    const actions = moreBtn.closest('.actions');
+    const dropdown = document.createElement('div');
+    dropdown.className = 'selection more-btn-dropdown collapsed';
+    dropdown.dataset.triggerId = moreBtn.dataset.moreBtnId || '';
+    
+    // 获取所有被隐藏的 icon-btn
+    const hiddenBtns = actions.querySelectorAll('.icon-btn.hidden-btn');
+    
+    hiddenBtns.forEach(btn => {
+        // 克隆按钮并添加到下拉菜单
+        const cloneBtn = btn.cloneNode(true);
+        cloneBtn.classList.remove('hidden-btn');
+        cloneBtn.classList.add('selection-item');
+        // 重置内联样式，确保克隆的按钮可见
+        cloneBtn.style.display = '';
+        cloneBtn.style.opacity = '';
+        cloneBtn.style.transform = '';
+        
+        // 检查是否包含文字 span（非 material-symbols-outlined）
+        const hasTextSpan = Array.from(cloneBtn.querySelectorAll('span')).some(span => 
+            !span.classList.contains('material-symbols-outlined') && span.textContent.trim()
+        );
+        
+        // 如果没有文字 span 且有 title 属性，则添加文本 span
+        if (!hasTextSpan && btn.title) {
+            const textSpan = document.createElement('span');
+            textSpan.textContent = btn.title;
+            cloneBtn.appendChild(textSpan);
+        }
+        
+        // 保留原始按钮的事件监听器
+        cloneBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // 触发原始按钮的点击事件
+            btn.click();
+            // 关闭下拉菜单
+            dropdown.remove();
+        });
+        
+        dropdown.appendChild(cloneBtn);
+    });
+    
+    // 点击外部关闭下拉菜单
+    const closeHandler = (e) => {
+        if (!dropdown.contains(e.target) && !moreBtn.contains(e.target)) {
+            dropdown.remove();
+            document.removeEventListener('click', closeHandler);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 0);
+    
+    // 窗口大小变化时关闭下拉菜单
+    const resizeHandler = () => {
+        dropdown.remove();
+        window.removeEventListener('resize', resizeHandler);
+    };
+    window.addEventListener('resize', resizeHandler);
+    
+    return dropdown;
+}
+
+// 处理 actions 溢出自适应逻辑
+function handleActionsOverflow() {
+    const actionsWithMoreBtn = document.querySelectorAll('.actions:has(.more-btn)');
+    
+    actionsWithMoreBtn.forEach(actions => {
+        const moreBtn = actions.querySelector('.more-btn');
+        if (!moreBtn) return;
+        
+        // 获取所有 icon-btn（排除 more-btn）
+        const iconBtns = Array.from(actions.querySelectorAll('.icon-btn')).filter(btn => btn !== moreBtn);
+        
+        // 重置所有按钮的隐藏状态
+        iconBtns.forEach(btn => {
+            btn.classList.remove('hidden-btn');
+            btn.style.display = '';
+        });
+        
+        // 移除现有的下拉菜单
+        const existingDropdown = actions.querySelector('.more-btn-dropdown');
+        if (existingDropdown) {
+            existingDropdown.remove();
+        }
+        
+        // 获取 actions 的可用宽度
+        const actionsWidth = actions.clientWidth;
+        const actionsStyle = getComputedStyle(actions);
+        const padding = parseFloat(actionsStyle.paddingLeft) + parseFloat(actionsStyle.paddingRight);
+        const availableWidth = actionsWidth - padding;
+        
+        // 计算所有按钮的总宽度
+        let totalButtonsWidth = 0;
+        const buttonWidths = [];
+        
+        iconBtns.forEach(btn => {
+            const btnWidth = btn.offsetWidth;
+            const btnStyle = getComputedStyle(btn);
+            const marginLeft = parseFloat(btnStyle.marginLeft);
+            const marginRight = parseFloat(btnStyle.marginRight);
+            buttonWidths.push(btnWidth + marginLeft + marginRight);
+            totalButtonsWidth += btnWidth + marginLeft + marginRight;
+        });
+        
+        // 计算 more-btn 的宽度
+        const moreBtnWidth = moreBtn.offsetWidth;
+        const moreBtnStyle = getComputedStyle(moreBtn);
+        const moreBtnMargin = parseFloat(moreBtnStyle.marginLeft) + parseFloat(moreBtnStyle.marginRight);
+        const moreBtnTotalWidth = moreBtnWidth + moreBtnMargin;
+        
+        // 判断是否需要隐藏按钮
+        if (totalButtonsWidth > availableWidth) {
+            // 需要隐藏按钮
+            let currentWidth = 0;
+            const hiddenBtns = [];
+            
+            // 从后往前遍历，隐藏多余的按钮
+            for (let i = 0; i <= iconBtns.length - 1; i++) {
+                const btn = iconBtns[i];
+                const btnWidth = buttonWidths[i];
+                
+                // 检查加上当前按钮后是否超出可用宽度
+                if (currentWidth + btnWidth + moreBtnTotalWidth > availableWidth) {
+                    // 隐藏按钮
+                    btn.classList.add('hidden-btn');
+                    btn.style.display = 'none';
+                    hiddenBtns.push(btn);
+                } else {
+                    currentWidth += btnWidth;
+                }
+            }
+            
+            // 如果有隐藏的按钮，显示 more-btn
+            if (hiddenBtns.length > 0) {
+                moreBtn.style.display = '';
+                moreBtn.title = strings.general.more[lang]+` (${hiddenBtns.length})`;
+            } else {
+                moreBtn.style.display = 'none';
+            }
+        } else {
+            // 不需要隐藏按钮，隐藏 more-btn
+            moreBtn.style.display = 'none';
+        }
+    });
+}
+
+window.handleActionsOverflow = handleActionsOverflow;
+
+// 在 handleWindowResize 后触发自适应显示逻辑
+const originalHandleWindowResize = window.handleWindowResize;
+window.handleWindowResize = function() {
+    // 执行原始的 handleWindowResize
+    if (originalHandleWindowResize) {
+        originalHandleWindowResize();
+    }
+    
+    // 触发自适应显示逻辑
+    handleActionsOverflow();
+};
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    initActionsOverflow();
+});
+
+// 窗口大小变化时重新计算
+window.addEventListener('resize', () => {
+    handleActionsOverflow();
+});

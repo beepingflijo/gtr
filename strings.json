@@ -23,7 +23,8 @@
         "hold_key":{"zh_hans":"按住", "en": "Hold ", "zh_hant":"按住", "uk": "Натисніть "},
         "toggle_compact_mode":{"zh_hans":"切换紧凑模式", "en": "Toggle compact mode", "zh_hant":"切換緊湊模式", "uk": "Перемкнути компактний режим"},
         "colon":{"zh_hans":"：", "en": ": ", "zh_hant":"：", "uk": ": "},
-        "comma":{"zh_hans":"，", "en": ", ", "zh_hant":"，", "uk": ", "}
+        "comma":{"zh_hans":"，", "en": ", ", "zh_hant":"，", "uk": ", "},
+        "more":{"zh_hans":"更多", "en": "More", "zh_hant":"更多", "uk": "Більше"}
     },
     "404":{
         "page_not_found":{"zh_hans":"找不到页面", "en": "Page not found", "zh_hant":"找不到頁面", "uk": "Сторінка не знайдена"},

@@ -404,6 +404,7 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, input, textarea, select {
     margin: 0;
     padding: 0;
     line-height: 1;
+    font-family: var(--font-family);
 }
 
 h1 { 
@@ -798,6 +799,7 @@ header * {
     width: 100%;
     padding: 0 12px;
     min-height: 42px;
+    min-width: 8em;
     transition: all 0.2s ease-in-out;
 }
 
@@ -1059,8 +1061,8 @@ header * {
 .actions:hover, .selection.collapsed:hover, .selection:not(.collapsed),
 .tooltip, button:hover, .side-bar.collapsed:hover, .dialog-container { 
     filter: var(--filter-item-shadow-hover);
-    backdrop-filter: var(--background-filter-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
     border-radius: 24px;
 }
 
@@ -1461,6 +1463,63 @@ footer .selection.collapsed .selection-item.active, footer .search-bar.collapsed
 
 footer .search-bar.collapsed { 
     padding: 12px 10px;
+}
+
+/* more-btn 下拉菜单样式 */
+.more-btn-dropdown {
+    position: fixed;
+    min-width: 120px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 10000;
+    transform-origin: top right;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: var(--color-background-card-transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 4px;
+}
+
+.more-btn-dropdown.collapsed {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+}
+
+.more-btn-dropdown .selection-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    margin: 2px 4px;
+}
+
+.more-btn-dropdown .selection-item:hover {
+    background-color: var(--icon-btn-hover);
+    transform: none;
+}
+
+.more-btn-dropdown .selection-item .material-symbols-outlined {
+    font-size: 20px;
+}
+
+/* 隐藏按钮的过渡效果 */
+.icon-btn.hidden-btn {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease;
+}
+
+/* actions 溢出时的样式调整 */
+.actions:has(.more-btn) {
+    overflow: visible;
 }
 
 .shortcut-list { 

@@ -103,11 +103,21 @@ function init() {
     lineSelectors.forEach(lineSelector => {
         lineSelector.setAttribute('style', `--color-primary: ${window.lines.find(line => line.id === getActiveLineId())?.color || '#808080'}`);
     });
+
+    const mapBtn = document.querySelectorAll('.map-btn');
+    mapBtn.forEach(btn => {
+        btn.title = strings.lines_info.route_map[lang];
+        btn.addEventListener('click', () => {
+            window.open('https://track.nitrogen.hydcraft.cn/', '_blank');
+        });
+    });
     
-    const mapBtn = document.querySelector('.map-btn');
-    mapBtn.title = strings.pov_frame.page_title[lang];
-    mapBtn.addEventListener('click', () => {
-        window.open('pov-frame.html', '_blank');
+    const castBtn = document.querySelectorAll('.cast-btn');
+    castBtn.forEach(btn => {
+        btn.title = strings.pov_frame.page_title[lang];
+        btn.addEventListener('click', () => {
+            window.open('pov-frame.html', '_blank');
+        });
     });
 
     const lineId = getActiveLineId();
@@ -1677,8 +1687,14 @@ function handleWindowResize() {
     }
 
     setTimeout(() => {
-        mapFitBtn?.click();
+        if (typeof MapMode !== 'undefined' && MapMode.fitAllIfNeeded) {
+            MapMode.fitAllIfNeeded();
+        } else {
+            mapFitBtn?.click();
+        }
     }, 500)
+
+    window.handleActionsOverflow();
 }
 
 window.handleWindowResize = handleWindowResize;
@@ -1963,10 +1979,11 @@ var MapMode = (function () {
     var mouseScreenY = -1;
     var isMouseOverCanvas = false;
 
-    var ANIMATION_DURATION = 400;
+    var ANIMATION_DURATION = 2000;
     var trainPositionCache = {};
     var playerPositionCache = {};
     var animationFrameId = null;
+    var hasUserZoomed = false;
 
     function getSidebarWidth() {
         var sidebar = document.querySelector('.side-bar');
@@ -2012,8 +2029,17 @@ var MapMode = (function () {
        // return Math.max(0.4, Math.min(4, Math.pow(viewState.zoom, 0.2)));
     }
 
-    function easeOutCubic(t) {
-        return 1 - Math.pow(1 - t, 3);
+    function easeLinear(t) {
+        return t;
+    }
+
+    function getCurrentInterpolated(entry, now) {
+        var elapsed = now - entry.startTime;
+        var progress = Math.min(1, elapsed / ANIMATION_DURATION);
+        return {
+            x: entry.prevX + (entry.x - entry.prevX) * progress,
+            z: entry.prevZ + (entry.z - entry.prevZ) * progress
+        };
     }
 
     function updatePositionCache(cache, key, newX, newZ) {
@@ -2031,8 +2057,9 @@ var MapMode = (function () {
         }
 
         if (Math.abs(entry.x - newX) > 0.5 || Math.abs(entry.z - newZ) > 0.5) {
-            entry.prevX = entry.x;
-            entry.prevZ = entry.z;
+            var current = getCurrentInterpolated(entry, now);
+            entry.prevX = current.x;
+            entry.prevZ = current.z;
             entry.x = newX;
             entry.z = newZ;
             entry.startTime = now;
@@ -2045,11 +2072,10 @@ var MapMode = (function () {
         var now = Date.now();
         var elapsed = now - entry.startTime;
         var progress = Math.min(1, elapsed / ANIMATION_DURATION);
-        var easedProgress = easeOutCubic(progress);
 
         return {
-            x: entry.prevX + (entry.x - entry.prevX) * easedProgress,
-            z: entry.prevZ + (entry.z - entry.prevZ) * easedProgress
+            x: entry.prevX + (entry.x - entry.prevX) * progress,
+            z: entry.prevZ + (entry.z - entry.prevZ) * progress
         };
     }
 
@@ -2087,31 +2113,198 @@ var MapMode = (function () {
         var scaleY = (ch - padding * 2) / worldH;
         var initialZoom = Math.min(scaleX, scaleY);
 
-        ctx.font = '11px ' + getComputedStyle(document.body).getPropertyValue('--font-family');
-        var maxLabelW = 0;
+        var savedZoom = viewState.zoom;
+        var savedOffsetX = viewState.offsetX;
+        var savedOffsetY = viewState.offsetY;
+        viewState.zoom = initialZoom;
+        viewState.offsetX = -(bounds.minX + worldW / 2);
+        viewState.offsetY = -(bounds.minZ + worldH / 2);
+
+        var fontFamily = getComputedStyle(document.body).getPropertyValue('--font-family');
+        var fontSize = 11;
+        ctx.font = fontSize + 'px ' + fontFamily;
+        var stationRadius = STATION_RADIUS;
+        var gap = stationRadius + 6;
+
+        buildMapSegments();
+        var tempLabels = [];
+
+        var labelBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
+
         Object.keys(stationCoordsMap).forEach(function (code) {
-            var s = stationCoordsMap[code];
-            if (s.count === 0) return;
+            var station = stationCoordsMap[code];
+            if (station.count === 0) return;
+            var pos = worldToScreen(station.x, station.z);
             var name = getStationName(code, lang);
-            var w = ctx.measureText(name).width;
-            if (w > maxLabelW) maxLabelW = w;
+            var nameWidth = Math.max(ctx.measureText(name).width, 32);
+            var nameHeight = fontSize + 3;
+
+            var candidates = buildCandidatePositions(pos, nameWidth, nameHeight, gap);
+            var best = null;
+
+            for (var i = 0; i < candidates.length; i++) {
+                var c = candidates[i];
+                var collision = false;
+                for (var j = 0; j < mapSegments.length; j++) {
+                    var seg = mapSegments[j];
+                    if (rectIntersectsSegment(c.boxX, c.boxY, nameWidth, nameHeight, seg.x1, seg.y1, seg.x2, seg.y2)) {
+                        collision = true;
+                        break;
+                    }
+                }
+                if (!collision) {
+                    for (var k = 0; k < tempLabels.length; k++) {
+                        var r = tempLabels[k];
+                        if (rectsOverlap(c.boxX, c.boxY, nameWidth, nameHeight, r.x, r.y, r.w, r.h)) {
+                            collision = true;
+                            break;
+                        }
+                    }
+                }
+                if (!collision) {
+                    best = c;
+                    break;
+                }
+            }
+
+            if (best) {
+                tempLabels.push({ x: best.boxX, y: best.boxY, w: nameWidth, h: nameHeight });
+                var screenMinX = Math.min(pos.x - stationRadius, best.boxX);
+                var screenMaxX = Math.max(pos.x + stationRadius, best.boxX + nameWidth);
+                var screenMinZ = Math.min(pos.y - stationRadius, best.boxY);
+                var screenMaxZ = Math.max(pos.y + stationRadius, best.boxY + nameHeight);
+
+                var worldMin = screenToWorld(screenMinX, screenMinZ);
+                var worldMax = screenToWorld(screenMaxX, screenMaxZ);
+
+                if (worldMin.x < labelBounds.minX) labelBounds.minX = worldMin.x;
+                if (worldMax.x > labelBounds.maxX) labelBounds.maxX = worldMax.x;
+                if (worldMin.z < labelBounds.minZ) labelBounds.minZ = worldMin.z;
+                if (worldMax.z > labelBounds.maxZ) labelBounds.maxZ = worldMax.z;
+            }
         });
 
-        var labelMarginPx = Math.max(maxLabelW, 32) + STATION_RADIUS + 10;
-        var labelMarginWorld = labelMarginPx / initialZoom;
+        viewState.zoom = savedZoom;
+        viewState.offsetX = savedOffsetX;
+        viewState.offsetY = savedOffsetY;
 
-        var expandedW = worldW + labelMarginWorld * 2;
-        var expandedH = worldH + labelMarginWorld * 2;
+        var totalMinX = Math.min(bounds.minX, labelBounds.minX);
+        var totalMaxX = Math.max(bounds.maxX, labelBounds.maxX);
+        var totalMinZ = Math.min(bounds.minZ, labelBounds.minZ);
+        var totalMaxZ = Math.max(bounds.maxZ, labelBounds.maxZ);
+        var expandedW = totalMaxX - totalMinX;
+        var expandedH = totalMaxZ - totalMinZ;
 
         scaleX = (visibleW - padding * 2) / expandedW;
         scaleY = (ch - padding * 2) / expandedH;
         viewState.zoom = Math.min(scaleX, scaleY);
         MIN_ZOOM = viewState.zoom;
 
+        viewState.offsetX = -(totalMinX + expandedW / 2);
+        viewState.offsetY = -(totalMinZ + expandedH / 2);
+
+        render();
+    }
+
+    function computeMinZoom() {
+        var bounds = computeBounds();
+        var worldW = bounds.maxX - bounds.minX;
+        var worldH = bounds.maxZ - bounds.minZ;
+        if (worldW <= 0 || worldH <= 0) return MIN_ZOOM;
+
+        var cw = getCanvasCssWidth();
+        var ch = getCanvasCssHeight();
+        var sw = getSidebarWidth();
+        var visibleW = cw - sw;
+        var padding = 80;
+        var scaleX = (visibleW - padding * 2) / worldW;
+        var scaleY = (ch - padding * 2) / worldH;
+        var initialZoom = Math.min(scaleX, scaleY);
+
+        var savedZoom = viewState.zoom;
+        var savedOffsetX = viewState.offsetX;
+        var savedOffsetY = viewState.offsetY;
+        viewState.zoom = initialZoom;
         viewState.offsetX = -(bounds.minX + worldW / 2);
         viewState.offsetY = -(bounds.minZ + worldH / 2);
 
-        render();
+        var fontFamily = getComputedStyle(document.body).getPropertyValue('--font-family');
+        var fontSize = 11;
+        ctx.font = fontSize + 'px ' + fontFamily;
+        var stationRadius = STATION_RADIUS;
+        var gap = stationRadius + 6;
+
+        buildMapSegments();
+        var tempLabels = [];
+        var labelBounds = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity };
+
+        Object.keys(stationCoordsMap).forEach(function (code) {
+            var station = stationCoordsMap[code];
+            if (station.count === 0) return;
+            var pos = worldToScreen(station.x, station.z);
+            var name = getStationName(code, lang);
+            var nameWidth = Math.max(ctx.measureText(name).width, 32);
+            var nameHeight = fontSize + 3;
+
+            var candidates = buildCandidatePositions(pos, nameWidth, nameHeight, gap);
+            var best = null;
+
+            for (var i = 0; i < candidates.length; i++) {
+                var c = candidates[i];
+                var collision = false;
+                for (var j = 0; j < mapSegments.length; j++) {
+                    var seg = mapSegments[j];
+                    if (rectIntersectsSegment(c.boxX, c.boxY, nameWidth, nameHeight, seg.x1, seg.y1, seg.x2, seg.y2)) {
+                        collision = true;
+                        break;
+                    }
+                }
+                if (!collision) {
+                    for (var k = 0; k < tempLabels.length; k++) {
+                        var r = tempLabels[k];
+                        if (rectsOverlap(c.boxX, c.boxY, nameWidth, nameHeight, r.x, r.y, r.w, r.h)) {
+                            collision = true;
+                            break;
+                        }
+                    }
+                }
+                if (!collision) {
+                    best = c;
+                    break;
+                }
+            }
+
+            if (best) {
+                tempLabels.push({ x: best.boxX, y: best.boxY, w: nameWidth, h: nameHeight });
+                var screenMinX = Math.min(pos.x - stationRadius, best.boxX);
+                var screenMaxX = Math.max(pos.x + stationRadius, best.boxX + nameWidth);
+                var screenMinZ = Math.min(pos.y - stationRadius, best.boxY);
+                var screenMaxZ = Math.max(pos.y + stationRadius, best.boxY + nameHeight);
+
+                var worldMin = screenToWorld(screenMinX, screenMinZ);
+                var worldMax = screenToWorld(screenMaxX, screenMaxZ);
+
+                if (worldMin.x < labelBounds.minX) labelBounds.minX = worldMin.x;
+                if (worldMax.x > labelBounds.maxX) labelBounds.maxX = worldMax.x;
+                if (worldMin.z < labelBounds.minZ) labelBounds.minZ = worldMin.z;
+                if (worldMax.z > labelBounds.maxZ) labelBounds.maxZ = worldMax.z;
+            }
+        });
+
+        viewState.zoom = savedZoom;
+        viewState.offsetX = savedOffsetX;
+        viewState.offsetY = savedOffsetY;
+
+        var totalMinX = Math.min(bounds.minX, labelBounds.minX);
+        var totalMaxX = Math.max(bounds.maxX, labelBounds.maxX);
+        var totalMinZ = Math.min(bounds.minZ, labelBounds.minZ);
+        var totalMaxZ = Math.max(bounds.maxZ, labelBounds.maxZ);
+        var expandedW = totalMaxX - totalMinX;
+        var expandedH = totalMaxZ - totalMinZ;
+
+        scaleX = (visibleW - padding * 2) / expandedW;
+        scaleY = (ch - padding * 2) / expandedH;
+        return Math.min(scaleX, scaleY);
     }
 
     function drawGrid() {
@@ -2982,6 +3175,7 @@ var MapMode = (function () {
         interactionsSetup = true;
 
         container.addEventListener('mousedown', function (e) {
+            hasUserZoomed = true;
             if (e.button !== 0) return;
             viewState.isDragging = true;
             dragMoved = false;
@@ -3004,6 +3198,7 @@ var MapMode = (function () {
         });
 
         window.addEventListener('mousemove', function (e) {
+            hasUserZoomed = true;
             if (!isOpen) return;
             if (viewState.isDragging) {
                 var dx = e.clientX - viewState.dragStartX;
@@ -3068,6 +3263,7 @@ var MapMode = (function () {
             var newZoom = viewState.zoom * factor;
             newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
             viewState.zoom = newZoom;
+            hasUserZoomed = true;
 
             var afterScreen = worldToScreen(beforeWorld.x, beforeWorld.z);
             viewState.offsetX += (mx - afterScreen.x) / viewState.zoom;
@@ -3118,6 +3314,7 @@ var MapMode = (function () {
         var touchDragging = false;
 
         container.addEventListener('touchstart', function (e) {
+            hasUserZoomed = true;
             if (e.touches.length === 1) {
                 touchDragging = true;
                 viewState.dragStartX = e.touches[0].clientX;
@@ -3157,6 +3354,7 @@ var MapMode = (function () {
 
                     var factor = dist / lastTouchDist;
                     viewState.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, viewState.zoom * factor));
+                    hasUserZoomed = true;
 
                     var afterScreen = worldToScreen(beforeWorld.x, beforeWorld.z);
                     viewState.offsetX += (cx - afterScreen.x) / viewState.zoom;
@@ -3175,15 +3373,18 @@ var MapMode = (function () {
 
         document.getElementById('map-zoom-in').addEventListener('click', function () {
             viewState.zoom = Math.min(MAX_ZOOM, viewState.zoom * 1.3);
+            hasUserZoomed = true;
             render();
         });
 
         document.getElementById('map-zoom-out').addEventListener('click', function () {
             viewState.zoom = Math.max(MIN_ZOOM, viewState.zoom / 1.3);
+            hasUserZoomed = true;
             render();
         });
 
         document.getElementById('map-fit-btn').addEventListener('click', function () {
+            hasUserZoomed = false;
             fitAll();
         });
 
@@ -3313,6 +3514,14 @@ var MapMode = (function () {
                 mapPlayersData = [];
             }
             if (isOpen) render();
+        },
+        fitAllIfNeeded: function () {
+            if (!isOpen) return;
+            var minZoom = computeMinZoom();
+            if (!hasUserZoomed || viewState.zoom < minZoom) {
+                fitAll();
+                hasUserZoomed = false;
+            }
         }
     };
 })();
