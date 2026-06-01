@@ -11,6 +11,12 @@ const PositionUtils = (function() {
     let strings = {};
     let lang = 'zh_hans';
     
+    // 玩家数据缓存
+    let playersDataCache = null;
+    let playersDataCacheTime = 0;
+    const PLAYERS_CACHE_DURATION = 10000; // 10秒缓存
+    let playersFetchPromise = null;
+    
     /**
      * 初始化函数
      * @param {Object} data - 包含trainsInfo, stationsNetwork, lines, strings, lang等数据的对象
@@ -539,23 +545,33 @@ const PositionUtils = (function() {
     }
     
     /**
-     * 获取并显示玩家信息
-     * @param {Function} callback - 回调函数，接收玩家数据作为参数
+     * 获取玩家数据（带缓存和请求合并）
+     * @returns {Promise<Array>} 玩家数据数组
      */
-    function fetchAndDisplayPlayers(callback) {
-        const timestamp = Date.now();
+    function fetchPlayersDataInternal() {
+        const now = Date.now();
+        
+        // 检查缓存是否有效
+        if (playersDataCache && (now - playersDataCacheTime) < PLAYERS_CACHE_DURATION) {
+            return Promise.resolve(playersDataCache);
+        }
+        
+        // 如果已有请求在进行中，复用该请求
+        if (playersFetchPromise) {
+            return playersFetchPromise;
+        }
+        
+        const timestamp = now;
         const playerDataUrl = `https://map.nitrogen.hydcraft.cn/up/world/world/${timestamp}`;
         
-        // 添加超时控制
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        fetch(playerDataUrl, { 
+        playersFetchPromise = fetch(playerDataUrl, { 
             signal: controller.signal,
             method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
+            headers: { 'Accept': 'application/json' },
+            mode: 'cors'
         })
             .then(response => {
                 clearTimeout(timeoutId);
@@ -565,87 +581,82 @@ const PositionUtils = (function() {
                 return response.json();
             })
             .then(data => {
+                playersFetchPromise = null;
                 if (data.players && data.players.length > 0) {
-                    if (callback) callback(data.players);
+                    playersDataCache = data.players;
+                    playersDataCacheTime = Date.now();
+                    return data.players;
                 }
+                return [];
             })
             .catch(error => {
                 clearTimeout(timeoutId);
-                //console.warn('获取玩家数据失败:', error);
-                
-                // 如果直接访问失败，尝试通过代理访问
-                const proxyUrls = [
-                    `https://api.allorigins.win/get?url=${encodeURIComponent(playerDataUrl)}&callback=?`
-                ];
-                
-                //fetchProxyData(proxyUrls, 0, playerDataUrl, callback);
+                playersFetchPromise = null;
+                console.warn('直接获取玩家数据失败，尝试代理:', error.message);
+                return fetchPlayersViaProxy(playerDataUrl);
             });
+        
+        return playersFetchPromise;
     }
     
     /**
      * 通过代理获取玩家数据
-     * @param {Array} proxyUrls - 代理URL数组
-     * @param {number} index - 当前代理索引
      * @param {string} originalUrl - 原始URL
-     * @param {Function} callback - 回调函数
+     * @returns {Promise<Array>} 玩家数据数组
      */
-    function fetchProxyData(proxyUrls, index, originalUrl, callback) {
-        if (index >= proxyUrls.length) {
-            //console.warn('所有代理服务都尝试失败');
-            return;
-        }
+    function fetchPlayersViaProxy(originalUrl) {
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(originalUrl)}`;
         
-        const proxyController = new AbortController();
-        const proxyTimeoutId = setTimeout(() => proxyController.abort(), 10000); // 10秒超时
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
         
-        fetch(proxyUrls[index], { 
-            signal: proxyController.signal,
+        return fetch(proxyUrl, { 
+            signal: controller.signal,
             method: 'GET'
         })
             .then(response => {
-                clearTimeout(proxyTimeoutId);
+                clearTimeout(timeoutId);
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`Proxy error! status: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
-                // 处理allorigins.win返回的数据格式
-                if (proxyUrls[index].includes('allorigins.win')) {
-                    try {
-                        if (typeof data === 'string') {
-                            const jsonData = JSON.parse(data.replace(/^\?\(|\)$/g, ''));
-                            if (jsonData.contents) {
-                                const playersData = JSON.parse(jsonData.contents);
-                                if (playersData.players && playersData.players.length > 0 && callback) {
-                                    callback(playersData.players);
-                                }
-                            }
-                        } else if (data.contents) {
-                            const playersData = JSON.parse(data.contents);
-                            if (playersData.players && playersData.players.length > 0 && callback) {
-                                callback(playersData.players);
-                            }
-                        } else {
-                            if (data.players && data.players.length > 0 && callback) {
-                                callback(data.players);
-                            }
-                        }
-                    } catch (parseError) {
-                        console.error('解析代理返回数据失败:', parseError);
-                        fetchProxyData(proxyUrls, index + 1, originalUrl, callback);
+                try {
+                    let playersData;
+                    if (data.contents) {
+                        playersData = typeof data.contents === 'string' ? JSON.parse(data.contents) : data.contents;
+                    } else {
+                        playersData = data;
                     }
-                } else {
-                    if (data.players && data.players.length > 0 && callback) {
-                        callback(data.players);
+                    
+                    if (playersData.players && playersData.players.length > 0) {
+                        playersDataCache = playersData.players;
+                        playersDataCacheTime = Date.now();
+                        return playersData.players;
                     }
+                } catch (parseError) {
+                    console.error('解析代理数据失败:', parseError);
                 }
+                return [];
             })
             .catch(proxyError => {
-                clearTimeout(proxyTimeoutId);
-                //console.warn(`通过代理${proxyUrls[index]}获取玩家数据失败:`, proxyError);
-                fetchProxyData(proxyUrls, index + 1, originalUrl, callback);
+                clearTimeout(timeoutId);
+                console.warn('代理获取玩家数据也失败:', proxyError.message);
+                return [];
             });
+    }
+    
+    /**
+     * 获取并显示玩家信息（兼容旧接口）
+     * @param {Function} callback - 回调函数，接收玩家数据作为参数
+     */
+    function fetchAndDisplayPlayers(callback) {
+        fetchPlayersDataInternal().then(function(players) {
+            if (players.length > 0 && callback) {
+                callback(players);
+            }
+        });
     }
     
     /**

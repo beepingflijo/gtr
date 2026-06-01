@@ -1959,6 +1959,14 @@ var MapMode = (function () {
     var STATION_RADIUS = 6;
     var TRAIN_RADIUS = 10;
     var sidebarObserver = null;
+    var mouseScreenX = -1;
+    var mouseScreenY = -1;
+    var isMouseOverCanvas = false;
+
+    var ANIMATION_DURATION = 400;
+    var trainPositionCache = {};
+    var playerPositionCache = {};
+    var animationFrameId = null;
 
     function getSidebarWidth() {
         var sidebar = document.querySelector('.side-bar');
@@ -2002,6 +2010,47 @@ var MapMode = (function () {
     function getElementScale() {
         return Math.pow(viewState.zoom,0.2) * 2;
        // return Math.max(0.4, Math.min(4, Math.pow(viewState.zoom, 0.2)));
+    }
+
+    function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+    }
+
+    function updatePositionCache(cache, key, newX, newZ) {
+        var now = Date.now();
+        var entry = cache[key];
+        if (!entry) {
+            cache[key] = {
+                x: newX,
+                z: newZ,
+                prevX: newX,
+                prevZ: newZ,
+                startTime: now
+            };
+            return cache[key];
+        }
+
+        if (Math.abs(entry.x - newX) > 0.5 || Math.abs(entry.z - newZ) > 0.5) {
+            entry.prevX = entry.x;
+            entry.prevZ = entry.z;
+            entry.x = newX;
+            entry.z = newZ;
+            entry.startTime = now;
+        }
+
+        return entry;
+    }
+
+    function getInterpolatedPosition(entry) {
+        var now = Date.now();
+        var elapsed = now - entry.startTime;
+        var progress = Math.min(1, elapsed / ANIMATION_DURATION);
+        var easedProgress = easeOutCubic(progress);
+
+        return {
+            x: entry.prevX + (entry.x - entry.prevX) * easedProgress,
+            z: entry.prevZ + (entry.z - entry.prevZ) * easedProgress
+        };
     }
 
     function computeBounds() {
@@ -2405,13 +2454,20 @@ var MapMode = (function () {
         if (!showTrains || !mapTrainsData || !mapTrainsData.trains) return;
         ctx.save();
 
+        var needsAnimation = false;
+
         mapTrainsData.trains.forEach(function (train) {
             if (!train || !train.cars || train.cars.length === 0) return;
             var car = train.cars[0];
             if (!car.leading || !car.leading.location) return;
             var loc = car.leading.location;
 
-            var pos = worldToScreen(loc.x, loc.z);
+            var cacheEntry = updatePositionCache(trainPositionCache, train.name, loc.x, loc.z);
+            var interpolated = getInterpolatedPosition(cacheEntry);
+            var progress = Math.min(1, (Date.now() - cacheEntry.startTime) / ANIMATION_DURATION);
+            if (progress < 1) needsAnimation = true;
+
+            var pos = worldToScreen(interpolated.x, interpolated.z);
             var scale = Math.pow(getElementScale(),0.1);
             var r = Math.max(5, TRAIN_RADIUS * scale);
 
@@ -2436,10 +2492,19 @@ var MapMode = (function () {
             ctx.strokeStyle = color;
             ctx.lineWidth = Math.max(1.5, 3 * scale);
             ctx.lineJoin = 'round';
-            ctx.strokeText('\ue534', pos.x, pos.y);
+            ctx.strokeText('directions_subway', pos.x, pos.y);
             ctx.fillStyle = '#fff';
-            ctx.fillText('\ue534', pos.x, pos.y);
+            ctx.fillText('directions_subway', pos.x, pos.y);
         });
+
+        if (needsAnimation) {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(function () {
+                animationFrameId = null;
+                if (isOpen) render();
+            });
+        }
+
         ctx.restore();
     }
 
@@ -2478,43 +2543,53 @@ var MapMode = (function () {
             mapPlayersData = [];
             return;
         }
-        if (playerFetchInFlight) {
-            if (playerFetchController) playerFetchController.abort();
-        }
-        playerFetchInFlight = true;
-        var timestamp = Date.now();
-        var playerDataUrl = 'https://map.nitrogen.hydcraft.cn/up/world/world/' + timestamp;
-        playerFetchController = new AbortController();
-        var controller = playerFetchController;
-        var timeoutId = setTimeout(function () { controller.abort(); }, 5000);
-
-        fetch(playerDataUrl, {
-            signal: controller.signal,
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
-        })
-            .then(function (response) {
-                clearTimeout(timeoutId);
-                if (!response.ok) throw new Error('HTTP error: ' + response.status);
-                return response.json();
-            })
-            .then(function (data) {
-                playerFetchInFlight = false;
-                playerFetchController = null;
-                if (data.players && data.players.length > 0) {
-                    mapPlayersData = data.players;
-                    data.players.forEach(function (p) { loadPlayerAvatar(p.name); });
-                    if (isOpen) render();
-                } else {
-                    mapPlayersData = [];
-                    if (isOpen) render();
-                }
-            })
-            .catch(function () {
-                clearTimeout(timeoutId);
-                playerFetchInFlight = false;
-                playerFetchController = null;
+        
+        if (typeof PositionUtils !== 'undefined' && PositionUtils.fetchAndDisplayPlayers) {
+            PositionUtils.fetchAndDisplayPlayers(function(players) {
+                mapPlayersData = players;
+                players.forEach(function (p) { loadPlayerAvatar(p.name); });
+                if (isOpen) render();
             });
+        } else {
+            if (playerFetchInFlight) {
+                if (playerFetchController) playerFetchController.abort();
+            }
+            playerFetchInFlight = true;
+            var timestamp = Date.now();
+            var playerDataUrl = 'https://map.nitrogen.hydcraft.cn/up/world/world/' + timestamp;
+            playerFetchController = new AbortController();
+            var controller = playerFetchController;
+            var timeoutId = setTimeout(function () { controller.abort(); }, 5000);
+
+            fetch(playerDataUrl, {
+                signal: controller.signal,
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                mode: 'cors'
+            })
+                .then(function (response) {
+                    clearTimeout(timeoutId);
+                    if (!response.ok) throw new Error('HTTP error: ' + response.status);
+                    return response.json();
+                })
+                .then(function (data) {
+                    playerFetchInFlight = false;
+                    playerFetchController = null;
+                    if (data.players && data.players.length > 0) {
+                        mapPlayersData = data.players;
+                        data.players.forEach(function (p) { loadPlayerAvatar(p.name); });
+                        if (isOpen) render();
+                    } else {
+                        mapPlayersData = [];
+                        if (isOpen) render();
+                    }
+                })
+                .catch(function () {
+                    clearTimeout(timeoutId);
+                    playerFetchInFlight = false;
+                    playerFetchController = null;
+                });
+        }
     }
 
     function startPlayersRefresh() {
@@ -2557,24 +2632,29 @@ var MapMode = (function () {
         var size = Math.max(12, Math.round(18 * scale));
         var half = size / 2;
         var cr = Math.max(3, Math.round(size / 6));
+        var needsAnimation = false;
 
         mapPlayersData.forEach(function (player) {
             if (!player || player.x === undefined || player.z === undefined) return;
-            var pos = worldToScreen(player.x, player.z);
+
+            var cacheEntry = updatePositionCache(playerPositionCache, player.name, player.x, player.z);
+            var interpolated = getInterpolatedPosition(cacheEntry);
+            var progress = Math.min(1, (Date.now() - cacheEntry.startTime) / ANIMATION_DURATION);
+            if (progress < 1) needsAnimation = true;
+
+            var pos = worldToScreen(interpolated.x, interpolated.z);
             var avatar = playerAvatars[player.name];
             var loaded = avatar && avatar !== 'error' && avatar.complete && avatar.naturalWidth > 0;
 
             ctx.save();
 
+            ctx.beginPath();
             drawRoundedRect(pos.x - half - 1.5, pos.y - half - 1.5, size + 3, size + 3, cr + 1);
             ctx.fillStyle = 'rgba(0,0,0,0.4)';
             ctx.fill();
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = Math.max(1, 1.5 * scale);
             ctx.stroke();
-
-            ctx.fillStyle = 'rgba(255,255,255,0)';
-            ctx.strokeStyle = 'rgba(0,0,0,0)';
 
             ctx.beginPath();
             drawRoundedRect(pos.x - half, pos.y - half, size, size, cr);
@@ -2591,10 +2671,17 @@ var MapMode = (function () {
                 ctx.fillStyle = '#fff';
                 ctx.fillText('\ue7fd', pos.x, pos.y);
             }
-            ctx.fillStyle = 'rgba(255,2555,255,0)';
-            ctx.strokeStyle = 'rgba(0,0,0,0)';
+
             ctx.restore();
         });
+
+        if (needsAnimation) {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(function () {
+                animationFrameId = null;
+                if (isOpen) render();
+            });
+        }
     }
 
     function findPlayerAtScreen(sx, sy) {
@@ -2687,19 +2774,65 @@ var MapMode = (function () {
         var ch = getCanvasCssHeight();
         var textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || 'rgba(128,128,128,0.6)';
         var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-background').trim() || '#f5f5f5';
-        ctx.font = '10px ' + getComputedStyle(document.body).getPropertyValue('--font-family');
-        ctx.textAlign = 'center';
+        var fontFamily = getComputedStyle(document.body).getPropertyValue('--font-family');
         ctx.textBaseline = 'top';
+        ctx.textAlign = 'left';
+        ctx.lineJoin = 'round';
+
+        var iconSize = '12px ';
+        var iconFont = iconSize + '"Material Symbols Outlined"';
+        var textFont = '10px ' + fontFamily;
 
         var centerX = getVisibleCenterX();
         var centerWorld = screenToWorld(centerX, ch / 2);
-        var coordText = 'x: ' + Math.round(centerWorld.x) + '  z: ' + Math.round(centerWorld.z);
+        var centerCoordText = 'x: ' + Math.round(centerWorld.x) + '  z: ' + Math.round(centerWorld.z);
+
+        var hasMouse = isMouseOverCanvas && mouseScreenX >= 0 && mouseScreenY >= 0;
+        var mouseCoordText = '';
+        if (hasMouse) {
+            var mouseWorld = screenToWorld(mouseScreenX, mouseScreenY);
+            mouseCoordText = 'x: ' + Math.round(mouseWorld.x) + '  z: ' + Math.round(mouseWorld.z);
+        }
+
+        var baseY = hasMouse ? ch - 32 : ch - 20;
+
+        ctx.font = iconFont;
+        var iconWidth = ctx.measureText('\uE943').width;
+        ctx.font = textFont;
+        var centerTextWidth = ctx.measureText(centerCoordText).width;
+        var totalCenterWidth = iconWidth + 4 + centerTextWidth;
+
+        var centerStartX = centerX - totalCenterWidth / 2;
+
         ctx.strokeStyle = bgColor;
         ctx.lineWidth = 3;
-        ctx.lineJoin = 'round';
-        ctx.strokeText(coordText, centerX, ch - 20);
+        ctx.font = iconFont;
+        ctx.strokeText('filter_center_focus', centerStartX, baseY);
         ctx.fillStyle = textColor;
-        ctx.fillText(coordText, centerX, ch - 20);
+        ctx.fillText('filter_center_focus', centerStartX, baseY);
+
+        ctx.font = textFont;
+        ctx.strokeText(centerCoordText, centerStartX + iconWidth + 4, baseY + 1.5);
+        ctx.fillText(centerCoordText, centerStartX + iconWidth + 4, baseY + 1.5);
+
+        if (hasMouse) {
+            ctx.font = textFont;
+            var mouseTextWidth = ctx.measureText(mouseCoordText).width;
+            var totalMouseWidth = iconWidth + 4 + mouseTextWidth;
+            var mouseStartX = centerX - totalMouseWidth / 2;
+
+            ctx.strokeStyle = bgColor;
+            ctx.lineWidth = 3;
+            ctx.font = iconFont;
+            ctx.strokeText('arrow_selector_tool', mouseStartX, baseY + 14);
+            ctx.fillStyle = textColor;
+            ctx.fillText('arrow_selector_tool', mouseStartX, baseY + 14);
+
+            ctx.font = textFont;
+            ctx.strokeText(mouseCoordText, mouseStartX + iconWidth + 4, baseY + 15.5);
+            ctx.fillText(mouseCoordText, mouseStartX + iconWidth + 4, baseY + 15.5);
+        }
+
         ctx.restore();
     }
 
@@ -2859,6 +2992,17 @@ var MapMode = (function () {
             container.classList.add('dragging');
         });
 
+        container.addEventListener('mouseenter', function () {
+            isMouseOverCanvas = true;
+        });
+
+        container.addEventListener('mouseleave', function () {
+            isMouseOverCanvas = false;
+            mouseScreenX = -1;
+            mouseScreenY = -1;
+            render();
+        });
+
         window.addEventListener('mousemove', function (e) {
             if (!isOpen) return;
             if (viewState.isDragging) {
@@ -2874,10 +3018,14 @@ var MapMode = (function () {
                 var mx = e.clientX - rect.left;
                 var my = e.clientY - rect.top;
 
+                mouseScreenX = mx;
+                mouseScreenY = my;
+
                 var stCode = findStationAtScreen(mx, my);
                 if (stCode) {
                     showTooltipForStation(stCode, mx, my);
                     container.style.cursor = 'pointer';
+                    render();
                     return;
                 }
 
@@ -2885,6 +3033,7 @@ var MapMode = (function () {
                 if (train) {
                     showTooltipForTrain(train, mx, my);
                     container.style.cursor = 'pointer';
+                    render();
                     return;
                 }
 
@@ -2892,11 +3041,13 @@ var MapMode = (function () {
                 if (player) {
                     showTooltipForPlayer(player, mx, my);
                     container.style.cursor = 'pointer';
+                    render();
                     return;
                 }
 
                 hideTooltip();
                 container.style.cursor = '';
+                render();
             }
         });
 

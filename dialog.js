@@ -119,7 +119,10 @@ async function loadSeriesInfo(seriesName,inDialog = true,lang=window.lang) {
         const sereisData = trainData.series.find(series => series.name === seriesName);
         if (!sereisData) throw showToast(strings.trains_info.series_not_found[lang]);
         
-        const seriesImg = sereisData.gallery.find(img => img.class === 'cover').image;
+        const coverItems = (sereisData.gallery || []).filter(img => img && img.class === 'cover');
+        const seriesImg = coverItems.length > 0
+            ? coverItems[Math.floor(Math.random() * coverItems.length)].image || ''
+            : '';
 
         const seriesInfo = document.createElement('div');
         seriesInfo.classList.add('series-info');
@@ -305,7 +308,7 @@ async function loadStationInfo(code, inDialog = true, lang=window.lang) {
         trainInfoBtn.style.padding = 0;
         const trainInfoLink = document.createElement('a');
         trainInfoLink.textContent = strings.station_info.check_train_info[lang];
-        trainInfoLink.href = `trains_info.html?q=${strings.station_names[code][lang]}`;
+        trainInfoLink.href = `trains_info.html?q=${code}`;
         trainInfoBtn.appendChild(trainInfoLink);
         stationInfo.appendChild(trainInfoBtn);
 

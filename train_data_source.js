@@ -1,7 +1,7 @@
 // train_data_source.js - 统一的列车数据源管理器（事件驱动架构）
 
 const TrainDataSource = (function () {
-    const API_URL = 'https://track.nitrogen.hydcraft.cn/api/trains.rt';
+    const API_URL = 'https://track.api.hydcraft.cn/api/trains.rt';
     const FALLBACK_URL = './data/trains.json';
     const NETWORK_URL = './data/network.json';
     

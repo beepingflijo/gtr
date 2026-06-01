@@ -262,7 +262,7 @@ function fetchTrainData() {
 
         TrainDataSource.start();
     } else {
-        const eventSource = new EventSource(TrainDataSource ? TrainDataSource.API_URL : 'https://track.nitrogen.hydcraft.cn/api/trains.rt');
+        const eventSource = new EventSource(TrainDataSource ? TrainDataSource.API_URL : 'https://track.api.hydcraft.cn/api/trains.rt');
         
         eventSource.onmessage = function(event) {
             try {
@@ -1193,7 +1193,7 @@ function applySearchFilter(searchTerm = '') {
             if (isAtStation) {
                 searchText += ` ${strings.trains_info.arrived_at[lang] || 'Arrived at'} ${stationName}`;
                 searchText += ` ${platform}`;
-                searchText += ` ${stationCode}`; // 添加车站三字码到搜索文本
+                searchText += ` ${stationCode.toLowerCase()}`; // 添加车站三字码到搜索文本
             } else {
                 // 如果不在车站，显示下一站信息
                 const position = actualCarPos || leadingPos; // 使用定义过的变量替代未定义的 position
@@ -1208,7 +1208,7 @@ function applySearchFilter(searchTerm = '') {
                         
                         if (nextStation) {
                             searchText += ` ${strings.trains_info.approaching[lang] || 'Approaching'} ${getStationName(nextStation.code, lang)}`;
-                            searchText += ` ${nextStation.code}`; // 添加下一站三字码到搜索文本
+                            searchText += ` ${nextStation.code.toLowerCase()}`; // 添加下一站三字码到搜索文本
                         }
                     }
                 }
@@ -1246,6 +1246,61 @@ function applySearchFilter(searchTerm = '') {
         } else {
             element.style.display = 'none';
         }
+    });
+
+    // 对显示的 trainElements 进行排序
+    const container = document.querySelector('main');
+    const visibleElements = Array.from(trainElements).filter(el => el.style.display !== 'none');
+    
+    const sortedElements = visibleElements.map((element, index) => {
+        const platformElement = element.querySelector('.train-platform');
+        const etaElement = element.querySelector('.eta-next-station');
+        
+        // 第一优先级：有 train-platform 且显示
+        if (platformElement && platformElement.style.display !== 'none' && platformElement.textContent.trim()) {
+            const platformText = platformElement.textContent.trim();
+            const platformMatch = platformText.match(/(\d+)/);
+            const platformNum = platformMatch ? parseInt(platformMatch[1], 10) : Infinity;
+            return { element, priority: 1, sortValue: platformNum, originalIndex: index };
+        }
+        
+        // 第二优先级：有 eta-next-station
+        if (etaElement && etaElement.textContent.trim()) {
+            const etaText = etaElement.textContent.trim();
+            let etaMinutes = Infinity;
+            
+            // 解析不同格式的 ETA 时间
+            // 格式1: "Xmin" 或 "X 分钟"
+            const minMatch = etaText.match(/(\d+)\s*(?:min|分)/i);
+            if (minMatch) {
+                etaMinutes = parseInt(minMatch[1], 10);
+            }
+            // 格式2: "即将到达" 或 "arriving"
+            else if (/arriving|即将|到站/i.test(etaText)) {
+                etaMinutes = 0;
+            }
+            // 格式3: "已停靠" 或 "stopped" - 视为已到达
+            else if (/stopped|已停|停靠/i.test(etaText)) {
+                etaMinutes = -1; // 最高优先级
+            }
+            
+            return { element, priority: 2, sortValue: etaMinutes, originalIndex: index };
+        }
+        
+        // 第三优先级：其余项目
+        return { element, priority: 3, sortValue: 0, originalIndex: index };
+    });
+    
+    // 排序：先按优先级，再按 sortValue，最后保持原始顺序
+    sortedElements.sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        if (a.sortValue !== b.sortValue) return a.sortValue - b.sortValue;
+        return a.originalIndex - b.originalIndex;
+    });
+    
+    // 重新排列 DOM 元素
+    sortedElements.forEach(({ element }) => {
+        container.appendChild(element);
     });
 }
 

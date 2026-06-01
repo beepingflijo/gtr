@@ -42,6 +42,8 @@
             "name":"DE92-i200", "maxSpeed":180, 
             "gallery":[
                 {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/2/23/DE92-i200.png"},
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/e/ea/2026-01-25_20.14.45.png"},
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/7/73/2026-05-10_22.21.42.png"},
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
             ], "seats":[
@@ -55,6 +57,7 @@
             "name":"DE134-280", "maxSpeed":280,
             "gallery":[
                 {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/1/14/DE134-280.png"},
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/b/ba/QQ%E5%9B%BE%E7%89%8720260601113755%2817%29.png"},
                 {"class":"premium", "image":"gallery1.jpg"},
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}
@@ -70,6 +73,7 @@
             "name":"DE92-i300", "maxSpeed":300,
             "gallery":[
                 {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/e/ea/DE92-i300.png"},
+                {"class":"cover", "image":"https://assets.wiki.hydcraft.cn/5/54/QQ%E5%9B%BE%E7%89%8720260601113755%285%29.png"},
                 {"class":"premium", "image":"gallery1.jpg"},
                 {"class":"first", "image":"gallery1.jpg"},
                 {"class":"second", "image":"gallery1.jpg"}

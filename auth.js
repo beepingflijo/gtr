@@ -408,13 +408,13 @@ async function showLoginDialog() {
                 const trainImages = trainData.series
                     .filter(train => train.gallery && Array.isArray(train.gallery))
                     .flatMap(train => {
-                        const coverImg = train.gallery.find(img => img.class === 'cover');
-                        if (!coverImg || !coverImg.image) return [];
+                        const coverImages = train.gallery.filter(img => img.class === 'cover');
+                        if (!coverImages.length) return [];
                         // 查找该列车对应的系列信息以获取系列名称
                         const seriesInfo = trainData.series?.find(series => series.name === train.series);
                         const desc = train.name+strings.trains_info._series[lang];
                         const link = `content.html?type=series&q=${train.name}`;
-                        return [{ img: coverImg.image, desc, link }];
+                        return coverImages.map(img => ({ img: img.image, desc, link }));
                     });
                 
                 // 合并车站和列车图片数组
