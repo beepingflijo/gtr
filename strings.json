@@ -10,6 +10,8 @@
         "back_to":{"zh_hans":"返回", "en": "Back to ", "zh_hant":"返回", "uk": "Назад до "},
         "set":{"zh_hans":"设置", "en": "Set", "zh_hant":"設置", "uk": "Налаштувати"},
         "close":{"zh_hans":"关闭", "en": "Close", "zh_hant":"關閉", "uk": "Закрити"},
+        "close_dialog":{"zh_hans":"关闭对话框", "en": "Close dialog", "zh_hant":"關閉對話框", "uk": "Закрити діалог"},
+        "copy_dialog":{"zh_hans":"复制对话框", "en": "Copy dialog", "zh_hant":"複製對話框", "uk": "Копіювати діалог"},
         "history":{"zh_hans":"历史记录", "en": "History", "zh_hant":"歷史記錄", "uk": "Історія"},
         "expand_side_bar":{"zh_hans":"展开侧边栏", "en": "Expand side bar", "zh_hant":"展開側欄", "uk": "Розгорнути бокову панель"},
         "collapse_side_bar":{"zh_hans":"收起侧边栏", "en": "Collapse side bar", "zh_hant":"收起側欄", "uk": "Згорнути бокову панель"},

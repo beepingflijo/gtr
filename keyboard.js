@@ -151,6 +151,75 @@ function listenKeyboardShortcuts() {
                     window.location.href = 'lines_info.html?line=' + newLineId;
                 }
             }
+        } else if (event.ctrlKey){
+            if (event.key === 'C' || event.key === 'c') {
+                const currentDialog = document.querySelector('.modal-overlay .dialog-container');
+                if (currentDialog) {
+                    const dialogTitle = currentDialog.querySelector('.dialog-title');
+                    const dialogContent = currentDialog.querySelector('.dialog-content');
+                    const dialogButtons = currentDialog.querySelector('.dialog-buttons');
+                    let text = '';
+                    // 标题部分
+                    if (dialogTitle && dialogTitle.textContent.trim()) {
+                        text += '[Window Title]\n' + dialogTitle.textContent.trim() + '\n\n';
+                    }
+                    // 内容部分 - 递归格式化处理
+                    if (dialogContent) {
+                        function formatDialogContent(el) {
+                            // 纯文本节点（无子元素）直接返回文本
+                            if (el.children.length === 0) {
+                                return (el.textContent || '').replace(/\s+/g, ' ').trim();
+                            }
+                            const parts = [];
+                            for (const child of el.children) {
+                                // 跳过图标元素
+                                if (child.classList.contains('material-symbols-outlined')) continue;
+                                // 检查是否有嵌套的元素子节点（排除纯文本和图标）
+                                const hasNestedElements = Array.from(child.children).some(
+                                    sub => !sub.classList.contains('material-symbols-outlined')
+                                );
+                                if (hasNestedElements) {
+                                    // 有嵌套子项，递归处理并用换行连接
+                                    parts.push(formatDialogContent(child));
+                                } else {
+                                    // 无嵌套子项，用空格连接文本内容
+                                    const clone = child.cloneNode(true);
+                                    clone.querySelectorAll('.material-symbols-outlined').forEach(icon => icon.remove());
+                                    const t = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+                                    if (t) parts.push(t);
+                                }
+                            }
+                            return parts.join('\n');
+                        }
+                        const contentText = formatDialogContent(dialogContent);
+                        if (contentText) {
+                            text += '[Content]\n' + contentText + '\n\n';
+                        }
+                    }
+                    // 按钮部分
+                    if (dialogButtons) {
+                        const buttons = Array.from(dialogButtons.querySelectorAll('button'));
+                        if (buttons.length > 0) {
+                            const buttonTexts = buttons.map(btn => '[' + btn.textContent.trim() + ']');
+                            text += buttonTexts.join(' ');
+                        }
+                    }
+                    // 写入剪贴板
+                    if (text) {
+                        navigator.clipboard.writeText(text).catch(() => {
+                            // 降级方案：使用临时 textarea
+                            const textArea = document.createElement('textarea');
+                            textArea.value = text;
+                            textArea.style.position = 'fixed';
+                            textArea.style.opacity = '0';
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            try { document.execCommand('copy'); } catch (e) {}
+                            document.body.removeChild(textArea);
+                        });
+                    }
+                }
+            }
         } else { 
             switch (event.key) { 
                 case 'Escape': 
@@ -298,6 +367,15 @@ function listenKeyboardShortcuts() {
                     <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key">⇧</span>
                     <span class="shortcut-key">M</span>
+                </div>
+                <div class="shortcut-item" ${!document.querySelector('.modal-overlay') ? 'style="display: none;"' : ''}>
+                    <span class="shortcut-description">${strings.general.close_dialog[lang]}</span>
+                    <span class="shortcut-key">Esc</span>
+                </div>
+                <div class="shortcut-item" ${!document.querySelector('.modal-overlay') ? 'style="display: none;"' : ''}>
+                    <span class="shortcut-description">${strings.general.copy_dialog[lang]}</span>
+                    <span class="shortcut-key">${ctrlKeyName}</span>
+                    <span class="shortcut-key">C</span>
                 </div>
             `;
             setTimeout(() => {

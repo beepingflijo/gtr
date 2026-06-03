@@ -287,7 +287,7 @@ selectionElements.forEach(selectionElement => {
 function handleActions() { 
     // 调整actions样式
     document.querySelectorAll('.actions:not(.search-bar,.tabs)').forEach(actions => {
-        if (Array.from(actions.children).filter(child => !child.classList.contains('cursor')).length >= 2) actions.style.padding = '2px 8px';
+        if (Array.from(actions.children).filter(child => !child.classList.contains('cursor')&&!child.classList.contains('hidden-btn')).length >= 2) actions.style.padding = '2px 8px';
     });
 }
 
@@ -788,7 +788,7 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
         if (window.prefs.useSystemDialog === false || type === 'custom') {
             const appContainer = document.querySelector('.app-container');
             const existingDialog = document.querySelectorAll('.modal-overlay');
-            if (existingDialog && existingDialog.length > 0) {
+            if (existingDialog && existingDialog.length > 0 && !content.classList.contains('shortcut-list')) {
                 existingDialog.forEach(dialog => {
                     dialog.remove();
                 });
@@ -1204,6 +1204,7 @@ function handleActionsOverflow() {
                     btn.classList.add('hidden-btn');
                     btn.style.display = 'none';
                     hiddenBtns.push(btn);
+                    handleActions();
                 } else {
                     currentWidth += btnWidth;
                 }

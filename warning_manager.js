@@ -23,28 +23,96 @@ const WarningManager = (function() {
 
     const WARNING_API_URL = '/api/warning';
     const ZERO_SPEED_START_PREFIX = 'zero_speed_start_';
+    const WARNING_START_TIMES_KEY = 'warning_start_times';
     let reportedWarnings = new Map();
     let pendingReports = new Map();
 
-    function getZeroSpeedStartTime(trainName) {
+    // 获取所有警告开始时间的统一存储
+    function getAllWarningStartTimes() {
         try {
-            const stored = localStorage.getItem(ZERO_SPEED_START_PREFIX + trainName);
-            return stored ? parseInt(stored, 10) : null;
+            const stored = localStorage.getItem(WARNING_START_TIMES_KEY);
+            return stored ? JSON.parse(stored) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    // 保存所有警告开始时间到统一存储
+    function setAllWarningStartTimes(data) {
+        try {
+            localStorage.setItem(WARNING_START_TIMES_KEY, JSON.stringify(data));
+        } catch (e) { }
+    }
+
+    // 获取特定警告的开始时间
+    function getWarningStartTime(trainId, warningType) {
+        try {
+            const allTimes = getAllWarningStartTimes();
+            if (allTimes[trainId] && allTimes[trainId][warningType]) {
+                return allTimes[trainId][warningType].startTime;
+            }
+            return null;
         } catch (e) {
             return null;
         }
     }
 
-    function setZeroSpeedStartTime(trainName, timestamp) {
+    // 设置特定警告的开始时间
+    function setWarningStartTime(trainId, warningType, timestamp) {
         try {
-            localStorage.setItem(ZERO_SPEED_START_PREFIX + trainName, timestamp.toString());
+            const allTimes = getAllWarningStartTimes();
+            if (!allTimes[trainId]) {
+                allTimes[trainId] = {};
+            }
+            allTimes[trainId][warningType] = {
+                startTime: timestamp,
+                trainId: trainId,
+                warningType: warningType,
+                createdAt: new Date().toISOString()
+            };
+            setAllWarningStartTimes(allTimes);
         } catch (e) { }
     }
 
-    function clearZeroSpeedStartTime(trainName) {
+    // 清除特定警告的开始时间
+    function clearWarningStartTime(trainId, warningType) {
         try {
-            localStorage.removeItem(ZERO_SPEED_START_PREFIX + trainName);
+            const allTimes = getAllWarningStartTimes();
+            if (allTimes[trainId] && allTimes[trainId][warningType]) {
+                delete allTimes[trainId][warningType];
+                // 如果该列车没有其他警告，删除整个列车条目
+                if (Object.keys(allTimes[trainId]).length === 0) {
+                    delete allTimes[trainId];
+                }
+                setAllWarningStartTimes(allTimes);
+            }
         } catch (e) { }
+    }
+
+    // 清除特定列车的所有警告开始时间
+    function clearAllWarningStartTimesForTrain(trainId) {
+        try {
+            const allTimes = getAllWarningStartTimes();
+            if (allTimes[trainId]) {
+                delete allTimes[trainId];
+                setAllWarningStartTimes(allTimes);
+            }
+        } catch (e) { }
+    }
+
+    // 向后兼容：获取零速度开始时间
+    function getZeroSpeedStartTime(trainName) {
+        return getWarningStartTime(trainName, CONFIG.WARNING_TYPES.ZERO_SPEED);
+    }
+
+    // 向后兼容：设置零速度开始时间
+    function setZeroSpeedStartTime(trainName, timestamp) {
+        setWarningStartTime(trainName, CONFIG.WARNING_TYPES.ZERO_SPEED, timestamp);
+    }
+
+    // 向后兼容：清除零速度开始时间
+    function clearZeroSpeedStartTime(trainName) {
+        clearWarningStartTime(trainName, CONFIG.WARNING_TYPES.ZERO_SPEED);
     }
 
     function getApiBaseUrl() {
@@ -231,7 +299,9 @@ const WarningManager = (function() {
         const warnings = [];
         const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
         const currentTrainData = allTrainsData[train.name];
+        const now = Date.now();
 
+        // 零速度警告检测
         if (!isAtStation && currentTrainData && currentTrainData.speed === CONFIG.ZERO_SPEED_THRESHOLD) {
             const isCoordinateChanging = checkCoordinateChange(train.name, allTrainsData);
             
@@ -240,7 +310,6 @@ const WarningManager = (function() {
             } else {
                 const atStation = position ? checkIfTrainAtStation(train.name, position) : false;
                 if (!atStation) {
-                    const now = Date.now();
                     const existingStart = getZeroSpeedStartTime(train.name);
 
                     if (existingStart === null) {
@@ -263,9 +332,16 @@ const WarningManager = (function() {
             clearZeroSpeedStartTime(train.name);
         }
 
+        // 长时间停车警告检测
         if (currentTrainData && currentTrainData.timestamp) {
-            const timeSinceUpdate = Date.now() - currentTrainData.timestamp;
+            const timeSinceUpdate = now - currentTrainData.timestamp;
             if (timeSinceUpdate > CONFIG.LONG_STOP_DURATION) {
+                // 记录长时间停车警告的开始时间
+                const longStopStart = getWarningStartTime(train.name, CONFIG.WARNING_TYPES.LONG_STOP);
+                if (longStopStart === null) {
+                    setWarningStartTime(train.name, CONFIG.WARNING_TYPES.LONG_STOP, currentTrainData.timestamp);
+                }
+
                 warnings.push({
                     type: CONFIG.WARNING_TYPES.LONG_STOP,
                     level: CONFIG.WARNING_LEVELS.long_stop,
@@ -274,15 +350,30 @@ const WarningManager = (function() {
                         threshold: CONFIG.LONG_STOP_DURATION
                     }
                 });
+            } else {
+                // 条件不满足时清除长时间停车警告的开始时间
+                clearWarningStartTime(train.name, CONFIG.WARNING_TYPES.LONG_STOP);
             }
+        } else {
+            clearWarningStartTime(train.name, CONFIG.WARNING_TYPES.LONG_STOP);
         }
 
+        // 站台冲突警告检测
         if (checkPlatformConflict(train, trainItem, isAtStation)) {
+            // 记录站台冲突警告的开始时间
+            const conflictStart = getWarningStartTime(train.name, CONFIG.WARNING_TYPES.PLATFORM_CONFLICT);
+            if (conflictStart === null) {
+                setWarningStartTime(train.name, CONFIG.WARNING_TYPES.PLATFORM_CONFLICT, now);
+            }
+
             warnings.push({
                 type: CONFIG.WARNING_TYPES.PLATFORM_CONFLICT,
                 level: CONFIG.WARNING_LEVELS.platform_conflict,
                 params: {}
             });
+        } else {
+            // 条件不满足时清除站台冲突警告的开始时间
+            clearWarningStartTime(train.name, CONFIG.WARNING_TYPES.PLATFORM_CONFLICT);
         }
 
         return warnings;
@@ -489,7 +580,15 @@ const WarningManager = (function() {
         getWarningReasonsText,
         reportWarningToServer,
         resolveWarningOnServer,
+        // 统一警告开始时间管理
+        getAllWarningStartTimes,
+        getWarningStartTime,
+        setWarningStartTime,
+        clearWarningStartTime,
+        clearAllWarningStartTimesForTrain,
+        // 向后兼容
         getZeroSpeedStartTime,
+        setZeroSpeedStartTime,
         clearZeroSpeedStartTime,
         resolveLocationInfo
     };

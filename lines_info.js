@@ -1978,8 +1978,12 @@ var MapMode = (function () {
     var mouseScreenX = -1;
     var mouseScreenY = -1;
     var isMouseOverCanvas = false;
+    var frozenMouseWorldX = 0;
+    var frozenMouseWorldZ = 0;
+    var isMouseWorldFrozen = false;
 
-    var ANIMATION_DURATION = 2000;
+    var TRAIN_ANIMATION_DURATION = 2000;
+    var PLAYER_ANIMATION_DURATION = 20000;
     var trainPositionCache = {};
     var playerPositionCache = {};
     var animationFrameId = null;
@@ -2033,16 +2037,16 @@ var MapMode = (function () {
         return t;
     }
 
-    function getCurrentInterpolated(entry, now) {
+    function getCurrentInterpolated(entry, now, duration) {
         var elapsed = now - entry.startTime;
-        var progress = Math.min(1, elapsed / ANIMATION_DURATION);
+        var progress = Math.min(1, elapsed / duration);
         return {
             x: entry.prevX + (entry.x - entry.prevX) * progress,
             z: entry.prevZ + (entry.z - entry.prevZ) * progress
         };
     }
 
-    function updatePositionCache(cache, key, newX, newZ) {
+    function updatePositionCache(cache, key, newX, newZ, duration) {
         var now = Date.now();
         var entry = cache[key];
         if (!entry) {
@@ -2057,9 +2061,17 @@ var MapMode = (function () {
         }
 
         if (Math.abs(entry.x - newX) > 0.5 || Math.abs(entry.z - newZ) > 0.5) {
-            var current = getCurrentInterpolated(entry, now);
-            entry.prevX = current.x;
-            entry.prevZ = current.z;
+            var current = getCurrentInterpolated(entry, now, duration);
+            var distance = Math.sqrt(Math.pow(newX - current.x, 2) + Math.pow(newZ - current.z, 2));
+            var speed = distance * 1000 / duration;
+            
+            if (speed > 200) {
+                entry.prevX = newX;
+                entry.prevZ = newZ;
+            } else {
+                entry.prevX = current.x;
+                entry.prevZ = current.z;
+            }
             entry.x = newX;
             entry.z = newZ;
             entry.startTime = now;
@@ -2068,10 +2080,10 @@ var MapMode = (function () {
         return entry;
     }
 
-    function getInterpolatedPosition(entry) {
+    function getInterpolatedPosition(entry, duration) {
         var now = Date.now();
         var elapsed = now - entry.startTime;
-        var progress = Math.min(1, elapsed / ANIMATION_DURATION);
+        var progress = Math.min(1, elapsed / duration);
 
         return {
             x: entry.prevX + (entry.x - entry.prevX) * progress,
@@ -2655,9 +2667,9 @@ var MapMode = (function () {
             if (!car.leading || !car.leading.location) return;
             var loc = car.leading.location;
 
-            var cacheEntry = updatePositionCache(trainPositionCache, train.name, loc.x, loc.z);
-            var interpolated = getInterpolatedPosition(cacheEntry);
-            var progress = Math.min(1, (Date.now() - cacheEntry.startTime) / ANIMATION_DURATION);
+            var cacheEntry = updatePositionCache(trainPositionCache, train.name, loc.x, loc.z, TRAIN_ANIMATION_DURATION);
+            var interpolated = getInterpolatedPosition(cacheEntry, TRAIN_ANIMATION_DURATION);
+            var progress = Math.min(1, (Date.now() - cacheEntry.startTime) / TRAIN_ANIMATION_DURATION);
             if (progress < 1) needsAnimation = true;
 
             var pos = worldToScreen(interpolated.x, interpolated.z);
@@ -2830,9 +2842,9 @@ var MapMode = (function () {
         mapPlayersData.forEach(function (player) {
             if (!player || player.x === undefined || player.z === undefined) return;
 
-            var cacheEntry = updatePositionCache(playerPositionCache, player.name, player.x, player.z);
-            var interpolated = getInterpolatedPosition(cacheEntry);
-            var progress = Math.min(1, (Date.now() - cacheEntry.startTime) / ANIMATION_DURATION);
+            var cacheEntry = updatePositionCache(playerPositionCache, player.name, player.x, player.z, PLAYER_ANIMATION_DURATION);
+            var interpolated = getInterpolatedPosition(cacheEntry, PLAYER_ANIMATION_DURATION);
+            var progress = Math.min(1, (Date.now() - cacheEntry.startTime) / PLAYER_ANIMATION_DURATION);
             if (progress < 1) needsAnimation = true;
 
             var pos = worldToScreen(interpolated.x, interpolated.z);
@@ -2963,6 +2975,8 @@ var MapMode = (function () {
     }
 
     function drawCoordinates() {
+        const body = document.querySelector('body');
+        if (body.classList.contains('compact')) return;
         ctx.save();
         var ch = getCanvasCssHeight();
         var textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || 'rgba(128,128,128,0.6)';
@@ -2983,7 +2997,12 @@ var MapMode = (function () {
         var hasMouse = isMouseOverCanvas && mouseScreenX >= 0 && mouseScreenY >= 0;
         var mouseCoordText = '';
         if (hasMouse) {
-            var mouseWorld = screenToWorld(mouseScreenX, mouseScreenY);
+            var mouseWorld;
+            if (isMouseWorldFrozen && viewState.isDragging) {
+                mouseWorld = { x: frozenMouseWorldX, z: frozenMouseWorldZ };
+            } else {
+                mouseWorld = screenToWorld(mouseScreenX, mouseScreenY);
+            }
             mouseCoordText = 'x: ' + Math.round(mouseWorld.x) + '  z: ' + Math.round(mouseWorld.z);
         }
 
@@ -3184,6 +3203,12 @@ var MapMode = (function () {
             viewState.dragOffsetX = viewState.offsetX;
             viewState.dragOffsetY = viewState.offsetY;
             container.classList.add('dragging');
+            if (mouseScreenX >= 0 && mouseScreenY >= 0) {
+                var w = screenToWorld(mouseScreenX, mouseScreenY);
+                frozenMouseWorldX = w.x;
+                frozenMouseWorldZ = w.z;
+                isMouseWorldFrozen = true;
+            }
         });
 
         container.addEventListener('mouseenter', function () {
@@ -3246,9 +3271,16 @@ var MapMode = (function () {
             }
         });
 
-        window.addEventListener('mouseup', function () {
+        window.addEventListener('mouseup', function (e) {
             viewState.isDragging = false;
             container.classList.remove('dragging');
+            isMouseWorldFrozen = false;
+            if (isMouseOverCanvas) {
+                var rect = container.getBoundingClientRect();
+                mouseScreenX = e.clientX - rect.left;
+                mouseScreenY = e.clientY - rect.top;
+                render();
+            }
         });
 
         container.addEventListener('wheel', function (e) {

@@ -138,7 +138,21 @@ const TrainDataSource = (function () {
         return data && data.type === 'patch' && Array.isArray(data.upsert);
     }
 
+    function applyFullData(data) {
+        // 全量数据：清空旧存储，重新填充
+        trainStore.clear();
+        if (Array.isArray(data.trains)) {
+            data.trains.forEach(train => {
+                if (train && train.id) {
+                    trainStore.set(train.id, train);
+                }
+            });
+        }
+        return data;
+    }
+
     function applyPatch(patchData) {
+        // 增量数据：合并到现有存储
         if (Array.isArray(patchData.upsert)) {
             patchData.upsert.forEach(train => {
                 if (train && train.id) {
@@ -167,7 +181,11 @@ const TrainDataSource = (function () {
                 let data = JSON.parse(event.data);
 
                 if (isPatchData(data)) {
+                    // 增量数据：合并到 trainStore
                     data = applyPatch(data);
+                } else {
+                    // 全量数据：同步更新 trainStore
+                    applyFullData(data);
                 }
 
                 if (!isValidTrainData(data)) {
@@ -224,6 +242,9 @@ const TrainDataSource = (function () {
 
                 const validTrains = filterValidTrains(data.trains);
                 data.trains = validTrains;
+
+                // 同步更新 trainStore
+                applyFullData(data);
 
                 updatePositionHistory(validTrains);
                 emit('data', data);
