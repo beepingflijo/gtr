@@ -87,6 +87,51 @@ function clearUserSession() {
     localStorage.removeItem('userSession');
 }
 
+// Token过期弹窗防护标志（防止多个API同时触发弹窗）
+let _isShowingTokenExpiredDialog = false;
+
+// 处理Token过期：清除会话并弹出登录窗口
+function handleTokenExpired() {
+    if (_isShowingTokenExpiredDialog) return;
+    _isShowingTokenExpiredDialog = true;
+
+    console.log('🔒 Token已过期，正在弹出登录窗口...');
+    clearUserSession();
+
+    if (typeof showToast === 'function') {
+        showToast(strings.preferences?.token_expired?.[lang] || '登录已过期，请重新登录', 3000);
+    }
+
+    showLoginDialog().then(() => {
+        _isShowingTokenExpiredDialog = false;
+    }).catch(() => {
+        _isShowingTokenExpiredDialog = false;
+    });
+}
+
+// 全局Fetch拦截器：自动检测Token过期并弹出登录窗口
+(function _setupAuthInterceptor() {
+    const _originalFetch = window.fetch;
+    window.fetch = async function (...args) {
+        const response = await _originalFetch.apply(this, args);
+
+        // 检查认证相关错误（401/403 且后端标记 requiresReLogin）
+        if (response.status === 401 || response.status === 403) {
+            try {
+                const clone = response.clone();
+                const data = await clone.json();
+                if (data && data.requiresReLogin) {
+                    handleTokenExpired();
+                }
+            } catch (e) {
+                // 非JSON响应或解析错误，忽略
+            }
+        }
+
+        return response;
+    };
+})();
+
 // 检查是否已登录
 function isLoggedIn() {
     const session = getUserSession();
@@ -156,7 +201,11 @@ async function validateToken() {
 
         if (!response.ok) {
             console.warn('❌ Token验证失败，清除会话');
-            clearUserSession();
+            // 全局fetch拦截器会自动检测requiresReLogin并弹出登录窗口
+            // 这里作为兜底，确保会话被清除
+            if (!_isShowingTokenExpiredDialog) {
+                clearUserSession();
+            }
             return false;
         }
 
@@ -184,13 +233,8 @@ async function validateToken() {
                 console.error('   - 这可能是JWT_SECRET配置错误或安全问题');
                 console.error('   - 为了保护用户会话，将清除当前session并强制重新登录');
                 
-                // 清除会话，强制重新登录
-                clearUserSession();
-                
-                // 显示错误提示
-                if (typeof showToast === 'function') {
-                    showToast('会话验证失败，请重新登录', 3000);
-                }
+                // 强制重新登录
+                handleTokenExpired();
                 
                 return false;
             }
@@ -967,6 +1011,7 @@ window.auth = {
     changePassword,
     validateToken,
     init: initAuth,
+    handleTokenExpired,
     getDevices,
     removeDevice,
     getLoginLog

@@ -526,6 +526,18 @@ function initSidebar() {
                                 </span>
                                 <span>${window.strings?.ticket_calculator.sort_by_price[lang] || 'Cheaper'}</span>
                             </div>
+                            <!--<div class="icon-btn selection-item sort-by-departure-early">
+                                <span class="material-symbols-outlined">
+                                directions_run
+                                </span>
+                                <span>${window.strings?.ticket_calculator.sort_by_departure_early[lang] || 'Depart Early'}</span>
+                            </div>
+                            <div class="icon-btn selection-item sort-by-arrival-early">
+                                <span class="material-symbols-outlined">
+                                flag
+                                </span>
+                                <span>${window.strings?.ticket_calculator.sort_by_arrival_early[lang] || 'Arrive Early'}</span>
+                            </div>-->
                         </div>
                     </div>
                 </${currentPage==='ticket_calculator'?'div':'a'}>
@@ -631,6 +643,18 @@ function initSearchPanel() {
                     </span>
                     <span>${window.strings?.ticket_calculator.sort_by_price[lang] || 'Cheaper'}</span>
                 </div>
+                <!--<div class="icon-btn selection-item sort-by-departure-early">
+                    <span class="material-symbols-outlined">
+                    directions_run
+                    </span>
+                    <span>${window.strings?.ticket_calculator.sort_by_departure_early[lang] || 'Depart Early'}</span>
+                </div>
+                <div class="icon-btn selection-item sort-by-arrival-early">
+                    <span class="material-symbols-outlined">
+                    flag
+                    </span>
+                    <span>${window.strings?.ticket_calculator.sort_by_arrival_early[lang] || 'Arrive Early'}</span>
+                </div>-->
             </div>
         `;
     });
@@ -1242,6 +1266,23 @@ window.handleWindowResize = function() {
 document.addEventListener('DOMContentLoaded', () => {
     initActionsOverflow();
 });
+
+// 设置排序按钮的禁用/启用状态
+function setSortButtonsDisabled(disabled) {
+    const departureEarlyBtns = document.querySelectorAll('.sort-by-departure-early');
+    const arrivalEarlyBtns = document.querySelectorAll('.sort-by-arrival-early');
+    const allBtns = [...departureEarlyBtns, ...arrivalEarlyBtns];
+    
+    allBtns.forEach(btn => {
+        if (disabled) {
+            btn.classList.add('disabled');
+            btn.disabled = true;
+        } else {
+            btn.classList.remove('disabled');
+            btn.disabled = false;
+        }
+    });
+}
 
 // 窗口大小变化时重新计算
 window.addEventListener('resize', () => {

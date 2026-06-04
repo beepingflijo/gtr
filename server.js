@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const WarningMonitor = require('./warning_monitor');
+const { initServices, stopServices, apiRoutes: timetableApiRoutes } = require('./services');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1706,9 +1708,108 @@ app.get('/api/warning/history', (req, res) => {
     }
 });
 
+// 监控状态查询
+app.get('/api/monitor/status', (req, res) => {
+    try {
+        const status = warningMonitor.getStatus();
+        res.json({ success: true, data: status });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to get monitor status' });
+    }
+});
+
 // ==================== 静态文件服务 ====================
 // 在生产环境中，Express也提供静态文件
 app.use(express.static(path.join(__dirname)));
+
+// ==================== 列车预警监控 ====================
+const warningMonitor = new WarningMonitor();
+
+// 监听监控事件
+warningMonitor.on('warning_detected', async (payload) => {
+    console.log(`[WarningMonitor] 检测到警告: ${payload.trainId} - ${payload.warningType}`);
+    
+    // 调用已有的警告上报接口
+    try {
+        const safetyData = readSafetyRecords();
+        const resolvedLocation = {};
+        const warningEvent = {
+            id: `warn-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`,
+            trainId: payload.trainId,
+            warningType: payload.warningType,
+            warningParams: payload.warningParams || {},
+            position: payload.position || null,
+            locationInfo: resolvedLocation,
+            status: 'active',
+            reportedBy: 'monitor',
+            reportedAt: payload.timestamp,
+            resolvedAt: null,
+            resolvedBy: null,
+            resolveReason: null
+        };
+        
+        const warningData = readWarningEvents();
+        warningData.activeWarnings[payload.trainId] = warningData.activeWarnings[payload.trainId] || [];
+        warningData.activeWarnings[payload.trainId].push(warningEvent);
+        warningData.warningHistory.push(warningEvent);
+        saveWarningEvents(warningData);
+        
+        console.log(`[WarningMonitor] 警告已自动上报: ${warningEvent.id}`);
+    } catch (error) {
+        console.error('[WarningMonitor] 上报警告失败:', error);
+    }
+});
+
+warningMonitor.on('warning_resolved', async (payload) => {
+    console.log(`[WarningMonitor] 警告解除: ${payload.trainId} - ${payload.warningType}`);
+    
+    try {
+        const warningData = readWarningEvents();
+        if (warningData.activeWarnings[payload.trainId]) {
+            const warningIndex = warningData.activeWarnings[payload.trainId].findIndex(
+                w => w.warningType === payload.warningType && w.status === 'active'
+            );
+            
+            if (warningIndex !== -1) {
+                const warning = warningData.activeWarnings[payload.trainId][warningIndex];
+                warning.status = 'resolved';
+                warning.resolvedAt = payload.timestamp;
+                warning.resolvedBy = 'monitor';
+                warning.resolveReason = payload.reason;
+                
+                warningData.activeWarnings[payload.trainId].splice(warningIndex, 1);
+                if (warningData.activeWarnings[payload.trainId].length === 0) {
+                    delete warningData.activeWarnings[payload.trainId];
+                }
+                
+                const historyIndex = warningData.warningHistory.findIndex(h => h.id === warning.id);
+                if (historyIndex !== -1) {
+                    warningData.warningHistory[historyIndex] = warning;
+                }
+                
+                saveWarningEvents(warningData);
+                console.log(`[WarningMonitor] 警告已自动撤回: ${warning.id}`);
+            }
+        }
+    } catch (error) {
+        console.error('[WarningMonitor] 撤回警告失败:', error);
+    }
+});
+
+warningMonitor.on('monitor_error', (payload) => {
+    console.error(`[WarningMonitor] 监控错误 [${payload.context}]:`, payload.error);
+});
+
+warningMonitor.on('sse_connected', () => {
+    console.log('[WarningMonitor] SSE 连接已建立');
+});
+
+warningMonitor.on('sse_disconnected', () => {
+    console.log('[WarningMonitor] SSE 连接已断开，将自动重连');
+});
+
+// 时刻表 API 路由
+app.use('/api/timetable', timetableApiRoutes);
 
 // 启动服务器
 async function startServer() {
@@ -1734,11 +1835,40 @@ async function startServer() {
         console.log(`   GET  /api/health - 健康检查`);
 
         console.log(`   GET  /api/user/data - 获取云端数据（需要登录）`);
-        console.log(`   PUT  /api/user/data - 更新云端数据（需要登录）`);        console.log(`\n👤 管理页面: http://localhost:${PORT}/admin.html`);
+        console.log(`   PUT  /api/user/data - 更新云端数据（需要登录）`);
+        console.log(`\n🚂 时刻表 API:`);
+        console.log(`   GET  /api/timetable/recent-trips?start=XXX&end=XXX - 获取最近班次`);
+        console.log(`   GET  /api/timetable/navigation?start=XXX&end=XXX - 获取导航用时`);
+        console.log(`   GET  /api/timetable/durations - 获取计算后的 duration 数据`);
+        console.log(`   GET  /api/timetable/status - 获取服务状态`);
+        console.log(`   POST /api/timetable/save - 手动保存数据`);
+        console.log(`   POST /api/timetable/clear-cache - 清除缓存`);
+        console.log(`\n👤 管理页面: http://localhost:${PORT}/admin.html`);
         console.log(`\n⚠️  默认管理员账户: admin / admin123`);
         console.log(`   请首次登录后立即修改密码！\n`);
+        
+        // 启动列车预警监控
+        console.log('🚂 启动列车预警监控...');
+        warningMonitor.start();
+        
+        // 启动时刻表服务
+        console.log('📊 启动时刻表服务...');
+        initServices();
     });
 }
+
+// 优雅关闭
+process.on('SIGTERM', () => {
+    console.log('收到 SIGTERM 信号，正在关闭服务...');
+    stopServices();
+    process.exit(0);
+});
+
+process.on('SIGINT', () => {
+    console.log('收到 SIGINT 信号，正在关闭服务...');
+    stopServices();
+    process.exit(0);
+});
 
 startServer();
 

@@ -39,6 +39,115 @@ let loadingToastShown = false;
 let loadingExampleToastShown = false;
 let visitedPageRecorded = false;
 
+// 时间表数据缓存
+const timetableCache = {
+    data: null,
+    timestamp: 0,
+    TTL: 30000 // 30秒缓存有效期
+};
+
+// 获取时间表数据
+async function fetchTimetableData() {
+    const now = Date.now();
+    
+    // 检查缓存是否有效
+    if (timetableCache.data && (now - timetableCache.timestamp) < timetableCache.TTL) {
+        return timetableCache.data;
+    }
+    
+    try {
+        const response = await fetch('./api/timetable/status');
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                timetableCache.data = result.data;
+                timetableCache.timestamp = now;
+                return result.data;
+            }
+        }
+    } catch (error) {
+        console.warn('获取时间表数据失败，使用本地计算:', error);
+    }
+    
+    return null;
+}
+
+// 获取列车的预计到站时间（使用后端API）
+async function fetchTrainETA(trainName, nextStationCode) {
+    try {
+        // 获取列车所在的线路
+        const lineId = getLineForTrain(trainName, 'id');
+        if (!lineId) return null;
+        
+        // 调用后端API获取导航用时
+        const response = await fetch(`./api/timetable/navigation?start=${getCurrentStationForTrain(trainName)}&end=${nextStationCode}&lang=${lang}`);
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data && result.data.length > 0) {
+                // 返回第一个匹配的线路的总时长
+                const matchingLine = result.data.find(item => item.lineId === lineId);
+                if (matchingLine) {
+                    return matchingLine.totalDuration;
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('获取列车ETA失败:', error);
+    }
+    
+    return null;
+}
+
+// 获取列车当前所在站点
+function getCurrentStationForTrain(trainName) {
+    const allTrainsData = JSON.parse(localStorage.getItem('all_trains_positions') || '{}');
+    const trainData = allTrainsData[trainName];
+    
+    if (!trainData || !trainData.position) return null;
+    
+    const position = trainData.position;
+    
+    // 获取列车所在的线路
+    const lineId = getLineForTrain(trainName, 'id');
+    if (!lineId) return null;
+    
+    const line = window.lines.find(l => l.id === lineId);
+    if (!line) return null;
+    
+    // 查找最近的站点
+    let closestStation = null;
+    let minDistance = Infinity;
+    
+    for (const step of line.route) {
+        if (step.type === 'station') {
+            const stationPos = getStationPosition(step.code);
+            if (stationPos) {
+                const dist = Math.sqrt(
+                    Math.pow(position.x - stationPos.x, 2) +
+                    Math.pow(position.z - stationPos.z, 2)
+                );
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestStation = step.code;
+                }
+            }
+        }
+    }
+    
+    return closestStation;
+}
+
+// 获取站点位置
+function getStationPosition(stationCode) {
+    if (window.stationsNetwork) {
+        const station = window.stationsNetwork.find(s => s.code === stationCode);
+        if (station && station.location) {
+            return station.location;
+        }
+    }
+    return null;
+}
+
 // 初始化函数
 function init() {
     
@@ -656,44 +765,127 @@ function createTrainSection(train) {
                         distanceElement.style.fontSize = '0.9em';
                         distanceElement.style.color = 'var(--color-text-secondary)';
                         
-                        // 计算预计到达时间
-                        if (currentSpeed > 0 && distanceToNext > 0) {
-                            const DECEL_RATE = 0.3; // 减速度 m/s²
-                            const CRUISE_DECEL_RATE = 0.5; // 进站减速 m/s²
-                            
-                            const speedMps = currentSpeed * 1000 / 3600;
-                            const trainLimitSpeed = getTrainLimitSpeed(train.name);
-                            const limitSpeedMps = trainLimitSpeed * 1000 / 3600;
-                            
-                            const decelDistanceFromCurrent = (speedMps * speedMps) / (2 * DECEL_RATE);
-                            
-                            let totalTime = 0;
-                            
-                            if (distanceToNext > decelDistanceFromCurrent) {
-                                const cruiseDistance = distanceToNext - decelDistanceFromCurrent;
-                                const avgCruiseSpeed = Math.min(speedMps, limitSpeedMps);
-                                const cruiseTime = cruiseDistance / avgCruiseSpeed;
-                                const decelTime = speedMps / DECEL_RATE;
-                                totalTime = cruiseTime + decelTime;
-                            } else {
-                                totalTime = speedMps / DECEL_RATE;
+                        // 计算预计到达时间（后端优先，降级到本地算法）
+                        const updateETA = async () => {
+                            // 尝试使用后端API
+                            try {
+                                const timetableData = await fetchTimetableData();
+                                if (timetableData && timetableData.dataAvailable) {
+                                    const currentStation = getCurrentStationForTrain(train.name);
+                                    if (currentStation) {
+                                        const navResponse = await fetch(`./api/timetable/navigation?start=${currentStation}&end=${nextStation.code}&lang=${lang}`);
+                                        if (navResponse.ok) {
+                                            const navResult = await navResponse.json();
+                                            if (navResult.success && navResult.data && navResult.data.length > 0) {
+                                                const matchingLine = navResult.data.find(item => item.lineId === trainLineId);
+                                                if (matchingLine) {
+                                                    const totalSeconds = matchingLine.totalDuration;
+                                                    const minutes = Math.floor(totalSeconds / 60);
+                                                    if (minutes > 0) {
+                                                        etaElement.textContent = minutes + strings.trains_info.min_to_arrival[lang];
+                                                        return;
+                                                    } else {
+                                                        etaElement.textContent = strings.trains_info.arriving[lang];
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                // 后端不可用，静默降级
                             }
-                            
-                            totalTime = Math.max(totalTime, 30);
-                            
-                            const totalSeconds = Math.round(totalTime);
-                            const minutes = Math.floor(totalSeconds / 60);
-                            
-                            if (minutes > 0) {
-                                etaElement.textContent = minutes + strings.trains_info.min_to_arrival[lang];
+
+                            // 降级：本地物理计算
+                            if (distanceToNext > 0) {
+                                const ACCEL = 0.3; // 加速度 m/s²
+                                const DECEL = 0.3; // 减速度 m/s²
+                                const speedMps = currentSpeed * 1000 / 3600;
+                                const trainLimitSpeed = getTrainLimitSpeed(train.name);
+                                const limitSpeedMps = trainLimitSpeed * 1000 / 3600;
+                                const targetSpeed = Math.min(speedMps, limitSpeedMps);
+
+                                // 如果当前速度为0，视为中途临时停车，假设恢复后加速到限速
+                                let totalTime = 0;
+                                if (currentSpeed === 0) {
+                                    // 从0加速到限速所需距离和时间
+                                    const accelDist = (limitSpeedMps * limitSpeedMps) / (2 * ACCEL);
+                                    const accelTime = limitSpeedMps / ACCEL;
+                                    // 从限速减速到0所需距离和时间
+                                    const decelDist = (limitSpeedMps * limitSpeedMps) / (2 * DECEL);
+                                    const decelTime = limitSpeedMps / DECEL;
+
+                                    const minDistNeeded = accelDist + decelDist;
+                                    if (distanceToNext >= minDistNeeded) {
+                                        // 距离足够：加速-巡航-减速
+                                        const cruiseDist = distanceToNext - minDistNeeded;
+                                        const cruiseTime = cruiseDist / limitSpeedMps;
+                                        totalTime = accelTime + cruiseTime + decelTime;
+                                    } else {
+                                        // 距离不够完成加速+减速，计算能达到的最大速度
+                                        // 由 d = v²/(2a) + v²/(2d) = v²*(1/(2a) + 1/(2d))
+                                        // v = sqrt(d / (1/(2a) + 1/(2d)))
+                                        const maxV = Math.sqrt(distanceToNext / (1/(2*ACCEL) + 1/(2*DECEL)));
+                                        totalTime = maxV / ACCEL + maxV / DECEL;
+                                    }
+                                    // 中途停车情况下显示提示
+                                    etaElement.textContent = strings.trains_info.midway_stop[lang] + ' · ' +
+                                        (Math.floor(Math.round(totalTime) / 60) > 0
+                                            ? Math.floor(Math.round(totalTime) / 60) + strings.trains_info.min_to_arrival[lang]
+                                            : strings.trains_info.arriving[lang]);
+                                    return;
+                                }
+
+                                // 当前有速度的正常情况：加速到限速 → 巡航 → 减速到0
+                                // 1. 加速阶段：从当前速度加速到限速
+                                const accelDist = (limitSpeedMps * limitSpeedMps - targetSpeed * targetSpeed) / (2 * ACCEL);
+                                const accelTime = (limitSpeedMps - targetSpeed) / ACCEL;
+
+                                // 2. 减速阶段：从限速减速到0
+                                const decelDist = (limitSpeedMps * limitSpeedMps) / (2 * DECEL);
+                                const decelTime = limitSpeedMps / DECEL;
+
+                                const minDistNeeded = Math.max(0, accelDist) + decelDist;
+
+                                if (distanceToNext >= minDistNeeded && limitSpeedMps > targetSpeed) {
+                                    // 距离足够完成加速+减速
+                                    const cruiseDist = distanceToNext - minDistNeeded;
+                                    const cruiseTime = cruiseDist / limitSpeedMps;
+                                    totalTime = Math.max(0, accelTime) + cruiseTime + decelTime;
+                                } else if (distanceToNext >= decelDist) {
+                                    // 距离不够加速，但够减速：直接巡航（当前速度）+ 减速
+                                    // 或者当前速度已达到/超过限速
+                                    const cruiseDist = distanceToNext - decelDist;
+                                    const cruiseSpeed = Math.min(speedMps, limitSpeedMps);
+                                    const cruiseTime = cruiseDist / cruiseSpeed;
+                                    totalTime = cruiseTime + decelTime;
+                                } else {
+                                    // 距离连减速都不够，计算能达到的最大速度
+                                    // d = (v² - v0²)/(2a_slowdown) ... 但这里是从当前速度减速
+                                    // 使用 v_final² = v0² - 2*DECEL*d, v_final >= 0
+                                    const finalV2 = speedMps * speedMps - 2 * DECEL * distanceToNext;
+                                    if (finalV2 > 0) {
+                                        // 还有剩余速度，用当前速度行驶整段距离
+                                        totalTime = distanceToNext / speedMps;
+                                    } else {
+                                        // 会在到达前减速到0
+                                        totalTime = speedMps / DECEL;
+                                    }
+                                }
+                                totalTime = Math.max(totalTime, 30);
+                                const minutes = Math.floor(Math.round(totalTime) / 60);
+                                if (minutes > 0) {
+                                    etaElement.textContent = minutes + strings.trains_info.min_to_arrival[lang];
+                                } else {
+                                    etaElement.textContent = strings.trains_info.arriving[lang];
+                                }
                             } else {
-                                etaElement.textContent = strings.trains_info.arriving[lang];
+                                etaElement.textContent = strings.trains_info.unknown_eta[lang];
                             }
-                        } else if (currentSpeed === 0) {
-                            etaElement.textContent = strings.trains_info.stopped[lang];
-                        } else {
-                            etaElement.textContent = strings.trains_info.unknown_eta[lang];
-                        }
+                        };
+                        
+                        updateETA();
                     }
                 }
             } else {

@@ -146,6 +146,12 @@ footer .search-panel .selection .selection-item.active:hover {
     width: -webkit-fill-available;
 }
 
+.sort-selector .icon-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .input-section input { 
     min-width: 0;
     max-width: -webkit-fill-available;
@@ -243,19 +249,19 @@ footer .search-panel .selection .selection-item.active:hover {
     cursor: pointer;
 }
 
-.line-info .material-symbols-outlined { 
+.line-info .expand-btn { 
     font-size: 1em;
     opacity: 0;
     filter: blur(6px);
     transition: all 0.35s ease;
 }
 
-.segment:hover .line-info .material-symbols-outlined { 
+.segment:hover .line-info .expand-btn { 
     opacity: 1;
     filter: none;
 }
 
-.segment:not(.collapsed) .line-info .material-symbols-outlined { 
+.segment:not(.collapsed) .line-info .expand-btn { 
     rotate: 180deg;
 }
 
@@ -267,6 +273,43 @@ footer .search-panel .selection .selection-item.active:hover {
 .line-name:hover { 
     filter: brightness(110%);
     text-decoration: underline;
+}
+
+/* 行内班次信息样式 */
+.line-trip-info {
+    font-size: 0.88em;
+    color: var(--color-text);
+}
+
+.line-trip-info .material-symbols-outlined { 
+    font-size: 14px;
+}
+
+.line-trip-status {
+    font-size: 0.82em;
+    padding: 0 5px;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
+.line-trip-status.line-trip-running {
+    color: #2e7d32;
+    background: rgba(46, 125, 50, 0.1);
+}
+
+.line-trip-status.line-trip-stopped {
+    color: #e65100;
+    background: rgba(230, 81, 0, 0.1);
+}
+
+.line-trip-status.line-trip-approaching {
+    color: #1565c0;
+    background: rgba(21, 101, 192, 0.1);
+}
+
+.line-trip-unavailable {
+    color: var(--color-warning, #ed6c02);
+    font-size: 0.85em;
 }
 
 .stations {
@@ -500,4 +543,428 @@ footer .search-panel .selection .selection-item.active:hover {
     font-variation-settings: 'wght' 500, 'opsz' 20;
     position: absolute;
     transform: translateX(-40%);
+}
+
+/* 班次时间信息卡片 */
+.trip-times-container {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 18px;
+}
+
+.trip-times-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.trip-times-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.trip-times-update {
+    font-size: 0.8em;
+    color: var(--color-text-secondary);
+}
+
+.trip-times-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.trip-time-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--color-secondary-hover);
+    transition: background 0.2s ease;
+}
+
+.trip-time-item:hover {
+    background: var(--color-background-actions);
+}
+
+.trip-time-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.trip-train-name {
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+.trip-train-series {
+    font-size: 0.8em;
+    color: var(--color-text-secondary);
+    background: var(--color-background-actions);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.trip-line-name {
+    font-size: 0.85em;
+    color: var(--color-text-secondary);
+}
+
+.trip-direction {
+    font-size: 0.8em;
+    color: var(--color-text-secondary);
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--color-secondary-hover, rgba(0,0,0,0.05));
+}
+
+.trip-time-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.trip-time-departure,
+.trip-time-duration,
+.trip-time-arrival {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.trip-time-label {
+    font-size: 0.75em;
+    color: var(--color-text-secondary);
+}
+
+.trip-time-value {
+    font-size: 1.1em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.trip-time-status {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.status-indicator {
+    font-size: 0.8em;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.status-indicator.running {
+    color: #2e7d32;
+    background: rgba(46, 125, 50, 0.1);
+}
+
+.status-indicator.stopped {
+    color: #e65100;
+    background: rgba(230, 81, 0, 0.1);
+}
+
+.status-indicator.approaching {
+    color: #1565c0;
+    background: rgba(21, 101, 192, 0.1);
+}
+
+/* 时刻表不可用提示 */
+.trip-times-unavailable {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    color: var(--color-text-secondary, #999);
+    font-size: 0.9em;
+}
+
+.trip-times-unavailable .material-symbols-outlined {
+    font-size: 20px;
+    opacity: 0.6;
+}
+
+/* 路线卡片内的班次信息 */
+.route-trip-info {
+    border-top: 1px solid var(--color-border, #e0e0e0);
+    padding: 8px 12px;
+    font-size: 0.85em;
+}
+
+.route-trip-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-text-secondary, #666);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.route-trip-header .material-symbols-outlined {
+    font-size: 16px;
+}
+
+.route-trip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.route-trip-item {
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--color-background-secondary, rgba(0,0,0,0.03));
+}
+
+.route-trip-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.route-trip-name {
+    font-weight: 600;
+    color: var(--color-text-primary, #333);
+}
+
+.route-trip-series {
+    color: var(--color-text-secondary, #888);
+    font-size: 0.9em;
+}
+
+.route-trip-line {
+    color: var(--color-text-secondary, #888);
+    font-size: 0.9em;
+}
+
+.route-trip-direction {
+    color: var(--color-text-secondary, #888);
+    font-size: 0.8em;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--color-secondary-hover, rgba(0,0,0,0.05));
+}
+
+.route-trip-status {
+    font-size: 0.8em;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: auto;
+}
+
+.route-trip-status.running {
+    color: #2e7d32;
+    background: rgba(46, 125, 50, 0.1);
+}
+
+.route-trip-status.stopped {
+    color: #e65100;
+    background: rgba(230, 81, 0, 0.1);
+}
+
+.route-trip-status.approaching {
+    color: #1565c0;
+    background: rgba(21, 101, 192, 0.1);
+}
+
+.route-trip-times {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-primary, #333);
+}
+
+.route-trip-dur {
+    color: var(--color-text-secondary, #888);
+    font-size: 0.9em;
+}
+
+/* 多段换乘班次信息样式 */
+.multi-segment {
+    padding: 10px 12px;
+}
+
+.multi-seg-overall {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    background: var(--color-background-secondary, rgba(0,0,0,0.03));
+    font-size: 1em;
+}
+
+.multi-seg-overall-dep,
+.multi-seg-overall-arr {
+    font-weight: 600;
+    color: var(--color-text-primary, #333);
+}
+
+.multi-seg-overall-arrow {
+    color: var(--color-text-secondary, #888);
+}
+
+.multi-seg-overall-dur {
+    color: var(--color-text-secondary, #888);
+    font-size: 0.9em;
+    margin-left: auto;
+}
+
+.multi-seg-segments {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.multi-seg-segment {
+    display: flex;
+    flex-direction: column;
+}
+
+.multi-seg-station {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 0.9em;
+    color: var(--color-text-secondary, #666);
+}
+
+.multi-seg-station .material-symbols-outlined {
+    font-size: 16px;
+}
+
+.multi-seg-station.depart .material-symbols-outlined {
+    color: #2e7d32;
+}
+
+.multi-seg-station.transfer .material-symbols-outlined {
+    color: #ed6c02;
+}
+
+.multi-seg-station.arrive .material-symbols-outlined {
+    color: #1565c0;
+}
+
+.multi-seg-line {
+    padding: 6px 8px 6px 10px;
+    margin: 2px 0 2px 6px;
+    border-radius: 4px;
+    background: var(--color-background-secondary, rgba(0,0,0,0.03));
+}
+
+.multi-seg-line-name {
+    font-weight: 600;
+    font-size: 0.95em;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.multi-seg-trip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 0.9em;
+    margin-top: 2px;
+}
+
+.multi-seg-train {
+    font-weight: 600;
+    color: var(--color-text-primary, #333);
+}
+
+.multi-seg-series {
+    color: var(--color-text-secondary, #888);
+    font-size: 0.85em;
+}
+
+.multi-seg-status {
+    font-size: 0.8em;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.multi-seg-status.running {
+    color: #2e7d32;
+    background: rgba(46, 125, 50, 0.1);
+}
+
+.multi-seg-status.stopped {
+    color: #e65100;
+    background: rgba(230, 81, 0, 0.1);
+}
+
+.multi-seg-status.approaching {
+    color: #1565c0;
+    background: rgba(21, 101, 192, 0.1);
+}
+
+.multi-seg-times {
+    color: var(--color-text-secondary, #666);
+    font-size: 0.9em;
+}
+
+.multi-seg-unavailable {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 0;
+    color: var(--color-warning, #ed6c02);
+    font-size: 0.9em;
+}
+
+.multi-seg-unavailable .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.multi-seg-more {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed var(--color-border, #e0e0e0);
+}
+
+.multi-seg-trip.extra {
+    padding: 2px 0;
+    opacity: 0.85;
+}
+
+.multi-seg-toggle {
+    display: inline-block;
+    color: var(--color-primary, #1976d2);
+    cursor: pointer;
+    font-size: 0.85em;
+    margin-top: 4px;
+}
+
+.multi-seg-toggle:hover {
+    text-decoration: underline;
+}
+
+.multi-seg-warning {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: rgba(237, 108, 2, 0.08);
+    color: var(--color-warning, #ed6c02);
+    font-size: 0.85em;
+}
+
+.multi-seg-warning .material-symbols-outlined {
+    font-size: 16px;
 }

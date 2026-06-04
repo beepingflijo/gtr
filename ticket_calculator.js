@@ -94,7 +94,9 @@ function init() {
                         const sortButtons = {
                             'time': '.sort-by-time',
                             'transfer': '.sort-by-transfers',
-                            'price': '.sort-by-price'
+                            'price': '.sort-by-price',
+                            'departure_early': '.sort-by-departure-early',
+                            'arrival_early': '.sort-by-arrival-early'
                         };
                         
                         const buttonSelector = sortButtons[sortParam];
@@ -170,6 +172,10 @@ function init() {
                     sortBy = 'transfer';
                 } else if (activeSortButton.classList.contains('sort-by-price')) {
                     sortBy = 'price';
+                } else if (activeSortButton.classList.contains('sort-by-departure-early')) {
+                    sortBy = 'departure_early';
+                } else if (activeSortButton.classList.contains('sort-by-arrival-early')) {
+                    sortBy = 'arrival_early';
                 }
             }
             
@@ -296,6 +302,10 @@ function init() {
                 sortBy = 'transfer';
             } else if (activeSortButton.classList.contains('sort-by-price')) {
                 sortBy = 'price';
+            } else if (activeSortButton.classList.contains('sort-by-departure-early')) {
+                sortBy = 'departure_early';
+            } else if (activeSortButton.classList.contains('sort-by-arrival-early')) {
+                sortBy = 'arrival_early';
             }
         }
         
@@ -317,6 +327,8 @@ function init() {
     const sortByTimeBtns = document.querySelectorAll('.sort-by-time');
     const sortByTransfersBtns = document.querySelectorAll('.sort-by-transfers');
     const sortByPriceBtns = document.querySelectorAll('.sort-by-price');
+    const sortByDepartureEarlyBtns = document.querySelectorAll('.sort-by-departure-early');
+    const sortByArrivalEarlyBtns = document.querySelectorAll('.sort-by-arrival-early');
     
     if (sortByTimeBtns && sortByTransfersBtns && sortByPriceBtns) {
         sortByTimeBtns.forEach(sortByTimeBtn => {
@@ -351,6 +363,32 @@ function init() {
                 const endCode = parseStationInput(endInput.value);
                 if (startCode && endCode) {
                     recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=price`);
+                }
+            });
+        });
+        
+        // 新增：按出发早排序
+        sortByDepartureEarlyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setActiveSortButton(btn);
+                handleSearch('departure_early');
+                const startCode = parseStationInput(startInput.value);
+                const endCode = parseStationInput(endInput.value);
+                if (startCode && endCode) {
+                    recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=departure_early`);
+                }
+            });
+        });
+        
+        // 新增：按到达早排序
+        sortByArrivalEarlyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                setActiveSortButton(btn);
+                handleSearch('arrival_early');
+                const startCode = parseStationInput(startInput.value);
+                const endCode = parseStationInput(endInput.value);
+                if (startCode && endCode) {
+                    recordLastVisitedPage(`?start=${startCode}&end=${endCode}&sort=arrival_early`);
                 }
             });
         });
@@ -503,6 +541,108 @@ function getAllStations() {
     return Array.from(stations);
 }
 
+// 班次时间信息缓存
+let tripTimesCache = {
+    data: null,
+    startCode: null,
+    endCode: null,
+    timestamp: 0,
+    TTL: 30000 // 30秒缓存有效期
+};
+
+// 多段换乘查询缓存
+let multiSegmentCache = {
+    data: null,
+    key: null,
+    timestamp: 0,
+    TTL: 30000
+};
+
+// 获取班次时间信息
+async function fetchTripTimes(startCode, endCode) {
+    const now = Date.now();
+    
+    // 检查缓存是否有效
+    if (tripTimesCache.data && 
+        tripTimesCache.startCode === startCode && 
+        tripTimesCache.endCode === endCode && 
+        (now - tripTimesCache.timestamp) < tripTimesCache.TTL) {
+        return tripTimesCache.data;
+    }
+    
+    try {
+        const response = await fetch(`./api/timetable/recent-trips?start=${startCode}&end=${endCode}&lang=${lang}`);
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+                // 更新缓存
+                tripTimesCache = {
+                    data: result.data,
+                    startCode,
+                    endCode,
+                    timestamp: now,
+                    TTL: 30000
+                };
+                return result.data;
+            }
+        }
+    } catch (error) {
+        console.warn('获取班次时间信息失败:', error);
+    }
+    
+    return null;
+}
+
+// 获取多段换乘路线的班次信息
+async function fetchMultiSegmentTrips(segments) {
+    const now = Date.now();
+    
+    // 生成缓存 key
+    const cacheKey = segments.map(s => `${s.lineId}:${s.startCode}:${s.endCode}`).join('|');
+    
+    // 检查缓存是否有效
+    if (multiSegmentCache.data && 
+        multiSegmentCache.key === cacheKey && 
+        (now - multiSegmentCache.timestamp) < multiSegmentCache.TTL) {
+        return multiSegmentCache.data;
+    }
+    
+    try {
+        const response = await fetch('./api/timetable/multi-segment-trips', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ segments, lang })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+                // 更新缓存
+                multiSegmentCache = {
+                    data: result.data,
+                    key: cacheKey,
+                    timestamp: now,
+                    TTL: 30000
+                };
+                return result.data;
+            }
+        }
+    } catch (error) {
+        console.warn('获取多段换乘班次信息失败:', error);
+    }
+    
+    return null;
+}
+
+// 格式化时间显示
+function formatTime(isoString) {
+    if (!isoString) return '--:--';
+    const date = new Date(isoString);
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
 // 处理桌面版搜索
 function handleSearch(sortBy = 'time') {
     const startStation = document.getElementById('startInput').value.trim();
@@ -538,6 +678,111 @@ function handleSearch(sortBy = 'time') {
     const resultsContainer = document.querySelector('.search-result');
     renderSearchResults(routes, resultsContainer);
     handleWindowResize();
+    
+    // 异步获取班次时间信息
+    // 1. 单线直达查询（原有逻辑）
+    fetchTripTimes(startStationCode, endStationCode).then(tripTimes => {
+        if (tripTimes && tripTimes.available === false) {
+            // 时刻表不可用，显示提示
+            showTimetableUnavailable(tripTimes.reason);
+            return;
+        }
+        if (tripTimes && tripTimes.trips && tripTimes.trips.length > 0) {
+            updateTripTimesDisplay(tripTimes.trips);
+
+            // 按线路匹配班次到各路线
+            updateRoutesWithTripTimes(routes, tripTimes.trips);
+
+            // 如果是按出发早或到达早排序，先重新排序
+            if (sortBy === 'departure_early' || sortBy === 'arrival_early') {
+                sortRoutes(routes, sortBy);
+            }
+
+            // 重新渲染以显示各路线的班次信息
+            renderSearchResults(routes, resultsContainer);
+        }
+    });
+
+    // 2. 多段换乘查询（新增逻辑）
+    routes.forEach((route, routeIndex) => {
+        if (!route.segments || route.segments.length <= 1) return;
+        
+        // 构建分段查询参数
+        const segments = route.segments.map(seg => ({
+            lineId: seg.line,
+            startCode: seg.stations[0],
+            endCode: seg.stations[seg.stations.length - 1]
+        }));
+        
+        fetchMultiSegmentTrips(segments).then(multiResult => {
+            if (multiResult) {
+                route.multiSegmentTrips = multiResult;
+                
+                // 如果有总体出发/到达时间，更新路线
+                if (multiResult.overallDeparture && multiResult.overallArrival) {
+                    route.earliestDeparture = new Date(multiResult.overallDeparture).getTime();
+                    route.earliestArrival = new Date(multiResult.overallArrival).getTime();
+                    route.allSegmentsAvailable = multiResult.allAvailable;
+                }
+                
+                // 如果是按出发早或到达早排序，重新排序
+                if (sortBy === 'departure_early' || sortBy === 'arrival_early') {
+                    sortRoutes(routes, sortBy);
+                }
+                
+                // 重新渲染
+                renderSearchResults(routes, resultsContainer);
+            }
+        });
+    });
+}
+
+// 更新路线的班次时间信息（按线路和方向匹配）
+function updateRoutesWithTripTimes(routes, trips) {
+    if (!trips || trips.length === 0 || !routes) return;
+
+    // 获取用户查询的起终点站
+    const startStation = document.getElementById('startInput').value.trim();
+    const endStation = document.getElementById('endInput').value.trim();
+    const startCode = startStation ? parseStationInput(startStation) : null;
+    const endCode = endStation ? parseStationInput(endStation) : null;
+
+    routes.forEach(route => {
+        // 获取该路线涉及的所有线路ID
+        const routeLineIds = route.segments ? route.segments.map(s => s.line) : [];
+
+        // 筛选出匹配该路线的班次：同线路 + 同方向
+        const matchingTrips = trips.filter(trip => {
+            if (!routeLineIds.includes(trip.lineId)) return false;
+            
+            // 如果能确定方向，验证班次方向与路线方向一致
+            if (startCode && endCode && window.lines) {
+                const line = window.lines.find(l => l.id === trip.lineId);
+                if (line) {
+                    const sIdx = line.route.findIndex(s => s.type === 'station' && s.code === startCode);
+                    const eIdx = line.route.findIndex(s => s.type === 'station' && s.code === endCode);
+                    if (sIdx !== -1 && eIdx !== -1) {
+                        // 路线在此线路上的方向
+                        const routeForward = sIdx < eIdx;
+                        // 班次的方向
+                        const tripForward = trip.direction === 'forward';
+                        if (routeForward !== tripForward) return false;
+                    }
+                }
+            }
+            
+            return true;
+        });
+
+        if (matchingTrips.length > 0) {
+            const earliestDeparture = new Date(matchingTrips[0].departureTime).getTime();
+            const earliestArrival = new Date(matchingTrips[matchingTrips.length - 1].arrivalTime).getTime();
+            route.earliestDeparture = earliestDeparture;
+            route.earliestArrival = earliestArrival;
+            route.tripCount = matchingTrips.length;
+            route.matchingTrips = matchingTrips;
+        }
+    });
 }
 
 // 解析车站输入，支持仅输入车站名称或三字码
@@ -656,6 +901,32 @@ function sortRoutes(routes, sortBy) {
                     return priceDiff;
                 }
                 // 票价相同时按时间排序
+                return a.totalDuration - b.totalDuration;
+            });
+            break;
+        case 'departure_early':
+            // 按出发时间从早到晚排序
+            routes.sort((a, b) => {
+                // 使用班次时间信息进行排序
+                const aDeparture = a.earliestDeparture || Infinity;
+                const bDeparture = b.earliestDeparture || Infinity;
+                if (aDeparture !== bDeparture) {
+                    return aDeparture - bDeparture;
+                }
+                // 出发时间相同时按总用时排序
+                return a.totalDuration - b.totalDuration;
+            });
+            break;
+        case 'arrival_early':
+            // 按到达时间从早到晚排序
+            routes.sort((a, b) => {
+                // 使用班次时间信息进行排序
+                const aArrival = a.earliestArrival || Infinity;
+                const bArrival = b.earliestArrival || Infinity;
+                if (aArrival !== bArrival) {
+                    return aArrival - bArrival;
+                }
+                // 到达时间相同时按总用时排序
                 return a.totalDuration - b.totalDuration;
             });
             break;
@@ -1500,6 +1771,37 @@ function renderSearchResults(routes, container) {
                         </div>`
                 }
 
+                // 获取该段的班次信息
+                let tripInfoHTML = '';
+                if (route.multiSegmentTrips && route.multiSegmentTrips.segments && route.multiSegmentTrips.segments[segIndex]) {
+                    const segTrips = route.multiSegmentTrips.segments[segIndex];
+                    if (segTrips.available && segTrips.trips.length > 0) {
+                        const trip = segTrips.trips[0];
+                        const depTime = formatTime(trip.departureTime);
+                        const arrTime = formatTime(trip.arrivalTime);
+                        const durMin = Math.ceil(trip.duration / 60);
+                        let statusText = '';
+                        if (trip.status === 'running') statusText = strings.ticket_calculator.running?.[lang] || '运行中';
+                        else if (trip.status === 'stopped') statusText = strings.ticket_calculator.stopped?.[lang] || '已停靠';
+                        else statusText = strings.ticket_calculator.approaching?.[lang] || '即将到达';
+                        tripInfoHTML = `<br /><span class="line-trip-info"><span class="material-symbols-outlined">cast</span> <b>${trip.trainName}</b> ${depTime} (+${durMin}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>`;
+                    } else {
+                        tripInfoHTML = `<br /><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span>`;
+                    }
+                } else if (route.matchingTrips && route.matchingTrips.length > 0 && route.segments.length === 1) {
+                    const trip = route.matchingTrips[0];
+                    const depTime = formatTime(trip.departureTime);
+                    const arrTime = formatTime(trip.arrivalTime);
+                    const durMin = Math.ceil(trip.duration / 60);
+                    let statusText = '';
+                    if (trip.status === 'running') statusText = strings.ticket_calculator.running?.[lang] || '运行中';
+                    else if (trip.status === 'stopped') statusText = strings.ticket_calculator.stopped?.[lang] || '已停靠';
+                    else statusText = strings.ticket_calculator.approaching?.[lang] || '即将到达';
+                    tripInfoHTML = `<br /><span class="line-trip-info"><span class="material-symbols-outlined">cast</span> <b>${trip.trainName}</b> ${depTime} (+${durMin}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>`;
+                } else {
+                    tripInfoHTML = `<br /><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span>`;
+                }
+
                 routeHTML += `
                     <div class="segment collapsed">
                         <div class="line-info" style="
@@ -1514,11 +1816,12 @@ function renderSearchResults(routes, container) {
                                 '{dir}',
                                 terminalAddr
                             )}</span>
+                            ${tripInfoHTML}
                             <br />
                             <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]},</span>
                             <span>${(segment.distance/1000).toFixed(1)}${strings.ticket_calculator.km[lang]},</span>
                             <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
-                            <span class="material-symbols-outlined">keyboard_arrow_down</span>
+                            <span class="material-symbols-outlined expand-btn">keyboard_arrow_down</span>
                         </div>
                         <div class="stations" style="border-color: ${line.color};border-left-style:${(line.id.match('-R'))?'double':''}">
                             <ul class="station-list" ${segment.stations.length < 3 ? 'style="display: none;"' : ''}>
@@ -1561,13 +1864,13 @@ function renderSearchResults(routes, container) {
             segment.addEventListener('mouseenter', () => {
                 const stationList = segment.querySelector('.station-list');
                 if (stationList.style.display === 'none') {
-                    const icon = segment.querySelector('.material-symbols-outlined');
+                    const icon = segment.querySelector('.expand-btn');
                     icon.style.display = 'none';
                     segment.style.cursor = 'default';
                 }
             });
             document.addEventListener('touchstart', () => {
-                const icons = segment.querySelectorAll('.line-info .material-symbols-outlined');
+                const icons = segment.querySelectorAll('.line-info .expand-btn');
                 icons.forEach(icon => { 
                     const stationList = segment.querySelector('.station-list');
                     if (stationList.style.display !== 'none') {
@@ -1682,6 +1985,323 @@ function renderSearchResults(routes, container) {
         container.appendChild(routeElement);
         handleWindowResize();
     });
+}
+
+// 创建单个路线的最近班次信息元素
+function createRouteTripInfo(trips) {
+    if (!trips || trips.length === 0) return null;
+
+    const container = document.createElement('div');
+    container.className = 'route-trip-info';
+
+    const displayTrips = trips.slice(0, 3);
+    let html = `<div class="route-trip-header">
+        <span class="material-symbols-outlined">schedule</span>
+        <span>${strings.ticket_calculator.recent_trips?.[lang] || '最近班次'}</span>
+    </div><div class="route-trip-list">`;
+
+    displayTrips.forEach(trip => {
+        const depTime = formatTime(trip.departureTime);
+        const arrTime = formatTime(trip.arrivalTime);
+        const durMin = Math.ceil(trip.duration / 60);
+
+        let statusText = '';
+        let statusClass = '';
+        if (trip.status === 'running') {
+            statusText = strings.ticket_calculator.running?.[lang] || '运行中';
+            statusClass = 'running';
+        } else if (trip.status === 'stopped') {
+            statusText = strings.ticket_calculator.stopped?.[lang] || '已停靠';
+            statusClass = 'stopped';
+        } else {
+            statusText = strings.ticket_calculator.approaching?.[lang] || '即将到达';
+            statusClass = 'approaching';
+        }
+
+        // 方向信息
+        const directionLabel = trip.directionLabel || '';
+
+        html += `
+        <div class="route-trip-item">
+            <div class="route-trip-meta">
+                <span class="route-trip-name">${trip.trainName}</span>
+                <span class="route-trip-series">${trip.trainSeries || ''}</span>
+                <span class="route-trip-line">${trip.lineName || ''}</span>
+                ${directionLabel ? `<span class="route-trip-direction">${directionLabel}</span>` : ''}
+                <span class="route-trip-status ${statusClass}">${statusText}</span>
+            </div>
+            <div class="route-trip-times">
+                <span class="route-trip-dep">${strings.ticket_calculator.departure?.[lang] || '出发'} ${depTime}</span>
+                <span class="route-trip-dur">${durMin}${strings.ticket_calculator.min?.[lang] || '分钟'}</span>
+                <span class="route-trip-arr">${strings.ticket_calculator.arrival?.[lang] || '到达'} ${arrTime}</span>
+            </div>
+        </div>`;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+    return container;
+}
+
+// 创建多段换乘路线的班次信息元素
+function createMultiSegmentTripInfo(multiResult) {
+    if (!multiResult || !multiResult.segments || multiResult.segments.length === 0) return null;
+
+    const container = document.createElement('div');
+    container.className = 'route-trip-info multi-segment';
+
+    let html = `<div class="route-trip-header">
+        <span class="material-symbols-outlined">schedule</span>
+        <span>${strings.ticket_calculator.recent_trips?.[lang] || '最近班次'}</span>
+    </div>`;
+
+    // 总体出发/到达时间
+    if (multiResult.overallDeparture && multiResult.overallArrival) {
+        const totalDep = formatTime(multiResult.overallDeparture);
+        const totalArr = formatTime(multiResult.overallArrival);
+        const totalDur = Math.round((new Date(multiResult.overallArrival) - new Date(multiResult.overallDeparture)) / 60000);
+        html += `<div class="multi-seg-overall">
+            <span class="multi-seg-overall-dep">${totalDep}</span>
+            <span class="multi-seg-overall-arrow">→</span>
+            <span class="multi-seg-overall-arr">${totalArr}</span>
+            <span class="multi-seg-overall-dur">(${totalDur}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>
+        </div>`;
+    }
+
+    html += `<div class="multi-seg-segments">`;
+
+    multiResult.segments.forEach((seg, segIdx) => {
+        const line = window.lines ? window.lines.find(l => l.id === seg.lineId) : null;
+        const lineColor = line ? line.color : '#999';
+
+        html += `<div class="multi-seg-segment">`;
+
+        // 换乘站提示（在第一段之前显示出发站）
+        if (segIdx === 0) {
+            html += `<div class="multi-seg-station depart">
+                <span class="material-symbols-outlined">directions_walk</span>
+                <span>${strings.ticket_calculator.depart_from?.[lang] || '从'}${seg.startStation}${strings.ticket_calculator.depart_from_zh?.[lang] || '出发'}</span>
+            </div>`;
+        }
+
+        // 线路信息
+        html += `<div class="multi-seg-line" style="border-left: 3px solid ${lineColor};">
+            <span class="multi-seg-line-name" style="color: ${lineColor};">${seg.lineName}</span>
+        `;
+
+        if (seg.available && seg.trips.length > 0) {
+            // 显示第一班车信息
+            const trip = seg.trips[0];
+            const depTime = formatTime(trip.departureTime);
+            const arrTime = formatTime(trip.arrivalTime);
+            const durMin = Math.ceil(trip.duration / 60);
+
+            let statusText = '';
+            let statusClass = '';
+            if (trip.status === 'running') {
+                statusText = strings.ticket_calculator.running?.[lang] || '运行中';
+                statusClass = 'running';
+            } else if (trip.status === 'stopped') {
+                statusText = strings.ticket_calculator.stopped?.[lang] || '已停靠';
+                statusClass = 'stopped';
+            } else {
+                statusText = strings.ticket_calculator.approaching?.[lang] || '即将到达';
+                statusClass = 'approaching';
+            }
+
+            html += `<div class="multi-seg-trip">
+                <span class="multi-seg-train">${trip.trainName}</span>
+                <span class="multi-seg-series">${trip.trainSeries || ''}</span>
+                <span class="multi-seg-status ${statusClass}">${statusText}</span>
+                <span class="multi-seg-times">${depTime} → ${arrTime} (${durMin}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>
+            </div>`;
+
+            // 如果有更多班次，显示可展开的列表
+            if (seg.trips.length > 1) {
+                html += `<div class="multi-seg-more" style="display:none;">`;
+                seg.trips.slice(1).forEach(t => {
+                    const tDep = formatTime(t.departureTime);
+                    const tArr = formatTime(t.arrivalTime);
+                    const tDur = Math.ceil(t.duration / 60);
+                    html += `<div class="multi-seg-trip extra">
+                        <span class="multi-seg-train">${t.trainName}</span>
+                        <span class="multi-seg-series">${t.trainSeries || ''}</span>
+                        <span class="multi-seg-times">${tDep} → ${tArr} (${tDur}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>
+                    </div>`;
+                });
+                html += `</div>`;
+                html += `<div class="multi-seg-toggle" onclick="this.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.textContent=this.previousElementSibling.style.display==='none'?'${strings.ticket_calculator.show_more?.[lang] || '展开更多'}':'${strings.ticket_calculator.collapse?.[lang] || '收起'}';">${strings.ticket_calculator.show_more?.[lang] || '展开更多'}</div>`;
+            }
+        } else {
+            // 没有找到班次，显示警告
+            html += `<div class="multi-seg-unavailable">
+                <span class="material-symbols-outlined">cast_warning</span> <span class="line-trip-info line-trip-unavailable">${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span>
+            </div>`;
+        }
+
+        html += `</div>`;
+
+        // 换乘站提示
+        if (segIdx < multiResult.segments.length - 1) {
+            const nextSeg = multiResult.segments[segIdx + 1];
+            html += `<div class="multi-seg-station transfer">
+                <span class="material-symbols-outlined">transfer_within_a_station</span>
+                <span>${strings.ticket_calculator.transfer_at?.[lang] || '换乘'}${seg.endStation}</span>
+            </div>`;
+        } else {
+            html += `<div class="multi-seg-station arrive">
+                <span class="material-symbols-outlined">location_on</span>
+                <span>${strings.ticket_calculator.arrive_at?.[lang] || '到达'} ${seg.endStation}</span>
+            </div>`;
+        }
+
+        html += `</div>`;
+    });
+
+    html += `</div>`;
+
+    // 如果有不可用的段，显示整体提示
+    if (!multiResult.allAvailable) {
+        html += `<div class="multi-seg-warning">
+            <span class="material-symbols-outlined">info</span>
+            <span>${strings.ticket_calculator.partial_timetable?.[lang] || '部分区间暂无时刻表，显示时间可能不完整'}</span>
+        </div>`;
+    }
+
+    container.innerHTML = html;
+    return container;
+}
+
+// 显示时刻表不可用提示
+function showTimetableUnavailable(reason) {
+    // 禁用早出发和早到达排序按钮
+    if (typeof setSortButtonsDisabled === 'function') {
+        setSortButtonsDisabled(true);
+    }
+    
+    // 如果当前使用的是早出发或早到达排序，切换到时间排序
+    const activeSortButton = document.querySelector('.sort-selector .icon-btn.active');
+    if (activeSortButton) {
+        const isDisabledSort = activeSortButton.classList.contains('sort-by-departure-early') ||
+                              activeSortButton.classList.contains('sort-by-arrival-early');
+        if (isDisabledSort) {
+            const timeSortBtn = document.querySelector('.sort-by-time');
+            if (timeSortBtn) {
+                setActiveSortButton(timeSortBtn);
+                handleSearch('time');
+            }
+        }
+    }
+    
+    let tripTimesContainer = document.querySelector('.trip-times-container');
+    if (!tripTimesContainer) {
+        tripTimesContainer = document.createElement('div');
+        tripTimesContainer.className = 'trip-times-container';
+        tripTimesContainer.classList.add('item');
+        
+        const searchResult = document.querySelector('.search-result');
+        if (searchResult) {
+            searchResult.insertBefore(tripTimesContainer, searchResult.firstChild);
+        }
+    }
+    
+    const reasonText = reason === 'no_trains' 
+        ? (strings.ticket_calculator.timetable_no_trains?.[lang] || '当前无列车运行，时刻表不可用')
+        : (strings.ticket_calculator.timetable_unavailable?.[lang] || '时刻表数据不可用');
+    
+    tripTimesContainer.innerHTML = `
+        <div class="trip-times-header">
+            <h3>${strings.ticket_calculator.recent_trips?.[lang] || '最近班次'}</h3>
+        </div>
+        <div class="trip-times-unavailable">
+            <span class="material-symbols-outlined">cloud_off</span>
+            <span>${reasonText}</span>
+        </div>
+    `;
+}
+
+// 更新班次时间信息显示
+function updateTripTimesDisplay(trips) {
+    // 启用早出发和早到达排序按钮
+    if (typeof setSortButtonsDisabled === 'function') {
+        setSortButtonsDisabled(false);
+    }
+    
+    // 查找或创建班次信息容器
+    let tripTimesContainer = document.querySelector('.trip-times-container');
+    if (!tripTimesContainer) {
+        tripTimesContainer = document.createElement('div');
+        tripTimesContainer.className = 'trip-times-container';
+        tripTimesContainer.classList.add('item');
+        
+        // 插入到搜索结果的最前面
+        const searchResult = document.querySelector('.search-result');
+        if (searchResult) {
+            searchResult.insertBefore(tripTimesContainer, searchResult.firstChild);
+        }
+    }
+    
+    // 生成班次信息HTML
+    let tripTimesHTML = `
+        <div class="trip-times-header">
+            <h3>${strings.ticket_calculator.recent_trips || '最近班次'}</h3>
+            <span class="trip-times-update">${strings.ticket_calculator.last_updated || '最后更新'}: ${new Date().toLocaleTimeString()}</span>
+        </div>
+        <div class="trip-times-list">
+    `;
+    
+    // 显示最近的几个班次（最多显示5个）
+    const displayTrips = trips.slice(0, 5);
+    
+    displayTrips.forEach((trip, index) => {
+        const departureTime = formatTime(trip.departureTime);
+        const arrivalTime = formatTime(trip.arrivalTime);
+        const durationMinutes = Math.ceil(trip.duration / 60);
+        
+        let statusText = '';
+        let statusClass = '';
+        if (trip.status === 'running') {
+            statusText = strings.ticket_calculator.running || '运行中';
+            statusClass = 'running';
+        } else if (trip.status === 'stopped') {
+            statusText = strings.ticket_calculator.stopped || '已停靠';
+            statusClass = 'stopped';
+        } else {
+            statusText = strings.ticket_calculator.approaching || '即将到达';
+            statusClass = 'approaching';
+        }
+        
+        tripTimesHTML += `
+            <div class="trip-time-item ${statusClass}">
+                <div class="trip-time-header">
+                    <span class="trip-train-name">${trip.trainName}</span>
+                    <span class="trip-train-series">${trip.trainSeries || ''}</span>
+                    <span class="trip-line-name">${trip.lineName || ''}</span>
+                    ${trip.directionLabel ? `<span class="trip-direction">${trip.directionLabel}</span>` : ''}
+                </div>
+                <div class="trip-time-details">
+                    <div class="trip-time-departure">
+                        <span class="trip-time-label">${strings.ticket_calculator.departure || '出发'}</span>
+                        <span class="trip-time-value">${departureTime}</span>
+                    </div>
+                    <div class="trip-time-duration">
+                        <span class="trip-time-label">${strings.ticket_calculator.duration || '用时'}</span>
+                        <span class="trip-time-value">${durationMinutes}${strings.ticket_calculator.min || '分钟'}</span>
+                    </div>
+                    <div class="trip-time-arrival">
+                        <span class="trip-time-label">${strings.ticket_calculator.arrival || '到达'}</span>
+                        <span class="trip-time-value">${arrivalTime}</span>
+                    </div>
+                </div>
+                <div class="trip-time-status">
+                    <span class="status-indicator ${statusClass}">${statusText}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    tripTimesHTML += `</div>`;
+    tripTimesContainer.innerHTML = tripTimesHTML;
 }
 
 // 查找车站的坐标
