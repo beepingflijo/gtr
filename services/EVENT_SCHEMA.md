@@ -69,6 +69,49 @@ interface TimetableDataSavedPayload {
 }
 ```
 
+### 7. segment-duration-updated
+**描述**: 区间实际用时数据更新事件
+**触发时机**: 列车经过某轨道段后，收集到新的实际用时样本时
+**Payload**:
+```typescript
+interface SegmentDurationUpdatedPayload {
+    lineId: string;           // 线路ID
+    segmentIndex: number;     // 轨道段索引
+    direction: number;        // 行驶方向（1=正向, -1=反向）
+    duration: number;         // 本次收集的用时（秒）
+    sampleCount: number;      // 该区间累计样本数
+    timestamp: number;        // 事件触发时间戳
+}
+```
+
+### 8. station-dwell-updated
+**描述**: 站点停留时间数据更新事件
+**触发时机**: 列车离开某站点后，收集到新的停留时间样本时
+**Payload**:
+```typescript
+interface StationDwellUpdatedPayload {
+    lineId: string;           // 线路ID
+    stationCode: string;      // 站点代码
+    direction: number;        // 行驶方向（1=正向, -1=反向）
+    dwellTime: number;        // 本次收集的停留时间（秒）
+    sampleCount: number;      // 该站点累计样本数
+    timestamp: number;        // 事件触发时间戳
+}
+```
+
+### 9. train-schedule-updated
+**描述**: 列车完整时刻表更新事件
+**触发时机**: 因位置更新或时间数据变化，重新推算了某线路所有列车的完整时刻表后
+**Payload**:
+```typescript
+interface TrainScheduleUpdatedPayload {
+    lineId: string;           // 线路ID
+    scheduleCount: number;    // 更新的列车时刻表数量
+    trainNames: string[];     // 更新的列车名称列表
+    timestamp: number;        // 事件触发时间戳
+}
+```
+
 ## 服务模块
 
 ### 1. TrainPositionService (train-position-service.js)
@@ -82,16 +125,21 @@ interface TimetableDataSavedPayload {
 - **订阅事件**: `train-position-updated`
 
 ### 3. TimetableService (timetable-service.js)
-- **职责**: 生成列车时刻表和导航用时
-- **发布事件**: `timetable-generated`
+- **职责**: 生成列车时刻表、导航用时，以及每辆列车到 UTC 24:00 的完整时刻表
+- **发布事件**: `timetable-generated`, `train-schedule-updated`
+- **订阅事件**: `train-position-updated`, `segment-duration-updated`, `station-dwell-updated`
+
+### 4. SegmentDurationCollector (segment-duration-collector.js)
+- **职责**: 收集列车实际区间用时和站点停留时间数据
+- **发布事件**: `segment-duration-updated`, `station-dwell-updated`
 - **订阅事件**: `train-position-updated`
 
-### 4. StorageService (storage-service.js)
+### 5. StorageService (storage-service.js)
 - **职责**: 管理临时存储（JSON缓存）
 - **发布事件**: `duration-data-saved`, `timetable-data-saved`
 - **订阅事件**: 无
 
-### 5. EventBus (event-bus.js)
+### 6. EventBus (event-bus.js)
 - **职责**: 事件总线，解耦各服务模块
 - **功能**: 事件发布/订阅、日志记录
 
@@ -123,3 +171,23 @@ interface TimetableDataSavedPayload {
 ### POST /api/timetable/clear-cache
 清除缓存数据
 - **响应**: 清除结果
+
+### GET /api/timetable/train-schedules
+获取所有列车完整时刻表（每辆车到 UTC 24:00 前的到站时刻）
+- **参数**: `lineId` (可选，按线路ID筛选)
+- **响应**: 列车时刻表数组，包含每辆车经过每个站点的 arrivalTime、departureTime
+
+### GET /api/timetable/train-schedule/:trainName
+获取单辆列车的完整时刻表
+- **参数**: `trainName` (列车名称，路径参数)
+- **响应**: 单辆列车的完整时刻表数据
+
+### GET /api/timetable/scheduled-trips
+基于推算时刻表获取班次信息（含第二辆列车出发时刻）
+- **参数**: `start` (起点站代码), `end` (终点站代码), `lang` (语言，默认 zh_hans)
+- **响应**: 匹配的班次数组 + `nextTrips` 对象（每条线路+方向的第二辆车）
+
+### POST /api/timetable/scheduled-multi-segment-trips
+基于推算时刻表获取多段换乘班次信息（含第二辆列车）
+- **Body**: `{ segments: [{ lineId, startCode, endCode }], lang }`
+- **响应**: 每段的班次信息，每段附带 `nextTrip`（第二辆列车）

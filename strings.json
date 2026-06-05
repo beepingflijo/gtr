@@ -524,7 +524,8 @@
         "timetable_no_trains": {"zh_hans": "当前无列车运行，时刻表不可用", "en": "No trains running, timetable unavailable", "zh_hant": "目前無列車運行，時刻表不可用", "uk": "Немає поїздів, розклад недоступний"},
         "show_more": {"zh_hans": "展开更多", "en": "Show more", "zh_hant": "展開更多", "uk": "Показати більше"},
         "no_timetable_for_segment": {"zh_hans": "该区间暂无时刻表数据", "en": "No timetable data for this segment", "zh_hant": "該區間暫無時刻表資料", "uk": "Немає даних розкладу для цієї ділянки"},
-        "partial_timetable": {"zh_hans": "部分区间暂无时刻表，显示时间可能不完整", "en": "Some segments have no timetable data, displayed time may be incomplete", "zh_hant": "部分區間暫無時刻表，顯示時間可能不完整", "uk": "Деякі ділянки не мають даних розкладу, відображений час може бути неповним"}
+        "partial_timetable": {"zh_hans": "部分区间暂无时刻表，显示时间可能不完整", "en": "Some segments have no timetable data, displayed time may be incomplete", "zh_hant": "部分區間暫無時刻表，顯示時間可能不完整", "uk": "Деякі ділянки не мають даних розкладу, відображений час може бути неповним"},
+        "next_train": {"zh_hans": "下一班", "en": "Next", "zh_hant": "下一班", "uk": "Наступний"}
     },
     "trains_info": {
         "page_title": {"zh_hans":"列车信息", "en": "Trains Info", "zh_hant":"列車資訊", "uk": "Інформація про потяги"},

@@ -23,6 +23,13 @@ const trainPrevPositions = new Map(); // trainName -> { segmentIndex, timestamp 
 // 站点停留时间（秒）
 const DWELL_TIME = 30;
 
+// 列车完整时刻表缓存（每辆车直到 UTC 24:00 的到站时刻）
+const trainSchedules = new Map(); // trainName -> schedule object
+
+// 线路时刻表重算防抖
+const pendingLineRecalcs = new Map(); // lineId -> timer handle
+const RECALC_DEBOUNCE_MS = 5000; // 5秒防抖
+
 // 加载数据
 function loadData() {
     try {
@@ -237,6 +244,153 @@ function getBestDwellTime(lineId, stationCode, direction = 1) {
     return DWELL_TIME;
 }
 
+// 为单辆列车推算从当前位置到 UTC 24:00 的完整时刻表
+function generateFullSchedule(train, line, trainPosition) {
+    const now = Date.now();
+    const endOfDay = new Date();
+    endOfDay.setUTCHours(24, 0, 0, 0);
+    const endTime = endOfDay.getTime();
+
+    // 如果已过 UTC 24:00 则不推算
+    if (now >= endTime) return null;
+
+    const staticInfo = getTrainStaticInfo(train.name);
+    const trainSeries = (staticInfo && staticInfo.series) || train.series || '未知型号';
+
+    const lineId = trainPosition.lineId;
+    const segIdx = trainPosition.segmentIndex;
+    const progress = trainPosition.progress;
+    const direction = trainPosition.direction;
+
+    if (direction === 'unknown') return null;
+
+    const isForward = direction === 'forward';
+    const dir = isForward ? 1 : -1;
+    const lang = 'zh_hans';
+
+    const stops = [];
+    let accumulatedSeconds = 0;
+
+    if (isForward) {
+        // 正向：当前轨道段剩余用时
+        const trackDuration = getBestSegmentDuration(lineId, segIdx, dir);
+        accumulatedSeconds += trackDuration * (1 - progress);
+
+        // 从当前轨道段之后依次遍历 route
+        for (let i = segIdx + 1; i < line.route.length; i++) {
+            const segment = line.route[i];
+
+            if (segment.type === 'station') {
+                const arrivalTime = now + accumulatedSeconds * 1000;
+                if (arrivalTime > endTime) break;
+
+                const dwellTime = getBestDwellTime(lineId, segment.code, dir);
+                const isTerminal = (i === 0 || i === line.route.length - 1);
+
+                stops.push({
+                    stationCode: segment.code,
+                    stationName: getStationName(segment.code, lang),
+                    arrivalTime: new Date(arrivalTime).toISOString(),
+                    departureTime: new Date(Math.min(now + (accumulatedSeconds + dwellTime) * 1000, endTime)).toISOString(),
+                    isTerminal
+                });
+
+                accumulatedSeconds += dwellTime;
+            } else if (segment.type === 'track') {
+                accumulatedSeconds += getBestSegmentDuration(lineId, i, dir);
+            }
+        }
+    } else {
+        // 反向：当前轨道段反向用时 = progress * duration
+        const trackDuration = getBestSegmentDuration(lineId, segIdx, dir);
+        accumulatedSeconds += trackDuration * progress;
+
+        // 从当前轨道段之前依次遍历 route
+        for (let i = segIdx - 1; i >= 0; i--) {
+            const segment = line.route[i];
+
+            if (segment.type === 'station') {
+                const arrivalTime = now + accumulatedSeconds * 1000;
+                if (arrivalTime > endTime) break;
+
+                const dwellTime = getBestDwellTime(lineId, segment.code, dir);
+                const isTerminal = (i === 0 || i === line.route.length - 1);
+
+                stops.push({
+                    stationCode: segment.code,
+                    stationName: getStationName(segment.code, lang),
+                    arrivalTime: new Date(arrivalTime).toISOString(),
+                    departureTime: new Date(Math.min(now + (accumulatedSeconds + dwellTime) * 1000, endTime)).toISOString(),
+                    isTerminal
+                });
+
+                accumulatedSeconds += dwellTime;
+            } else if (segment.type === 'track') {
+                accumulatedSeconds += getBestSegmentDuration(lineId, i, dir);
+            }
+        }
+    }
+
+    if (stops.length === 0) return null;
+
+    return {
+        trainName: train.name,
+        trainSeries,
+        lineId,
+        lineName: line.name ? line.name[lang] || line.name.zh_hans : lineId,
+        direction,
+        directionLabel: isForward
+            ? (getStationName(line.route[0]?.code, lang) + ' → ' + getStationName(line.route[line.route.length - 1]?.code, lang))
+            : (getStationName(line.route[line.route.length - 1]?.code, lang) + ' → ' + getStationName(line.route[0]?.code, lang)),
+        currentSegmentIndex: segIdx,
+        currentProgress: progress,
+        stops,
+        lastUpdated: new Date(now).toISOString()
+    };
+}
+
+// 重新推算指定线路所有活跃列车的完整时刻表
+function recalculateLineTimetables(lineId) {
+    if (!linesData) return;
+
+    const line = linesData.find(l => l.id === lineId);
+    if (!line) return;
+
+    let updatedCount = 0;
+    for (const train of currentTrains) {
+        const trainPosition = findTrainPosition(train);
+        if (!trainPosition || trainPosition.lineId !== lineId) continue;
+
+        const schedule = generateFullSchedule(train, line, trainPosition);
+        if (schedule) {
+            trainSchedules.set(train.name, schedule);
+            updatedCount++;
+        }
+    }
+
+    if (updatedCount > 0) {
+        eventBus.publish('train-schedule-updated', {
+            lineId,
+            scheduleCount: updatedCount,
+            trainNames: [...trainSchedules.entries()]
+                .filter(([, s]) => s.lineId === lineId)
+                .map(([name]) => name),
+            timestamp: Date.now()
+        });
+    }
+}
+
+// 防抖调度线路时刻表重算
+function scheduleLineRecalc(lineId) {
+    if (pendingLineRecalcs.has(lineId)) {
+        clearTimeout(pendingLineRecalcs.get(lineId));
+    }
+    pendingLineRecalcs.set(lineId, setTimeout(() => {
+        pendingLineRecalcs.delete(lineId);
+        recalculateLineTimetables(lineId);
+    }, RECALC_DEBOUNCE_MS));
+}
+
 // 计算到达时间（支持正向和反向）
 function calculateArrivalTime(lineId, fromSegmentIndex, fromProgress, toSegmentIndex, lang) {
     const line = linesData.find(l => l.id === lineId);
@@ -299,6 +453,30 @@ function calculateArrivalTime(lineId, fromSegmentIndex, fromProgress, toSegmentI
 // 处理列车位置更新
 function handleTrainPositionUpdate(payload) {
     currentTrains = payload.trains || [];
+
+    // 每次位置更新时，为所有活跃列车重新推算完整时刻表
+    if (!linesData || currentTrains.length === 0) return;
+
+    for (const train of currentTrains) {
+        const trainPosition = findTrainPosition(train);
+        if (!trainPosition) continue;
+
+        const line = linesData.find(l => l.id === trainPosition.lineId);
+        if (!line) continue;
+
+        const schedule = generateFullSchedule(train, line, trainPosition);
+        if (schedule) {
+            trainSchedules.set(train.name, schedule);
+        }
+    }
+
+    // 清理已不存在的列车的时刻表
+    const activeNames = new Set(currentTrains.map(t => t.name));
+    for (const name of trainSchedules.keys()) {
+        if (!activeNames.has(name)) {
+            trainSchedules.delete(name);
+        }
+    }
 }
 
 // 检查数据是否可用
@@ -674,6 +852,16 @@ function init() {
     // 订阅列车位置更新事件
     eventBus.subscribe('train-position-updated', handleTrainPositionUpdate);
     
+    // 订阅区间用时更新事件 → 防抖重算受影响线路的时刻表
+    eventBus.subscribe('segment-duration-updated', (payload) => {
+        scheduleLineRecalc(payload.lineId);
+    });
+    
+    // 订阅站点停留时间更新事件 → 防抖重算受影响线路的时刻表
+    eventBus.subscribe('station-dwell-updated', (payload) => {
+        scheduleLineRecalc(payload.lineId);
+    });
+    
     // 定期重新生成时刻表（每分钟）
     setInterval(() => {
         if (currentTrains.length > 0) {
@@ -687,10 +875,244 @@ function init() {
     console.log('[TimetableService] 初始化完成');
 }
 
+// 获取所有列车完整时刻表（可按线路筛选）
+function getTrainSchedules(lineId) {
+    if (lineId) {
+        const result = [];
+        for (const [name, schedule] of trainSchedules.entries()) {
+            if (schedule.lineId === lineId) {
+                result.push(schedule);
+            }
+        }
+        return result;
+    }
+    return Array.from(trainSchedules.values());
+}
+
+// 获取单辆列车的完整时刻表
+function getTrainSchedule(trainName) {
+    return trainSchedules.get(trainName) || null;
+}
+
+// 基于推算时刻表获取从 startCode 到 endCode 的班次信息
+// 返回匹配的班次以及每条线路+方向的第二辆车
+function getScheduledTrips(startCode, endCode, lang = 'zh_hans') {
+    if (!linesData || trainSchedules.size === 0) {
+        return { trips: [], nextTrips: {}, available: false, reason: 'no_schedules' };
+    }
+
+    const trips = [];
+    const now = Date.now();
+
+    for (const [, schedule] of trainSchedules.entries()) {
+        const startStop = schedule.stops.find(s => s.stationCode === startCode);
+        const endStop = schedule.stops.find(s => s.stationCode === endCode);
+
+        if (!startStop || !endStop) continue;
+
+        const startIdx = schedule.stops.indexOf(startStop);
+        const endIdx = schedule.stops.indexOf(endStop);
+
+        // 确保起点在终点之前（按行程顺序）
+        if (startIdx >= endIdx) continue;
+
+        const departureTime = new Date(startStop.departureTime).getTime();
+        const arrivalTime = new Date(endStop.arrivalTime).getTime();
+
+        // 跳过出发时间已过的班次
+        if (departureTime < now) continue;
+
+        trips.push({
+            trainName: schedule.trainName,
+            trainSeries: schedule.trainSeries,
+            lineId: schedule.lineId,
+            lineName: schedule.lineName,
+            startStation: startStop.stationName,
+            endStation: endStop.stationName,
+            startCode,
+            endCode,
+            departureTime: startStop.departureTime,
+            arrivalTime: endStop.arrivalTime,
+            duration: Math.round((arrivalTime - departureTime) / 1000),
+            direction: schedule.direction,
+            directionLabel: schedule.directionLabel,
+            isScheduled: true
+        });
+    }
+
+    // 按出发时间排序
+    trips.sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+
+    // 为每条线路+方向找到第二辆车
+    const nextTrips = {};
+    const lineDirectionGroups = new Map();
+    for (const trip of trips) {
+        const key = `${trip.lineId}:${trip.direction}`;
+        if (!lineDirectionGroups.has(key)) {
+            lineDirectionGroups.set(key, []);
+        }
+        lineDirectionGroups.get(key).push(trip);
+    }
+
+    for (const [key, group] of lineDirectionGroups.entries()) {
+        if (group.length >= 2) {
+            nextTrips[key] = {
+                trainName: group[1].trainName,
+                trainSeries: group[1].trainSeries,
+                departureTime: group[1].departureTime,
+                arrivalTime: group[1].arrivalTime
+            };
+        }
+    }
+
+    return {
+        trips: trips.slice(0, 10),
+        nextTrips,
+        available: true,
+        timestamp: new Date().toISOString()
+    };
+}
+
+// 基于推算时刻表获取多段换乘班次信息
+// 每段返回最近的列车，并附带第二辆列车的出发时刻
+function getScheduledMultiSegmentTrips(segments, lang = 'zh_hans') {
+    if (!linesData || trainSchedules.size === 0) {
+        return { segments: [], available: false, reason: 'no_schedules' };
+    }
+    if (!segments || segments.length === 0) {
+        return { segments: [], available: false, reason: 'no_segments' };
+    }
+
+    const now = Date.now();
+    const result = [];
+    let previousArrivalTime = null;
+
+    for (let segIdx = 0; segIdx < segments.length; segIdx++) {
+        const seg = segments[segIdx];
+        const { lineId, startCode, endCode } = seg;
+
+        const line = linesData.find(l => l.id === lineId);
+        if (!line) {
+            result.push({
+                lineId, startCode, endCode,
+                trips: [], nextTrip: null,
+                available: false, reason: 'line_not_found'
+            });
+            continue;
+        }
+
+        const startIdx = line.route.findIndex(s => s.type === 'station' && s.code === startCode);
+        const endIdx = line.route.findIndex(s => s.type === 'station' && s.code === endCode);
+
+        if (startIdx === -1 || endIdx === -1) {
+            result.push({
+                lineId, startCode, endCode,
+                trips: [], nextTrip: null,
+                available: false, reason: 'station_not_found'
+            });
+            continue;
+        }
+
+        const isForward = startIdx < endIdx;
+        const targetDirection = isForward ? 'forward' : 'backward';
+
+        // 从 trainSchedules 中筛选匹配的列车
+        const segTrips = [];
+
+        for (const [, schedule] of trainSchedules.entries()) {
+            if (schedule.lineId !== lineId) continue;
+            if (schedule.direction !== targetDirection) continue;
+
+            const schedStart = schedule.stops.find(s => s.stationCode === startCode);
+            const schedEnd = schedule.stops.find(s => s.stationCode === endCode);
+
+            if (!schedStart || !schedEnd) continue;
+
+            const sIdx = schedule.stops.indexOf(schedStart);
+            const eIdx = schedule.stops.indexOf(schedEnd);
+            if (sIdx >= eIdx) continue;
+
+            const departureTime = new Date(schedStart.departureTime).getTime();
+            const arrivalTime = new Date(schedEnd.arrivalTime).getTime();
+
+            // 跳过出发时间已过的班次
+            if (departureTime < now) continue;
+
+            // 如果是换乘后的段，必须在上一段到达之后才能出发
+            if (previousArrivalTime !== null && departureTime < previousArrivalTime) continue;
+
+            segTrips.push({
+                trainName: schedule.trainName,
+                trainSeries: schedule.trainSeries,
+                lineId: schedule.lineId,
+                lineName: schedule.lineName,
+                startStation: schedStart.stationName,
+                endStation: schedEnd.stationName,
+                startCode,
+                endCode,
+                departureTime: schedStart.departureTime,
+                arrivalTime: schedEnd.arrivalTime,
+                duration: Math.round((arrivalTime - departureTime) / 1000),
+                direction: schedule.direction,
+                directionLabel: schedule.directionLabel,
+                status: 'scheduled',
+                isScheduled: true
+            });
+        }
+
+        // 按出发时间排序
+        segTrips.sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+        const topTrips = segTrips.slice(0, 3);
+
+        // 更新下一段的基准时间
+        if (topTrips.length > 0) {
+            previousArrivalTime = new Date(topTrips[0].arrivalTime).getTime();
+        } else {
+            previousArrivalTime = null;
+        }
+
+        result.push({
+            lineId,
+            lineName: line.name ? line.name[lang] || line.name.zh_hans : lineId,
+            startCode,
+            endCode,
+            startStation: getStationName(startCode, lang),
+            endStation: getStationName(endCode, lang),
+            trips: topTrips,
+            nextTrip: topTrips.length >= 2 ? {
+                trainName: topTrips[1].trainName,
+                departureTime: topTrips[1].departureTime
+            } : null,
+            available: topTrips.length > 0,
+            reason: topTrips.length > 0 ? null : 'no_matching_trips'
+        });
+    }
+
+    // 计算总行程信息
+    const firstSeg = result[0];
+    const lastSeg = result[result.length - 1];
+    const overallDeparture = firstSeg && firstSeg.trips.length > 0 ? firstSeg.trips[0].departureTime : null;
+    const overallArrival = lastSeg && lastSeg.trips.length > 0 ? lastSeg.trips[0].arrivalTime : null;
+    const allAvailable = result.every(s => s.available);
+
+    return {
+        segments: result,
+        overallDeparture,
+        overallArrival,
+        allAvailable,
+        available: allAvailable,
+        timestamp: new Date().toISOString()
+    };
+}
+
 module.exports = {
     init,
     getRecentTrips,
     getMultiSegmentTrips,
+    getScheduledTrips,
+    getScheduledMultiSegmentTrips,
     getNavigationDuration,
-    isDataAvailable
+    isDataAvailable,
+    getTrainSchedules,
+    getTrainSchedule
 };

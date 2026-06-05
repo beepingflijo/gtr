@@ -312,6 +312,12 @@ footer .search-panel .selection .selection-item.active:hover {
     font-size: 0.85em;
 }
 
+.line-trip-next {
+    font-size: 0.82em;
+    color: var(--color-text-secondary, #888);
+    opacity: 0.85;
+}
+
 .stations {
     display: flex;
     flex-direction: column;

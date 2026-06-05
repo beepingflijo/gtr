@@ -305,4 +305,111 @@ router.post('/multi-segment-trips', (req, res) => {
     }
 });
 
+// 获取所有列车完整时刻表（每辆车到 UTC 24:00 前的到站时刻）
+// GET /api/timetable/train-schedules?lineId=XXX
+router.get('/train-schedules', (req, res) => {
+    try {
+        const { lineId } = req.query;
+        const schedules = timetableService.getTrainSchedules(lineId || null);
+        
+        res.json({
+            success: true,
+            data: {
+                schedules,
+                count: schedules.length,
+                timestamp: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('[API] 获取列车时刻表失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '服务器内部错误'
+        });
+    }
+});
+
+// 获取单辆列车的完整时刻表
+// GET /api/timetable/train-schedule/:trainName
+router.get('/train-schedule/:trainName', (req, res) => {
+    try {
+        const { trainName } = req.params;
+        const schedule = timetableService.getTrainSchedule(trainName);
+        
+        if (!schedule) {
+            return res.status(404).json({
+                success: false,
+                error: '未找到该列车的时刻表数据'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: schedule
+        });
+    } catch (error) {
+        console.error('[API] 获取列车时刻表失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '服务器内部错误'
+        });
+    }
+});
+
+// 基于推算时刻表获取班次信息（含第二辆列车）
+// GET /api/timetable/scheduled-trips?start=XXX&end=XXX&lang=zh_hans
+router.get('/scheduled-trips', (req, res) => {
+    try {
+        const { start, end, lang = 'zh_hans' } = req.query;
+        
+        if (!start || !end) {
+            return res.status(400).json({
+                success: false,
+                error: '缺少必要参数: start, end'
+            });
+        }
+        
+        const result = timetableService.getScheduledTrips(start, end, lang);
+        
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        console.error('[API] 获取推算班次失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '服务器内部错误'
+        });
+    }
+});
+
+// 基于推算时刻表获取多段换乘班次信息（含第二辆列车）
+// POST /api/timetable/scheduled-multi-segment-trips
+router.post('/scheduled-multi-segment-trips', (req, res) => {
+    try {
+        const { segments, lang = 'zh_hans' } = req.body;
+        
+        if (!segments || !Array.isArray(segments) || segments.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: '缺少必要参数: segments'
+            });
+        }
+        
+        const result = timetableService.getScheduledMultiSegmentTrips(segments, lang);
+        
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        console.error('[API] 获取推算换乘班次失败:', error);
+        res.status(500).json({
+            success: false,
+            error: '服务器内部错误'
+        });
+    }
+});
+
 module.exports = router;

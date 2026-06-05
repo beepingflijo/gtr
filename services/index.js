@@ -63,6 +63,11 @@ function setupEventListeners() {
         console.log('[Services] 时刻表已更新，当前列车数:', payload.trainCount);
     });
     
+    // 监听列车完整时刻表更新事件
+    eventBus.subscribe('train-schedule-updated', (payload) => {
+        console.log(`[Services] 列车时刻表已更新: 线路 ${payload.lineId}, ${payload.scheduleCount} 辆列车`);
+    });
+    
     // 监听区间用时更新事件（可选：记录日志或触发其他操作）
     eventBus.subscribe('segment-duration-updated', (payload) => {
         // 只在样本数较少时记录日志，避免日志过多
