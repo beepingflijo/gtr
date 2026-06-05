@@ -103,6 +103,29 @@ footer.swapped .search-controls{
     width: fit-content;
 }
 
+footer .search-panel:not(.collapsed) .input-section,
+footer .search-panel:not(.collapsed) .search-actions {
+    width: -webkit-fill-available;
+}
+
+footer .search-panel:not(.collapsed) {
+    width: calc(100% - 12em);
+    max-width: 18em;
+}
+
+@media (width < 540px) {
+    footer .search-panel:not(.collapsed) {
+        width: calc(100% - 5em);
+        max-width: 18em;
+    }
+}
+
+@media (width < 440px) {
+    footer .search-panel:not(.collapsed) .sort-selector .icon-btn {
+        padding-inline: 0;
+    }
+}
+
 footer .search-panel .selection:not(.collapsed) { 
     margin: 0;
     filter: none;
@@ -155,6 +178,7 @@ footer .search-panel .selection .selection-item.active:hover {
 .input-section input { 
     min-width: 0;
     max-width: -webkit-fill-available;
+    width: -webkit-fill-available;
 }
 
 .search-actions { 
@@ -991,4 +1015,63 @@ footer .search-panel .selection .selection-item.active:hover {
 
 .multi-seg-warning .material-symbols-outlined {
     font-size: 16px;
+}
+
+/* 班次信息收起/展开动画 —— 与 .segment.collapsed .stations 保持一致 */
+.line-trip-info,
+.line-trip-list .line-trip-info {
+    overflow: hidden;
+    max-height: 10em;
+    opacity: 1;
+    transition: max-height 0.35s ease, opacity 0.35s ease, filter 0.35s ease;
+}
+
+.line-trip-info.collapsed,
+.line-trip-list .line-trip-info.collapsed {
+    max-height: 0;
+    opacity: 0;
+    filter: blur(4px);
+    padding: 0;
+    margin: 0;
+    height: 0;
+    line-height: 0;
+    overflow: hidden;
+}
+
+/* 票价明细收起/展开动画 */
+.fare-detail-calc {
+    overflow: hidden;
+    max-height: 10em;
+    opacity: 1;
+    transition: max-height 0.35s ease, opacity 0.35s ease, filter 0.35s ease;
+}
+
+.fare-detail-calc.collapsed {
+    max-height: 0;
+    opacity: 0;
+    filter: blur(4px);
+    padding: 0;
+    margin: 0;
+    height: 0;
+    line-height: 0;
+    overflow: hidden;
+}
+
+/* 班次总览容器收起/展开动画 */
+.trip-times-container {
+    overflow: hidden;
+    max-height: 50em;
+    opacity: 1;
+    transition: max-height 0.35s ease, opacity 0.35s ease, filter 0.35s ease;
+}
+
+.trip-times-container.collapsed {
+    max-height: 0;
+    opacity: 0;
+    filter: blur(4px);
+    padding: 0;
+    margin: 0;
+    height: 0;
+    line-height: 0;
+    overflow: hidden;
 }

@@ -402,7 +402,11 @@ function init() {
             btn.classList.toggle('active');
             const isActive = btn.classList.contains('active');
             document.querySelectorAll('.line-trip-info, .line-trip-list').forEach(el => {
-                el.style.display = isActive ? '' : 'none';
+                if (isActive) {
+                    el.classList.remove('collapsed');
+                } else {
+                    el.classList.add('collapsed');
+                }
             });
         });
     });
@@ -415,7 +419,11 @@ function init() {
             btn.classList.toggle('active');
             const isActive = btn.classList.contains('active');
             document.querySelectorAll('.fare-detail-calc').forEach(el => {
-                el.style.display = isActive ? '' : 'none';
+                if (isActive) {
+                    el.classList.remove('collapsed');
+                } else {
+                    el.classList.add('collapsed');
+                }
             });
         });
     });
@@ -649,6 +657,11 @@ async function fetchWithRetry(url, options = {}, maxRetries = 2, baseDelay = 200
 
 // 更新刷新状态指示器
 function updateRefreshIndicator(status) {
+    // 非本地测试情况下不继续执行
+    const isLocalTest = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocalTest) {
+        return;
+    }
     if (status === 'updated') {
         const timeStr = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         showToast(`✓ ${timeStr} 班次数据已更新`, 3000);
@@ -676,14 +689,11 @@ async function performRefresh(forceRefresh = true) {
         const fetchPromises = [];
 
         // 1. 实时单线数据
-        const showTimetableActive = document.querySelector('.show-timetable-btn.active') !== null;
         fetchPromises.push(
             fetchTripTimes(startCode, endCode, forceRefresh).then(tripTimes => {
                 if (tripTimes && tripTimes.trips && tripTimes.trips.length > 0) {
                     updateRoutesWithTripTimes(routes, tripTimes.trips);
-                    if (showTimetableActive) {
-                        updateTripTimesDisplay(tripTimes.trips);
-                    }
+                    updateTripTimesDisplay(tripTimes.trips);
                     hasUpdate = true;
                     tripLogger.info('实时单线数据更新成功', { count: tripTimes.trips.length });
                 }
@@ -707,9 +717,13 @@ async function performRefresh(forceRefresh = true) {
                             if (scheduledData.nextTrips && scheduledData.nextTrips[key]) {
                                 route.scheduledNextTrip = scheduledData.nextTrips[key];
                             }
-                            if (!route.earliestDeparture) {
-                                route.earliestDeparture = new Date(matchingScheduled[0].departureTime).getTime();
-                                route.earliestArrival = new Date(matchingScheduled[0].arrivalTime).getTime();
+                            if (!route.earliestDeparture || !route.earliestArrival) {
+                                if (!route.earliestDeparture) {
+                                    route.earliestDeparture = new Date(matchingScheduled[0].departureTime).getTime();
+                                }
+                                if (!route.earliestArrival) {
+                                    route.earliestArrival = new Date(matchingScheduled[matchingScheduled.length - 1].arrivalTime).getTime();
+                                }
                             }
                         }
                     });
@@ -735,7 +749,29 @@ async function performRefresh(forceRefresh = true) {
                 fetchMultiSegmentTrips(segments, forceRefresh).then(multiResult => {
                     if (multiResult) {
                         route.multiSegmentTrips = multiResult;
-                        if (multiResult.overallDeparture && multiResult.overallArrival) {
+                        // 更新路线时间：出发取第一个有数据的段，到达取最后一个有数据的段
+                        if (multiResult.segments && multiResult.segments.length > 0) {
+                            const firstAvailableIdx = multiResult.segments.findIndex(s => s.available && s.trips.length > 0);
+                            if (firstAvailableIdx >= 0) {
+                                let departureTime = new Date(multiResult.segments[firstAvailableIdx].trips[0].departureTime).getTime();
+                                for (let i = 0; i < firstAvailableIdx; i++) {
+                                    departureTime -= (route.segments[i].duration || 0) * 1000;
+                                    departureTime -= 120 * 1000;
+                                }
+                                route.earliestDeparture = departureTime;
+                            }
+                            const lastAvailableIdx = [...multiResult.segments].reverse().findIndex(s => s.available && s.trips.length > 0);
+                            if (lastAvailableIdx >= 0) {
+                                const actualLastIdx = multiResult.segments.length - 1 - lastAvailableIdx;
+                                let arrivalTime = new Date(multiResult.segments[actualLastIdx].trips[multiResult.segments[actualLastIdx].trips.length - 1].arrivalTime).getTime();
+                                for (let i = actualLastIdx + 1; i < multiResult.segments.length; i++) {
+                                    arrivalTime += 120 * 1000;
+                                    arrivalTime += (route.segments[i].duration || 0) * 1000;
+                                }
+                                route.earliestArrival = arrivalTime;
+                            }
+                            route.allSegmentsAvailable = multiResult.allAvailable;
+                        } else if (multiResult.overallDeparture && multiResult.overallArrival) {
                             route.earliestDeparture = new Date(multiResult.overallDeparture).getTime();
                             route.earliestArrival = new Date(multiResult.overallArrival).getTime();
                             route.allSegmentsAvailable = multiResult.allAvailable;
@@ -752,9 +788,40 @@ async function performRefresh(forceRefresh = true) {
                 fetchScheduledMultiSegmentTrips(segments, forceRefresh).then(scheduledMultiResult => {
                     if (scheduledMultiResult) {
                         route.scheduledMultiSegmentTrips = scheduledMultiResult;
-                        if (scheduledMultiResult.overallDeparture && scheduledMultiResult.overallArrival && !route.earliestDeparture) {
-                            route.earliestDeparture = new Date(scheduledMultiResult.overallDeparture).getTime();
-                            route.earliestArrival = new Date(scheduledMultiResult.overallArrival).getTime();
+                        // 如果没有实时数据，使用推算数据：出发取第一个有数据的段，到达取最后一个有数据的段
+                        if (!route.earliestDeparture || !route.earliestArrival) {
+                            if (scheduledMultiResult.segments && scheduledMultiResult.segments.length > 0) {
+                                if (!route.earliestDeparture) {
+                                    const firstAvailableIdx = scheduledMultiResult.segments.findIndex(s => s.available && s.trips.length > 0);
+                                    if (firstAvailableIdx >= 0) {
+                                        let departureTime = new Date(scheduledMultiResult.segments[firstAvailableIdx].trips[0].departureTime).getTime();
+                                        for (let i = 0; i < firstAvailableIdx; i++) {
+                                            departureTime -= (route.segments[i].duration || 0) * 1000;
+                                            departureTime -= 120 * 1000;
+                                        }
+                                        route.earliestDeparture = departureTime;
+                                    }
+                                }
+                                if (!route.earliestArrival) {
+                                    const lastAvailableIdx = [...scheduledMultiResult.segments].reverse().findIndex(s => s.available && s.trips.length > 0);
+                                    if (lastAvailableIdx >= 0) {
+                                        const actualLastIdx = scheduledMultiResult.segments.length - 1 - lastAvailableIdx;
+                                        let arrivalTime = new Date(scheduledMultiResult.segments[actualLastIdx].trips[scheduledMultiResult.segments[actualLastIdx].trips.length - 1].arrivalTime).getTime();
+                                        for (let i = actualLastIdx + 1; i < scheduledMultiResult.segments.length; i++) {
+                                            arrivalTime += 120 * 1000;
+                                            arrivalTime += (route.segments[i].duration || 0) * 1000;
+                                        }
+                                        route.earliestArrival = arrivalTime;
+                                    }
+                                }
+                            } else if (scheduledMultiResult.overallDeparture && scheduledMultiResult.overallArrival) {
+                                if (!route.earliestDeparture) {
+                                    route.earliestDeparture = new Date(scheduledMultiResult.overallDeparture).getTime();
+                                }
+                                if (!route.earliestArrival) {
+                                    route.earliestArrival = new Date(scheduledMultiResult.overallArrival).getTime();
+                                }
+                            }
                         }
                         hasUpdate = true;
                     }
@@ -1063,10 +1130,7 @@ function handleSearch(sortBy = 'time') {
             return;
         }
         if (tripTimes && tripTimes.trips && tripTimes.trips.length > 0) {
-            const showTimetableActive = document.querySelector('.show-timetable-btn.active') !== null;
-            if (showTimetableActive) {
-                updateTripTimesDisplay(tripTimes.trips);
-            }
+            updateTripTimesDisplay(tripTimes.trips);
 
             // 按线路匹配班次到各路线
             updateRoutesWithTripTimes(routes, tripTimes.trips);
@@ -1096,8 +1160,34 @@ function handleSearch(sortBy = 'time') {
             if (multiResult) {
                 route.multiSegmentTrips = multiResult;
                 
-                // 如果有总体出发/到达时间，更新路线
-                if (multiResult.overallDeparture && multiResult.overallArrival) {
+                // 更新路线时间：出发时间取第一个有数据的段，到达时间取最后一个有数据的段
+                // 始终覆盖，因为单段回调可能为多段行程设置了错误的时间（matchingTrips 混合了所有段的班次）
+                if (multiResult.segments && multiResult.segments.length > 0) {
+                    // 找到第一个有班次数据的段
+                    const firstAvailableIdx = multiResult.segments.findIndex(s => s.available && s.trips.length > 0);
+                    if (firstAvailableIdx >= 0) {
+                        let departureTime = new Date(multiResult.segments[firstAvailableIdx].trips[0].departureTime).getTime();
+                        // 如果第一个有数据的段不是第一段，减去前面段的 duration 和换乘时间
+                        for (let i = 0; i < firstAvailableIdx; i++) {
+                            departureTime -= (route.segments[i].duration || 0) * 1000;
+                            departureTime -= 120 * 1000; // 换乘时间
+                        }
+                        route.earliestDeparture = departureTime;
+                    }
+                    // 找到最后一个有班次数据的段
+                    const lastAvailableIdx = [...multiResult.segments].reverse().findIndex(s => s.available && s.trips.length > 0);
+                    if (lastAvailableIdx >= 0) {
+                        const actualLastIdx = multiResult.segments.length - 1 - lastAvailableIdx;
+                        let arrivalTime = new Date(multiResult.segments[actualLastIdx].trips[multiResult.segments[actualLastIdx].trips.length - 1].arrivalTime).getTime();
+                        // 如果最后一个有数据的段不是最后一段，加上后面段的 duration 和换乘时间
+                        for (let i = actualLastIdx + 1; i < multiResult.segments.length; i++) {
+                            arrivalTime += 120 * 1000; // 换乘时间
+                            arrivalTime += (route.segments[i].duration || 0) * 1000;
+                        }
+                        route.earliestArrival = arrivalTime;
+                    }
+                    route.allSegmentsAvailable = multiResult.allAvailable;
+                } else if (multiResult.overallDeparture && multiResult.overallArrival) {
                     route.earliestDeparture = new Date(multiResult.overallDeparture).getTime();
                     route.earliestArrival = new Date(multiResult.overallArrival).getTime();
                     route.allSegmentsAvailable = multiResult.allAvailable;
@@ -1136,9 +1226,13 @@ function handleSearch(sortBy = 'time') {
                         route.scheduledNextTrip = scheduledData.nextTrips[key];
                     }
                     // 如果没有实时数据，使用推算数据更新出发/到达时间
-                    if (!route.earliestDeparture) {
-                        route.earliestDeparture = new Date(matchingScheduled[0].departureTime).getTime();
-                        route.earliestArrival = new Date(matchingScheduled[0].arrivalTime).getTime();
+                    if (!route.earliestDeparture || !route.earliestArrival) {
+                        if (!route.earliestDeparture) {
+                            route.earliestDeparture = new Date(matchingScheduled[0].departureTime).getTime();
+                        }
+                        if (!route.earliestArrival) {
+                            route.earliestArrival = new Date(matchingScheduled[matchingScheduled.length - 1].arrivalTime).getTime();
+                        }
                     }
                 }
             });
@@ -1164,11 +1258,39 @@ function handleSearch(sortBy = 'time') {
             if (scheduledMultiResult) {
                 route.scheduledMultiSegmentTrips = scheduledMultiResult;
 
-                if (scheduledMultiResult.overallDeparture && scheduledMultiResult.overallArrival) {
-                    // 如果没有实时数据，使用推算数据
-                    if (!route.earliestDeparture) {
-                        route.earliestDeparture = new Date(scheduledMultiResult.overallDeparture).getTime();
-                        route.earliestArrival = new Date(scheduledMultiResult.overallArrival).getTime();
+                // 如果没有实时数据，使用推算数据：出发取第一个有数据的段，到达取最后一个有数据的段
+                if (!route.earliestDeparture || !route.earliestArrival) {
+                    if (scheduledMultiResult.segments && scheduledMultiResult.segments.length > 0) {
+                        if (!route.earliestDeparture) {
+                            const firstAvailableIdx = scheduledMultiResult.segments.findIndex(s => s.available && s.trips.length > 0);
+                            if (firstAvailableIdx >= 0) {
+                                let departureTime = new Date(scheduledMultiResult.segments[firstAvailableIdx].trips[0].departureTime).getTime();
+                                for (let i = 0; i < firstAvailableIdx; i++) {
+                                    departureTime -= (route.segments[i].duration || 0) * 1000;
+                                    departureTime -= 120 * 1000;
+                                }
+                                route.earliestDeparture = departureTime;
+                            }
+                        }
+                        if (!route.earliestArrival) {
+                            const lastAvailableIdx = [...scheduledMultiResult.segments].reverse().findIndex(s => s.available && s.trips.length > 0);
+                            if (lastAvailableIdx >= 0) {
+                                const actualLastIdx = scheduledMultiResult.segments.length - 1 - lastAvailableIdx;
+                                let arrivalTime = new Date(scheduledMultiResult.segments[actualLastIdx].trips[scheduledMultiResult.segments[actualLastIdx].trips.length - 1].arrivalTime).getTime();
+                                for (let i = actualLastIdx + 1; i < scheduledMultiResult.segments.length; i++) {
+                                    arrivalTime += 120 * 1000;
+                                    arrivalTime += (route.segments[i].duration || 0) * 1000;
+                                }
+                                route.earliestArrival = arrivalTime;
+                            }
+                        }
+                    } else if (scheduledMultiResult.overallDeparture && scheduledMultiResult.overallArrival) {
+                        if (!route.earliestDeparture) {
+                            route.earliestDeparture = new Date(scheduledMultiResult.overallDeparture).getTime();
+                        }
+                        if (!route.earliestArrival) {
+                            route.earliestArrival = new Date(scheduledMultiResult.overallArrival).getTime();
+                        }
                     }
                 }
 
@@ -1208,12 +1330,16 @@ function updateRoutesWithTripTimes(routes, trips) {
         });
 
         if (matchingTrips.length > 0) {
-            const earliestDeparture = new Date(matchingTrips[0].departureTime).getTime();
-            const earliestArrival = new Date(matchingTrips[matchingTrips.length - 1].arrivalTime).getTime();
-            route.earliestDeparture = earliestDeparture;
-            route.earliestArrival = earliestArrival;
             route.tripCount = matchingTrips.length;
             route.matchingTrips = matchingTrips;
+            
+            // 仅对单段行程设置时间
+            // 多段行程的时间由多段回调（fetchMultiSegmentTrips）正确设置
+            // 避免 matchingTrips 混合多段班次导致出发时间取自非首段
+            if (!route.segments || route.segments.length <= 1) {
+                route.earliestDeparture = new Date(matchingTrips[0].departureTime).getTime();
+                route.earliestArrival = new Date(matchingTrips[matchingTrips.length - 1].arrivalTime).getTime();
+            }
         }
     });
 }
@@ -1440,7 +1566,7 @@ function findShortestRoutes(startCode, endCode) {
     const paths = buildAllPaths(previousWithAll, startCode, endCode);
     
     paths.forEach(path => {
-        const formattedPath = formatPath(path.path, false, graphWithAll);
+        const formattedPath = formatPath(path.path, false, graphWithAll, path.lineInfo);
         if (formattedPath) {
             formattedPath.totalDuration = path.time;
             allRoutes.push(formattedPath);
@@ -1538,7 +1664,7 @@ function findShortestRoutes(startCode, endCode) {
     const pathsWithoutGX = buildAllPaths(previousWithoutGX, startCode, endCode);
     
     pathsWithoutGX.forEach(path => {
-        const formattedPath = formatPath(path.path, true, graphWithoutGX);
+        const formattedPath = formatPath(path.path, true, graphWithoutGX, path.lineInfo);
         if (formattedPath) {
             formattedPath.totalDuration = path.time;
             routesWithoutGX.push(formattedPath);
@@ -1727,15 +1853,17 @@ function calculateSegmentDistanceAndDuration(line, fromIndex, toIndex) {
 }
 
 // 构建所有可能的路径（兼容旧的 previous[station]=[array] 格式）
+// 返回值中 path 为站点代码数组，lineInfo 为与 path 中相邻站点对一一对应的线路ID数组
 function buildAllPaths(previous, startCode, endCode) {
     const paths = [];
     
-    function dfs(station, path, time) {
+    function dfs(station, path, time, lineInfos) {
         // 如果已经到达起点
         if (station === startCode) {
             paths.push({
                 path: [...path, startCode].reverse(),
-                time: time
+                time: time,
+                lineInfo: [...lineInfos].reverse()
             });
             return;
         }
@@ -1743,14 +1871,14 @@ function buildAllPaths(previous, startCode, endCode) {
         const prev = previous[station];
         if (!prev || prev.length === 0) return;
         
-        // 遍历所有前驱节点
+        // 遍历所有前驱节点，记录每条边使用的线路
         prev.forEach(p => {
             const newTime = time + p.duration + 30; // 30秒站点停留时间
-            dfs(p.station, [...path, station], newTime);
+            dfs(p.station, [...path, station], newTime, [...lineInfos, p.line]);
         });
     }
     
-    dfs(endCode, [], 0);
+    dfs(endCode, [], 0, []);
     return paths;
 }
 
@@ -1798,7 +1926,8 @@ function buildAllPathsWithTransfer(previous, times, startCode, endCode) {
 }
 
 // 格式化路径
-function formatPath(path, excludeGXLines, graph) {
+// lineInfo: 与 path 中相邻站点对一一对应的线路ID数组（由 buildAllPaths 提供）
+function formatPath(path, excludeGXLines, graph, lineInfo) {
     if (path.length < 2) return null;
     
     // 根据参数决定是否排除GX开头的线路
@@ -1818,6 +1947,8 @@ function formatPath(path, excludeGXLines, graph) {
     for (let i = 0; i < path.length - 1; i++) {
         const from = path[i];
         const to = path[i + 1];
+        // 从 Dijkstra 计算的最短路径中获取该段实际使用的线路ID
+        const expectedLineId = lineInfo && lineInfo[i] ? lineInfo[i] : null;
         
         // 查找连接这两站的线路
         let foundLines = []; // 修改：支持多条线路
@@ -1858,17 +1989,20 @@ function formatPath(path, excludeGXLines, graph) {
             }
         }
         
-        // 如果有多条线路，我们需要根据当前线路选择合适的线路
+        // 选择合适的线路：优先使用 Dijkstra 计算路径中的实际线路
         let foundInfo = null;
         let foundLine = null;
         
         if (foundLines.length > 0) {
-            if (currentSegment.line) {
-                // 如果当前已经有线路，优先选择同一线路
+            // 1. 最高优先级：使用路径计算时确定的线路（确保线路选择与最短路径一致）
+            if (expectedLineId) {
+                foundInfo = foundLines.find(info => info.line.id === expectedLineId);
+            }
+            // 2. 次优先级：与当前段同一线路（保持连续性）
+            if (!foundInfo && currentSegment.line) {
                 foundInfo = foundLines.find(info => info.line.id === currentSegment.line);
             }
-            
-            // 如果没有同一线路或者当前没有线路，则选择第一条
+            // 3. 兜底：选择第一条可用线路
             if (!foundInfo) {
                 foundInfo = foundLines[0];
             }
@@ -2038,7 +2172,7 @@ function findRoutesFromStartLine(startCode, endCode, startLineInfo, graph, exclu
     const paths = buildAllPaths(previous, startCode, endCode);
     
     paths.forEach(path => {
-        const formattedPath = formatPath(path.path, excludeGXLines, graph);
+        const formattedPath = formatPath(path.path, excludeGXLines, graph, path.lineInfo);
         if (formattedPath) {
             formattedPath.totalDuration = path.time;
             routes.push(formattedPath);
@@ -2244,7 +2378,7 @@ function renderSearchResults(routes, container) {
                 const isTimetableVisible = showTimetableBtn && showTimetableBtn.classList.contains('active');
 
                 if (displayTrips.length > 0) {
-                    tripInfoHTML = `<div class="line-trip-list" ${isTimetableVisible ? '' : 'style="display: none;"'}>`;
+                    tripInfoHTML = `<div class="line-trip-list${isTimetableVisible ? '' : ' collapsed'}">`;
                     displayTrips.forEach((trip, tripIdx) => {
                         const depTime = formatTime(trip.departureTime);
                         const arrTime = formatTime(trip.arrivalTime);
@@ -2264,9 +2398,9 @@ function renderSearchResults(routes, container) {
                     if (segIndex > 0 && tripsBeforeFilter > 0 && previousSegmentArrivalTime !== null) {
                         // 有班次数据但因时间衔接被过滤
                         const prevArrivalStr = formatTime(new Date(previousSegmentArrivalTime).toISOString());
-                        tripInfoHTML = `<div class="line-trip-list" ${isTimetableVisible ? '' : 'style="display: none;"'}><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_valid_connection?.[lang]?.replace('{time}', prevArrivalStr) || `暂无晚于 ${prevArrivalStr} 出发的有效衔接班次`}</span></div>`;
+                        tripInfoHTML = `<div class="line-trip-list${isTimetableVisible ? '' : ' collapsed'}"><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_valid_connection?.[lang]?.replace('{time}', prevArrivalStr) || `暂无晚于 ${prevArrivalStr} 出发的有效衔接班次`}</span></div>`;
                     } else {
-                        tripInfoHTML = `<div class="line-trip-list" ${isTimetableVisible ? '' : 'style="display: none;"'}><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span></div>`;
+                        tripInfoHTML = `<div class="line-trip-list${isTimetableVisible ? '' : ' collapsed'}"><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span></div>`;
                     }
                 }
 
@@ -2288,9 +2422,9 @@ function renderSearchResults(routes, container) {
                             </div>
                             ${tripInfoHTML}
                             <div class="line-meta">
-                                <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]},</span>
-                                <span>${(segment.distance/1000).toFixed(1)}${strings.ticket_calculator.km[lang]},</span>
-                                <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
+                                <span>${strings.ticket_calculator.about_time[lang]}${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
+                                <span> (${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]},</span>
+                                <span>${(segment.distance/1000).toFixed(1)}${strings.ticket_calculator.km[lang]})</span>
                                 <span class="material-symbols-outlined expand-btn">keyboard_arrow_down</span>
                             </div>
                         </div>
@@ -2399,11 +2533,11 @@ function renderSearchResults(routes, container) {
                 strings.ticket_calculator.second_class[lang] + ' / ' 
                 + strings.ticket_calculator.no_seat_class[lang]  || '二等座/无座'
             }</span>
-            <span class="fare-detail-title fare-detail-calc" ${isFareDetailVisible ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}">
                 <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>¥${(basicFare.toFixed(2))}</span>
             </span>
-            <span class="fare-detail-title fare-detail-calc" ${(addition > 0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}" ${addition > 0 ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>${(addition > 0 ? '¥'+addition.toFixed(2) : '')}</span>
             </span>
@@ -2414,19 +2548,19 @@ function renderSearchResults(routes, container) {
                 strings.ticket_calculator.first_class[lang] + ' (' 
                 + strings.ticket_calculator.if_available[lang]  + ') ' || '一等座（如有）'
             }</span>
-            <span class="fare-detail-title fare-detail-calc" ${isFareDetailVisible ? '' : 'style="display: none;"'}">
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}">
                 <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>¥${basicFare.toFixed(2)}</span>
             </span>
-            <span class="fare-detail-title fare-detail-calc" ${(addition > 0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}" ${addition > 0 ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>¥${addition.toFixed(2)}</span>
             </span>
-            <span class="fare-detail-title fare-detail-calc" ${isFareDetailVisible ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}">
                 <span>${strings.ticket_calculator.first_class_addition[lang]}</span>
                 <span>¥${((basicFare+addition)/2).toFixed(2)}</span>
             </span>
-            <span class="fare-detail-title fare-detail-calc" ${((firstClassFare*100).toFixed(0)%5!==0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}" ${(firstClassFare*100).toFixed(0)%5!==0 ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.price_rounding[lang]}</span>
                 <span>-¥${(firstClassFare-Math.floor(firstClassFare*20)/20).toFixed(2)}</span>
             </span>
@@ -2437,20 +2571,20 @@ function renderSearchResults(routes, container) {
                 strings.ticket_calculator.premium_class[lang] + ' (' 
                 + strings.ticket_calculator.if_available[lang] + ') ' || '商务座（如有）'
             }</span>
-            <span class="fare-detail-title fare-detail-calc" ${isFareDetailVisible ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}">
                 <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>${(addition > 0 ? '¥'+basicFare.toFixed(2) : '')}</span>
             </span>
-            <span class="fare-detail-title fare-detail-calc" ${(addition > 0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}" ${addition > 0 ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>${(addition > 0 ? '¥'+addition.toFixed(2) : '')}</span>
             </span>
-            <span class="fare-detail-title fare-detail-calc" ${(addition > 0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc${isFareDetailVisible ? '' : ' collapsed'}" ${addition > 0 ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.premium_class_addition[lang]}</span>
                 <span>¥${(premiumClassFare === 29 ? (29-secondClassFare) : (addition*2)).toFixed(2)}</span>
             </span>
             <span class="fare-detail-value">¥<b>${(Math.floor(premiumClassFare*20)/20).toFixed(2)}</b></span>
-        </div>`
+        </div>`;
         fareDetails.innerHTML = fareDetailsHTML;
         routeElement.appendChild(fareDetails);
 
@@ -2711,6 +2845,14 @@ function updateTripTimesDisplay(trips) {
         if (searchResult) {
             searchResult.insertBefore(tripTimesContainer, searchResult.firstChild);
         }
+    }
+    
+    // 根据 show-timetable-btn 状态保持显示/隐藏
+    const showTimetableBtn = document.querySelector('.show-timetable-btn');
+    if (showTimetableBtn && !showTimetableBtn.classList.contains('active')) {
+        tripTimesContainer.classList.add('collapsed');
+    } else {
+        tripTimesContainer.classList.remove('collapsed');
     }
     
     // 生成班次信息HTML

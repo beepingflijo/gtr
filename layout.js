@@ -526,7 +526,7 @@ function initSidebar() {
                                 </span>
                                 <span>${window.strings?.ticket_calculator.sort_by_price[lang] || 'Cheaper'}</span>
                             </div>
-                            <!--<div class="icon-btn selection-item sort-by-departure-early">
+                            <div class="icon-btn selection-item sort-by-departure-early">
                                 <span class="material-symbols-outlined">
                                 directions_run
                                 </span>
@@ -537,7 +537,7 @@ function initSidebar() {
                                 flag
                                 </span>
                                 <span>${window.strings?.ticket_calculator.sort_by_arrival_early[lang] || 'Arrive Early'}</span>
-                            </div>-->
+                            </div>
                         </div>
                     </div>
                 </${currentPage==='ticket_calculator'?'div':'a'}>
@@ -643,7 +643,7 @@ function initSearchPanel() {
                     </span>
                     <span>${window.strings?.ticket_calculator.sort_by_price[lang] || 'Cheaper'}</span>
                 </div>
-                <!--<div class="icon-btn selection-item sort-by-departure-early">
+                <div class="icon-btn selection-item sort-by-departure-early">
                     <span class="material-symbols-outlined">
                     directions_run
                     </span>
@@ -654,7 +654,7 @@ function initSearchPanel() {
                     flag
                     </span>
                     <span>${window.strings?.ticket_calculator.sort_by_arrival_early[lang] || 'Arrive Early'}</span>
-                </div>-->
+                </div>
             </div>
         `;
     });
