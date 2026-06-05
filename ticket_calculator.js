@@ -393,6 +393,33 @@ function init() {
             });
         });
     }
+
+    // 添加时刻表显示按钮事件监听器
+    const showTimetableBtns = document.querySelectorAll('.show-timetable-btn');
+    showTimetableBtns.forEach(btn => {
+        btn.title = strings.ticket_calculator.show_timetable[lang];
+        btn.addEventListener('click', () => {
+            btn.classList.toggle('active');
+            const isActive = btn.classList.contains('active');
+            document.querySelectorAll('.line-trip-info, .line-trip-list').forEach(el => {
+                el.style.display = isActive ? '' : 'none';
+            });
+        });
+    });
+
+    // 添加票价明细显示按钮事件监听器
+    const showFareDetailBtns = document.querySelectorAll('.show-fare-detail-btn');
+    showFareDetailBtns.forEach(btn => {
+        btn.title = strings.ticket_calculator.show_fare_detail[lang];
+        btn.addEventListener('click', () => {
+            btn.classList.toggle('active');
+            const isActive = btn.classList.contains('active');
+            document.querySelectorAll('.fare-detail-calc').forEach(el => {
+                el.style.display = isActive ? '' : 'none';
+            });
+        });
+    });
+    window.handleActionsOverflow();
 }
 
 // 设置激活的排序按钮
@@ -649,11 +676,14 @@ async function performRefresh(forceRefresh = true) {
         const fetchPromises = [];
 
         // 1. 实时单线数据
+        const showTimetableActive = document.querySelector('.show-timetable-btn.active') !== null;
         fetchPromises.push(
             fetchTripTimes(startCode, endCode, forceRefresh).then(tripTimes => {
                 if (tripTimes && tripTimes.trips && tripTimes.trips.length > 0) {
                     updateRoutesWithTripTimes(routes, tripTimes.trips);
-                    updateTripTimesDisplay(tripTimes.trips);
+                    if (showTimetableActive) {
+                        updateTripTimesDisplay(tripTimes.trips);
+                    }
                     hasUpdate = true;
                     tripLogger.info('实时单线数据更新成功', { count: tripTimes.trips.length });
                 }
@@ -1033,7 +1063,10 @@ function handleSearch(sortBy = 'time') {
             return;
         }
         if (tripTimes && tripTimes.trips && tripTimes.trips.length > 0) {
-            updateTripTimesDisplay(tripTimes.trips);
+            const showTimetableActive = document.querySelector('.show-timetable-btn.active') !== null;
+            if (showTimetableActive) {
+                updateTripTimesDisplay(tripTimes.trips);
+            }
 
             // 按线路匹配班次到各路线
             updateRoutesWithTripTimes(routes, tripTimes.trips);
@@ -2207,9 +2240,11 @@ function renderSearchResults(routes, container) {
                 // 生成 HTML：显示所有匹配的列车（最多显示前12辆）
                 const maxDisplayTrips = 12;
                 const displayTrips = allTrips.slice(0, maxDisplayTrips);
+                const showTimetableBtn = document.querySelector('.show-timetable-btn');
+                const isTimetableVisible = showTimetableBtn && showTimetableBtn.classList.contains('active');
 
                 if (displayTrips.length > 0) {
-                    tripInfoHTML = '<div class="line-trip-list">';
+                    tripInfoHTML = `<div class="line-trip-list" ${isTimetableVisible ? '' : 'style="display: none;"'}>`;
                     displayTrips.forEach((trip, tripIdx) => {
                         const depTime = formatTime(trip.departureTime);
                         const arrTime = formatTime(trip.arrivalTime);
@@ -2219,7 +2254,7 @@ function renderSearchResults(routes, container) {
                         // 混合模式下仅对推算班次标注
                         const isScheduled = dataSource === 'scheduled' || (dataSource === 'mixed' && realtimeNames.has(trip.trainName) === false);
                         const schedTag = isScheduled ? ' ..' : '';
-                        tripInfoHTML += `${tripIdx > 0 ? '<br />' : ''}<span class="${itemClass}"><span class="material-symbols-outlined">${iconClass}</span> <b>${trip.trainName}</b>${schedTag} ${depTime} (${durMin}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>`;
+                        tripInfoHTML += `<span class="${itemClass}"><span class="material-symbols-outlined">${iconClass}</span> <b>${trip.trainName}</b>${schedTag} ${depTime} (${durMin}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>`;
                     });
                     if (allTrips.length > maxDisplayTrips) {
                         tripInfoHTML += `<span class="line-trip-more">+${allTrips.length - maxDisplayTrips} ${strings.ticket_calculator.more_trips?.[lang] || '更多班次'}</span>`;
@@ -2229,9 +2264,9 @@ function renderSearchResults(routes, container) {
                     if (segIndex > 0 && tripsBeforeFilter > 0 && previousSegmentArrivalTime !== null) {
                         // 有班次数据但因时间衔接被过滤
                         const prevArrivalStr = formatTime(new Date(previousSegmentArrivalTime).toISOString());
-                        tripInfoHTML = `<br /><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_valid_connection?.[lang]?.replace('{time}', prevArrivalStr) || `暂无晚于 ${prevArrivalStr} 出发的有效衔接班次`}</span><br />`;
+                        tripInfoHTML = `<div class="line-trip-list" ${isTimetableVisible ? '' : 'style="display: none;"'}><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_valid_connection?.[lang]?.replace('{time}', prevArrivalStr) || `暂无晚于 ${prevArrivalStr} 出发的有效衔接班次`}</span></div>`;
                     } else {
-                        tripInfoHTML = `<br /><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span><br />`;
+                        tripInfoHTML = `<div class="line-trip-list" ${isTimetableVisible ? '' : 'style="display: none;"'}><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span></div>`;
                     }
                 }
 
@@ -2242,18 +2277,22 @@ function renderSearchResults(routes, container) {
                             border-left-style:${(line.id.match('-R'))?
                                 'double':''}
                         ">
-                            <a class="line-name" 
-                                href="lines_info.html?line=${line.id.replace('-R', '')}"
-                                >${line.name[lang]}</a>
-                            <span>${strings.ticket_calculator.to_[lang].replace(
-                                '{dir}',
-                                terminalAddr
-                            )}</span>
+                            <div class="line-header">
+                                <a class="line-name" 
+                                    href="lines_info.html?line=${line.id.replace('-R', '')}"
+                                    >${line.name[lang]}</a>
+                                <span>${strings.ticket_calculator.to_[lang].replace(
+                                    '{dir}',
+                                    terminalAddr
+                                )}</span>
+                            </div>
                             ${tripInfoHTML}
-                            <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]},</span>
-                            <span>${(segment.distance/1000).toFixed(1)}${strings.ticket_calculator.km[lang]},</span>
-                            <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
-                            <span class="material-symbols-outlined expand-btn">keyboard_arrow_down</span>
+                            <div class="line-meta">
+                                <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]},</span>
+                                <span>${(segment.distance/1000).toFixed(1)}${strings.ticket_calculator.km[lang]},</span>
+                                <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
+                                <span class="material-symbols-outlined expand-btn">keyboard_arrow_down</span>
+                            </div>
                         </div>
                         <div class="stations" style="border-color: ${line.color};border-left-style:${(line.id.match('-R'))?'double':''}">
                             <ul class="station-list" ${segment.stations.length < 3 ? 'style="display: none;"' : ''}>
@@ -2337,7 +2376,6 @@ function renderSearchResults(routes, container) {
         const fareDetails = document.createElement('div');
         fareDetails.className = 'fare-details';
 
-        const showFareCalculation = prefs.showFareCalculation===true;
         const basicFare = route.basicFare;
         const secondClassFare = route.fare;
         const addition = secondClassFare - basicFare;
@@ -2353,17 +2391,19 @@ function renderSearchResults(routes, container) {
         const firstClassFare = route.fare * 1.5;
         const premiumClassAddition = addition * 2;
         const premiumClassFare = Math.max(secondClassFare + premiumClassAddition, 29);
+        const showFareDetailBtn = document.querySelector('.show-fare-detail-btn');
+        const isFareDetailVisible = showFareDetailBtn && showFareDetailBtn.classList.contains('active');
         const fareDetailsHTML = `
         <div class="fare-detail-item second">
             <span class="fare-detail-title">${
                 strings.ticket_calculator.second_class[lang] + ' / ' 
                 + strings.ticket_calculator.no_seat_class[lang]  || '二等座/无座'
             }</span>
-            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${isFareDetailVisible ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>¥${(basicFare.toFixed(2))}</span>
             </span>
-            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${(addition > 0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>${(addition > 0 ? '¥'+addition.toFixed(2) : '')}</span>
             </span>
@@ -2374,19 +2414,19 @@ function renderSearchResults(routes, container) {
                 strings.ticket_calculator.first_class[lang] + ' (' 
                 + strings.ticket_calculator.if_available[lang]  + ') ' || '一等座（如有）'
             }</span>
-            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${isFareDetailVisible ? '' : 'style="display: none;"'}">
                 <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>¥${basicFare.toFixed(2)}</span>
             </span>
-            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${(addition > 0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>¥${addition.toFixed(2)}</span>
             </span>
-            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${isFareDetailVisible ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.first_class_addition[lang]}</span>
                 <span>¥${((basicFare+addition)/2).toFixed(2)}</span>
             </span>
-            <span class="fare-detail-title" ${showFareCalculation && (firstClassFare*100).toFixed(0)%5!==0 ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${((firstClassFare*100).toFixed(0)%5!==0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.price_rounding[lang]}</span>
                 <span>-¥${(firstClassFare-Math.floor(firstClassFare*20)/20).toFixed(2)}</span>
             </span>
@@ -2397,15 +2437,15 @@ function renderSearchResults(routes, container) {
                 strings.ticket_calculator.premium_class[lang] + ' (' 
                 + strings.ticket_calculator.if_available[lang] + ') ' || '商务座（如有）'
             }</span>
-            <span class="fare-detail-title" ${showFareCalculation ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${isFareDetailVisible ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.basic_fare[lang]+' ('+(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>${(addition > 0 ? '¥'+basicFare.toFixed(2) : '')}</span>
             </span>
-            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${(addition > 0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.additional_fare[lang]+' ('+Math.ceil((additionalDistance/1000))+strings.ticket_calculator.km[lang]+')'}</span>
                 <span>${(addition > 0 ? '¥'+addition.toFixed(2) : '')}</span>
             </span>
-            <span class="fare-detail-title" ${showFareCalculation && addition > 0 ? '' : 'style="display: none;"'}>
+            <span class="fare-detail-title fare-detail-calc" ${(addition > 0 && isFareDetailVisible) ? '' : 'style="display: none;"'}>
                 <span>${strings.ticket_calculator.premium_class_addition[lang]}</span>
                 <span>¥${(premiumClassFare === 29 ? (29-secondClassFare) : (addition*2)).toFixed(2)}</span>
             </span>

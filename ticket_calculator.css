@@ -277,6 +277,7 @@ footer .search-panel .selection .selection-item.active:hover {
 
 /* 行内班次信息样式 */
 .line-trip-info {
+    display: block;
     font-size: 0.88em;
     color: var(--color-text);
 }
@@ -316,6 +317,19 @@ footer .search-panel .selection .selection-item.active:hover {
     font-size: 0.82em;
     color: var(--color-text-secondary, #888);
     opacity: 0.85;
+}
+
+.line-header {
+    display: block;
+}
+
+.line-trip-list {
+    display: block;
+    margin: 4px 0;
+}
+
+.line-meta {
+    display: block;
 }
 
 .stations {
@@ -537,6 +551,10 @@ footer .search-panel .selection .selection-item.active:hover {
 .swap-btn img {
     rotate: 90deg;
     transition: all 0.3s ease;
+}
+
+.show-fare-detail-btn .material-symbols-outlined { 
+    transform: translateX(-3%);
 }
 
 .fare-info-btn .material-symbols-outlined {

@@ -21,7 +21,7 @@ const WarningManager = (function() {
         }
     };
 
-    const WARNING_API_URL = '/api/warning';
+    const WARNING_API_URL = './api/warning';
     const ZERO_SPEED_START_PREFIX = 'zero_speed_start_';
     const WARNING_START_TIMES_KEY = 'warning_start_times';
     let reportedWarnings = new Map();
