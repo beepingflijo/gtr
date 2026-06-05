@@ -408,7 +408,33 @@
                     </tbody>
                 </table>
             </div>
-            <div class="item"> 
+
+            <div class="item">
+                <div class="progress-header">
+                    <span class="progress-title">列车时刻表（推算数据）</span>
+                    <span id="scheduleCount" class="last-update">--</span>
+                </div>
+                <table class="segments-table">
+                    <thead>
+                        <tr>
+                            <th>列车编号</th>
+                            <th>型号</th>
+                            <th>线路</th>
+                            <th>方向</th>
+                            <th>前方到站</th>
+                            <th>到站时间</th>
+                            <th>停站数</th>
+                            <th>最后更新</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trainSchedulesBody">
+                        <tr>
+                            <td colspan="8" class="loading">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="item">
         </main>
     </div>
 
@@ -598,16 +624,77 @@
             }
         }
 
+        function updateTrainSchedulesTable(schedules, lines) {
+            const tbody = document.getElementById('trainSchedulesBody');
+            const countEl = document.getElementById('scheduleCount');
+
+            if (!schedules || schedules.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">暂无推算时刻表数据</td></tr>';
+                countEl.textContent = '共 0 条';
+                return;
+            }
+
+            countEl.textContent = `共 ${schedules.length} 条`;
+
+            // 按线路和列车名称排序
+            schedules.sort((a, b) => {
+                if (a.lineId !== b.lineId) return a.lineId.localeCompare(b.lineId);
+                return a.trainName.localeCompare(b.trainName);
+            });
+
+            let html = '';
+            for (const schedule of schedules) {
+                const lineObj = lines[schedule.lineId];
+                const lineName = schedule.lineName || lineObj?.name?.zh_hans || schedule.lineId;
+
+                // 找到下一个未到达的站点
+                const now = new Date();
+                let nextStop = null;
+                let nextStopIndex = -1;
+                for (let i = 0; i < schedule.stops.length; i++) {
+                    const stopTime = new Date(schedule.stops[i].arrivalTime);
+                    if (stopTime > now) {
+                        nextStop = schedule.stops[i];
+                        nextStopIndex = i;
+                        break;
+                    }
+                }
+
+                const directionText = schedule.direction === 'forward' ? '正向' : '反向';
+                const nextStopName = nextStop ? nextStop.stationName : '已完成';
+                const nextStopTime = nextStop ? new Date(nextStop.arrivalTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--';
+                const stopsRemaining = nextStopIndex >= 0 ? schedule.stops.length - nextStopIndex : 0;
+                const lastUpdated = schedule.lastUpdated
+                    ? new Date(schedule.lastUpdated).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    : '--';
+
+                html += `
+                    <tr>
+                        <td><strong>${schedule.trainName}</strong></td>
+                        <td>${schedule.trainSeries || '--'}</td>
+                        <td>${lineName}</td>
+                        <td>${directionText}</td>
+                        <td>${nextStopName}</td>
+                        <td>${nextStopTime}</td>
+                        <td>${stopsRemaining}</td>
+                        <td class="last-update">${lastUpdated}</td>
+                    </tr>
+                `;
+            }
+            tbody.innerHTML = html;
+        }
+
         async function refreshData() {
             hideError();
 
             try {
                 // 并行加载所有数据
-                const [statusResult, segmentsResult, trainsResult, dwellResult, lines] = await Promise.all([
+                const [statusResult, segmentsResult, trainsResult, dwellResult, schedulesResult, lines] = await Promise.all([
                     fetchJson(`${API_BASE}/collector-status`),
                     fetchJson(`${API_BASE}/segment-durations`),
                     fetchJson(`${API_BASE}/tracked-trains`),
                     fetchJson(`${API_BASE}/station-dwell-times`),
+                    fetchJson(`${API_BASE}/train-schedules`),
                     loadLinesData()
                 ]);
 
@@ -627,6 +714,10 @@
 
                 if (dwellResult.success) {
                     updateStationDwellTable(dwellResult.data, lines);
+                }
+
+                if (schedulesResult.success) {
+                    updateTrainSchedulesTable(schedulesResult.data.schedules, lines);
                 }
 
             } catch (error) {

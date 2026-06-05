@@ -2,10 +2,13 @@
 // 基于列车位置变化，按区间/方向收集实际运行时间
 // 不必等待一辆车走完全程，每段轨道只需一辆列车经过就能获得该段耗时
 // 优先使用实际收集的数据，回退到 lines.json 中的默认值
+// 实现区间用时共享机制：当收集到某一线路特定区间的运行用时数据后，
+// 自动将该数据应用于该线路所有列车在相同区间的时刻表推算中
 
 const fs = require('fs');
 const path = require('path');
 const eventBus = require('./event-bus');
+const { config } = require('./timetable-config');
 
 const LINES_FILE = path.join(__dirname, '..', 'data', 'lines.json');
 const TRAINS_INFO_FILE = path.join(__dirname, '..', 'data', 'trains_info.json');
@@ -29,30 +32,50 @@ const stationDwellTimes = new Map();
 const stationPositions = new Map();
 
 // 默认站点停留时间（秒）
-const DEFAULT_DWELL_TIME = 30;
+const DEFAULT_DWELL_TIME = config.dwellTime.default;
 
 // 列车站点状态记录：key = trainName, value = { lineId, stationCode, direction, arrivalTime }
 const trainStationState = new Map();
 
 // 站点检测半径（米）
-const STATION_DETECT_RADIUS = 150;
+const STATION_DETECT_RADIUS = config.stationDetection.radius;
 
 // 最小/最大有效停留时间（秒）
-const MIN_VALID_DWELL = 5;
-const MAX_VALID_DWELL = 300; // 5分钟
+const MIN_VALID_DWELL = config.dwellTime.min;
+const MAX_VALID_DWELL = config.dwellTime.max;
 
 // 列车上次位置记录：key = trainName, value = { lineId, segmentIndex, timestamp, direction }
 const trainLastPositions = new Map();
 
 // 数据有效期（24小时）
-const DATA_TTL = 24 * 60 * 60 * 1000;
+const DATA_TTL = config.segmentDuration.dataTTL;
 
 // 每个区间最多存储的样本数
-const MAX_SAMPLES = 50;
+const MAX_SAMPLES = config.segmentDuration.maxSamples;
 
 // 最小有效用时（秒），过滤异常数据
-const MIN_VALID_DURATION = 5;
-const MAX_VALID_DURATION = 600; // 10分钟
+const MIN_VALID_DURATION = config.segmentDuration.minValid;
+const MAX_VALID_DURATION = config.segmentDuration.maxValid;
+
+// 日志函数
+function log(level, message, data = null) {
+    if (!config.logging.enabled) return;
+    
+    const levels = ['debug', 'info', 'warn', 'error'];
+    const configLevel = levels.indexOf(config.logging.level);
+    const messageLevel = levels.indexOf(level);
+    
+    if (messageLevel >= configLevel) {
+        const timestamp = new Date().toISOString();
+        const logMessage = `[SegmentDurationCollector] [${timestamp}] [${level.toUpperCase()}] ${message}`;
+        
+        if (data) {
+            console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](logMessage, data);
+        } else {
+            console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](logMessage);
+        }
+    }
+}
 
 // 加载线路数据
 function loadLinesData() {
@@ -398,6 +421,16 @@ function handleTrainPositionUpdate(payload) {
                             duration: estimatedSegmentDuration,
                             sampleCount: segmentData.durations.length
                         });
+                        
+                        // 记录日志
+                        if (config.logging.logDataUpdates) {
+                            log('info', `区间用时更新: ${lineId} 段${segmentIndex} 方向${direction}`, {
+                                train: trainName,
+                                duration: estimatedSegmentDuration.toFixed(2) + 's',
+                                sampleCount: segmentData.durations.length,
+                                source: 'progress-based'
+                            });
+                        }
                     }
                 }
             } else if (lastRecord.lineId === lineId && lastRecord.segmentIndex !== segmentIndex) {
@@ -433,6 +466,16 @@ function handleTrainPositionUpdate(payload) {
                         duration: timeDiff,
                         sampleCount: segmentData.durations.length
                     });
+                    
+                    // 记录日志
+                    if (config.logging.logDataUpdates) {
+                        log('info', `区间用时更新: ${lineId} 段${lastSegmentIndex} 方向${lastRecord.direction}`, {
+                            train: trainName,
+                            duration: timeDiff.toFixed(2) + 's',
+                            sampleCount: segmentData.durations.length,
+                            source: 'segment-complete'
+                        });
+                    }
                 }
             }
         }
@@ -494,6 +537,17 @@ function handleTrainPositionUpdate(payload) {
                         dwellTime,
                         sampleCount: dwellData.dwellTimes.length
                     });
+                    
+                    // 记录日志
+                    if (config.logging.logDataUpdates) {
+                        log('info', `站点停留时间更新: ${prevStationState.stationCode}`, {
+                            train: trainName,
+                            lineId: prevStationState.lineId,
+                            direction: prevStationState.direction,
+                            dwellTime: dwellTime.toFixed(2) + 's',
+                            sampleCount: dwellData.dwellTimes.length
+                        });
+                    }
                 }
                 
                 // 清除站点状态

@@ -550,6 +550,258 @@ let tripTimesCache = {
     TTL: 30000 // 30秒缓存有效期
 };
 
+// 自动刷新状态管理
+let refreshState = {
+    timer: null,          // 定时器 ID
+    active: false,        // 是否正在自动刷新
+    interval: 30000,      // 刷新间隔（30秒）
+    retryCount: 0,        // 当前重试次数
+    maxRetries: 3,        // 最大重试次数
+    retryDelay: 5000,     // 重试基础延迟（5秒）
+    lastRefreshTime: 0,   // 上次刷新时间
+    consecutiveErrors: 0, // 连续失败次数
+    routes: null,         // 当前路线数据
+    sortBy: 'time',       // 当前排序方式
+    startCode: null,      // 当前起点
+    endCode: null,        // 当前终点
+    resultsContainer: null // 结果容器
+};
+
+// 轻量日志系统
+const tripLogger = {
+    _logs: [],
+    _maxLogs: 100,
+    log(level, message, data = null) {
+        const entry = {
+            time: new Date().toISOString(),
+            level,
+            message,
+            data
+        };
+        this._logs.push(entry);
+        if (this._logs.length > this._maxLogs) {
+            this._logs = this._logs.slice(-this._maxLogs);
+        }
+        const prefix = `[TripRefresh][${level.toUpperCase()}]`;
+        if (level === 'error') {
+            console.error(prefix, message, data || '');
+        } else if (level === 'warn') {
+            console.warn(prefix, message, data || '');
+        } else {
+            console.log(prefix, message, data || '');
+        }
+    },
+    info(msg, data) { this.log('info', msg, data); },
+    warn(msg, data) { this.log('warn', msg, data); },
+    error(msg, data) { this.log('error', msg, data); },
+    getLogs() { return [...this._logs]; }
+};
+
+// 带重试的 fetch 封装
+async function fetchWithRetry(url, options = {}, maxRetries = 2, baseDelay = 2000) {
+    let lastError = null;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            if (attempt > 0) {
+                const delay = baseDelay * Math.pow(2, attempt - 1);
+                tripLogger.info(`重试请求 (第${attempt}次): ${url}`, { delay });
+                await new Promise(r => setTimeout(r, delay));
+            }
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error) {
+            lastError = error;
+            tripLogger.warn(`请求失败 (第${attempt + 1}次): ${url}`, { error: error.message });
+        }
+    }
+    throw lastError;
+}
+
+// 更新刷新状态指示器
+function updateRefreshIndicator(status) {
+    if (status === 'updated') {
+        const timeStr = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        showToast(`✓ ${timeStr} 班次数据已更新`, 3000);
+    } else if (status === 'error') {
+        showToast('班次数据更新失败，稍后自动重试', 5000);
+    }
+}
+
+// 执行一次刷新（重新获取所有班次数据）
+async function performRefresh(forceRefresh = true) {
+    const { routes, sortBy, startCode, endCode, resultsContainer } = refreshState;
+    if (!routes || !startCode || !endCode || !resultsContainer) {
+        tripLogger.warn('刷新跳过：缺少必要上下文');
+        return false;
+    }
+
+    tripLogger.info('开始刷新班次数据', { startCode, endCode, forceRefresh });
+    updateRefreshIndicator('refreshing');
+
+    let hasError = false;
+    let hasUpdate = false;
+
+    try {
+        // 并行获取所有数据源
+        const fetchPromises = [];
+
+        // 1. 实时单线数据
+        fetchPromises.push(
+            fetchTripTimes(startCode, endCode, forceRefresh).then(tripTimes => {
+                if (tripTimes && tripTimes.trips && tripTimes.trips.length > 0) {
+                    updateRoutesWithTripTimes(routes, tripTimes.trips);
+                    updateTripTimesDisplay(tripTimes.trips);
+                    hasUpdate = true;
+                    tripLogger.info('实时单线数据更新成功', { count: tripTimes.trips.length });
+                }
+            }).catch(e => {
+                tripLogger.error('实时单线数据更新失败', { error: e.message });
+                hasError = true;
+            })
+        );
+
+        // 2. 推算单线数据
+        fetchPromises.push(
+            fetchScheduledTrips(startCode, endCode, forceRefresh).then(scheduledData => {
+                if (scheduledData && scheduledData.trips && scheduledData.trips.length > 0) {
+                    routes.forEach(route => {
+                        if (route.segments && route.segments.length > 1) return;
+                        const routeLineIds = route.segments ? route.segments.map(s => s.line) : [];
+                        const matchingScheduled = scheduledData.trips.filter(trip => routeLineIds.includes(trip.lineId));
+                        if (matchingScheduled.length > 0) {
+                            route.scheduledTrips = matchingScheduled;
+                            const key = `${matchingScheduled[0].lineId}:${matchingScheduled[0].direction}`;
+                            if (scheduledData.nextTrips && scheduledData.nextTrips[key]) {
+                                route.scheduledNextTrip = scheduledData.nextTrips[key];
+                            }
+                            if (!route.earliestDeparture) {
+                                route.earliestDeparture = new Date(matchingScheduled[0].departureTime).getTime();
+                                route.earliestArrival = new Date(matchingScheduled[0].arrivalTime).getTime();
+                            }
+                        }
+                    });
+                    hasUpdate = true;
+                    tripLogger.info('推算单线数据更新成功', { count: scheduledData.trips.length });
+                }
+            }).catch(e => {
+                tripLogger.error('推算单线数据更新失败', { error: e.message });
+                hasError = true;
+            })
+        );
+
+        // 3. 多段换乘数据
+        routes.forEach(route => {
+            if (!route.segments || route.segments.length <= 1) return;
+            const segments = route.segments.map(seg => ({
+                lineId: seg.line,
+                startCode: seg.stations[0],
+                endCode: seg.stations[seg.stations.length - 1]
+            }));
+
+            fetchPromises.push(
+                fetchMultiSegmentTrips(segments, forceRefresh).then(multiResult => {
+                    if (multiResult) {
+                        route.multiSegmentTrips = multiResult;
+                        if (multiResult.overallDeparture && multiResult.overallArrival) {
+                            route.earliestDeparture = new Date(multiResult.overallDeparture).getTime();
+                            route.earliestArrival = new Date(multiResult.overallArrival).getTime();
+                            route.allSegmentsAvailable = multiResult.allAvailable;
+                        }
+                        hasUpdate = true;
+                    }
+                }).catch(e => {
+                    tripLogger.error('实时多段数据更新失败', { error: e.message });
+                    hasError = true;
+                })
+            );
+
+            fetchPromises.push(
+                fetchScheduledMultiSegmentTrips(segments, forceRefresh).then(scheduledMultiResult => {
+                    if (scheduledMultiResult) {
+                        route.scheduledMultiSegmentTrips = scheduledMultiResult;
+                        if (scheduledMultiResult.overallDeparture && scheduledMultiResult.overallArrival && !route.earliestDeparture) {
+                            route.earliestDeparture = new Date(scheduledMultiResult.overallDeparture).getTime();
+                            route.earliestArrival = new Date(scheduledMultiResult.overallArrival).getTime();
+                        }
+                        hasUpdate = true;
+                    }
+                }).catch(e => {
+                    tripLogger.error('推算多段数据更新失败', { error: e.message });
+                    hasError = true;
+                })
+            );
+        });
+
+        await Promise.allSettled(fetchPromises);
+
+        if (hasUpdate) {
+            if (sortBy === 'departure_early' || sortBy === 'arrival_early') {
+                sortRoutes(routes, sortBy);
+            }
+            renderSearchResults(routes, resultsContainer);
+            refreshState.consecutiveErrors = 0;
+            updateRefreshIndicator('updated');
+            tripLogger.info('班次数据刷新完成');
+        } else if (hasError) {
+            refreshState.consecutiveErrors++;
+            updateRefreshIndicator('error');
+            tripLogger.warn('刷新完成但无数据更新', { consecutiveErrors: refreshState.consecutiveErrors });
+        }
+
+        return hasUpdate;
+    } catch (error) {
+        refreshState.consecutiveErrors++;
+        tripLogger.error('刷新过程异常', { error: error.message });
+        updateRefreshIndicator('error');
+        return false;
+    }
+}
+
+// 启动自动刷新
+function startAutoRefresh(routes, sortBy, startCode, endCode, resultsContainer) {
+    stopAutoRefresh();
+    refreshState.routes = routes;
+    refreshState.sortBy = sortBy;
+    refreshState.startCode = startCode;
+    refreshState.endCode = endCode;
+    refreshState.resultsContainer = resultsContainer;
+    refreshState.active = true;
+    refreshState.consecutiveErrors = 0;
+    refreshState.lastRefreshTime = Date.now();
+
+    tripLogger.info('启动自动刷新', { interval: refreshState.interval, startCode, endCode });
+
+    refreshState.timer = setInterval(async () => {
+        if (!refreshState.active) return;
+        // 连续失败超过阈值时，逐步增加间隔（退避策略）
+        if (refreshState.consecutiveErrors >= refreshState.maxRetries) {
+            const backoffInterval = refreshState.interval * Math.min(refreshState.consecutiveErrors, 5);
+            tripLogger.warn(`连续失败${refreshState.consecutiveErrors}次，延迟${backoffInterval / 1000}秒后重试`);
+            updateRefreshIndicator('stopped');
+            return;
+        }
+        await performRefresh(true);
+        refreshState.lastRefreshTime = Date.now();
+    }, refreshState.interval);
+}
+
+// 停止自动刷新
+function stopAutoRefresh() {
+    if (refreshState.timer) {
+        clearInterval(refreshState.timer);
+        refreshState.timer = null;
+    }
+    refreshState.active = false;
+    updateRefreshIndicator('stopped');
+    tripLogger.info('停止自动刷新');
+}
+
+// 页面卸载时清理
+window.addEventListener('beforeunload', stopAutoRefresh);
+
 // 多段换乘查询缓存
 let multiSegmentCache = {
     data: null,
@@ -576,11 +828,12 @@ let scheduledMultiSegmentCache = {
 };
 
 // 获取推算时刻表班次信息（含第二辆列车）
-async function fetchScheduledTrips(startCode, endCode) {
+async function fetchScheduledTrips(startCode, endCode, forceRefresh = false) {
     const now = Date.now();
 
-    // 检查缓存
-    if (scheduledTripsCache.data &&
+    // 检查缓存（强制刷新时跳过）
+    if (!forceRefresh &&
+        scheduledTripsCache.data &&
         scheduledTripsCache.startCode === startCode &&
         scheduledTripsCache.endCode === endCode &&
         (now - scheduledTripsCache.timestamp) < scheduledTripsCache.TTL) {
@@ -588,7 +841,7 @@ async function fetchScheduledTrips(startCode, endCode) {
     }
 
     try {
-        const response = await fetch(`./api/timetable/scheduled-trips?start=${startCode}&end=${endCode}&lang=${lang}`);
+        const response = await fetchWithRetry(`./api/timetable/scheduled-trips?start=${startCode}&end=${endCode}&lang=${lang}`);
         if (response.ok) {
             const result = await response.json();
             if (result.success && result.data) {
@@ -610,19 +863,20 @@ async function fetchScheduledTrips(startCode, endCode) {
 }
 
 // 获取推算时刻表多段换乘班次信息
-async function fetchScheduledMultiSegmentTrips(segments) {
+async function fetchScheduledMultiSegmentTrips(segments, forceRefresh = false) {
     const now = Date.now();
 
     const cacheKey = segments.map(s => `${s.lineId}:${s.startCode}:${s.endCode}`).join('|');
 
-    if (scheduledMultiSegmentCache.data &&
+    if (!forceRefresh &&
+        scheduledMultiSegmentCache.data &&
         scheduledMultiSegmentCache.key === cacheKey &&
         (now - scheduledMultiSegmentCache.timestamp) < scheduledMultiSegmentCache.TTL) {
         return scheduledMultiSegmentCache.data;
     }
 
     try {
-        const response = await fetch('./api/timetable/scheduled-multi-segment-trips', {
+        const response = await fetchWithRetry('./api/timetable/scheduled-multi-segment-trips', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ segments, lang })
@@ -648,11 +902,12 @@ async function fetchScheduledMultiSegmentTrips(segments) {
 }
 
 // 获取班次时间信息
-async function fetchTripTimes(startCode, endCode) {
+async function fetchTripTimes(startCode, endCode, forceRefresh = false) {
     const now = Date.now();
     
-    // 检查缓存是否有效
-    if (tripTimesCache.data && 
+    // 检查缓存是否有效（强制刷新时跳过）
+    if (!forceRefresh &&
+        tripTimesCache.data && 
         tripTimesCache.startCode === startCode && 
         tripTimesCache.endCode === endCode && 
         (now - tripTimesCache.timestamp) < tripTimesCache.TTL) {
@@ -660,7 +915,7 @@ async function fetchTripTimes(startCode, endCode) {
     }
     
     try {
-        const response = await fetch(`./api/timetable/recent-trips?start=${startCode}&end=${endCode}&lang=${lang}`);
+        const response = await fetchWithRetry(`./api/timetable/recent-trips?start=${startCode}&end=${endCode}&lang=${lang}`);
         if (response.ok) {
             const result = await response.json();
             if (result.success && result.data) {
@@ -683,21 +938,22 @@ async function fetchTripTimes(startCode, endCode) {
 }
 
 // 获取多段换乘路线的班次信息
-async function fetchMultiSegmentTrips(segments) {
+async function fetchMultiSegmentTrips(segments, forceRefresh = false) {
     const now = Date.now();
     
     // 生成缓存 key
     const cacheKey = segments.map(s => `${s.lineId}:${s.startCode}:${s.endCode}`).join('|');
     
-    // 检查缓存是否有效
-    if (multiSegmentCache.data && 
+    // 检查缓存是否有效（强制刷新时跳过）
+    if (!forceRefresh &&
+        multiSegmentCache.data && 
         multiSegmentCache.key === cacheKey && 
         (now - multiSegmentCache.timestamp) < multiSegmentCache.TTL) {
         return multiSegmentCache.data;
     }
     
     try {
-        const response = await fetch('./api/timetable/multi-segment-trips', {
+        const response = await fetchWithRetry('./api/timetable/multi-segment-trips', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ segments, lang })
@@ -835,20 +1091,8 @@ function handleSearch(sortBy = 'time') {
 
                 const routeLineIds = route.segments ? route.segments.map(s => s.line) : [];
                 const matchingScheduled = scheduledData.trips.filter(trip => {
-                    if (!routeLineIds.includes(trip.lineId)) return false;
-                    // 验证方向
-                    if (startStationCode && endStationCode && window.lines) {
-                        const line = window.lines.find(l => l.id === trip.lineId);
-                        if (line) {
-                            const sIdx = line.route.findIndex(s => s.type === 'station' && s.code === startStationCode);
-                            const eIdx = line.route.findIndex(s => s.type === 'station' && s.code === endStationCode);
-                            if (sIdx !== -1 && eIdx !== -1) {
-                                const routeForward = sIdx < eIdx;
-                                if (routeForward !== (trip.direction === 'forward')) return false;
-                            }
-                        }
-                    }
-                    return true;
+                    // 后端已根据用户查询方向过滤班次，前端仅需匹配线路
+                    return routeLineIds.includes(trip.lineId);
                 });
 
                 if (matchingScheduled.length > 0) {
@@ -884,7 +1128,7 @@ function handleSearch(sortBy = 'time') {
         }));
 
         fetchScheduledMultiSegmentTrips(segments).then(scheduledMultiResult => {
-            if (scheduledMultiResult && scheduledMultiResult.available) {
+            if (scheduledMultiResult) {
                 route.scheduledMultiSegmentTrips = scheduledMultiResult;
 
                 if (scheduledMultiResult.overallDeparture && scheduledMultiResult.overallArrival) {
@@ -902,6 +1146,12 @@ function handleSearch(sortBy = 'time') {
             }
         });
     });
+
+    // 启动自动刷新（等待初始数据加载完成后开始）
+    stopAutoRefresh();
+    setTimeout(() => {
+        startAutoRefresh(routes, sortBy, startStationCode, endStationCode, resultsContainer);
+    }, refreshState.interval);
 }
 
 // 更新路线的班次时间信息（按线路和方向匹配）
@@ -920,25 +1170,8 @@ function updateRoutesWithTripTimes(routes, trips) {
 
         // 筛选出匹配该路线的班次：同线路 + 同方向
         const matchingTrips = trips.filter(trip => {
-            if (!routeLineIds.includes(trip.lineId)) return false;
-            
-            // 如果能确定方向，验证班次方向与路线方向一致
-            if (startCode && endCode && window.lines) {
-                const line = window.lines.find(l => l.id === trip.lineId);
-                if (line) {
-                    const sIdx = line.route.findIndex(s => s.type === 'station' && s.code === startCode);
-                    const eIdx = line.route.findIndex(s => s.type === 'station' && s.code === endCode);
-                    if (sIdx !== -1 && eIdx !== -1) {
-                        // 路线在此线路上的方向
-                        const routeForward = sIdx < eIdx;
-                        // 班次的方向
-                        const tripForward = trip.direction === 'forward';
-                        if (routeForward !== tripForward) return false;
-                    }
-                }
-            }
-            
-            return true;
+            // 后端已根据用户查询方向过滤班次，前端仅需匹配线路
+            return routeLineIds.includes(trip.lineId);
         });
 
         if (matchingTrips.length > 0) {
@@ -1108,7 +1341,6 @@ function sortRoutes(routes, sortBy) {
 function findShortestRoutes(startCode, endCode) {
     // 构建图（含所有线路）
     const graphWithAll = buildGraph(false);
-    console.log('构建的图：', graphWithAll);
     
     // 使用Dijkstra算法计算最短路径（含所有线路）
     const timesWithAll = {};
@@ -1136,9 +1368,7 @@ function findShortestRoutes(startCode, endCode) {
             }
         }
         
-        if (minStation === null) {
-            break;
-        }
+        if (minStation === null) break;
         
         visitedWithAll[minStation] = true;
         queueWithAll.splice(queueWithAll.indexOf(minStation), 1);
@@ -1147,12 +1377,9 @@ function findShortestRoutes(startCode, endCode) {
         if (graphWithAll[minStation]) {
             Object.keys(graphWithAll[minStation]).forEach(neighbor => {
                 if (!visitedWithAll[neighbor]) {
-                    // 修改：处理多条线路的情况
                     graphWithAll[minStation][neighbor].forEach(edge => {
-                        // 计算到邻居节点的总时间（包括行驶时间和站点/换乘时间）
-                        const newTime = timesWithAll[minStation] + edge.duration + 30; // 30秒站点停留时间
+                        const newTime = timesWithAll[minStation] + edge.duration + 30;
                         
-                        // 如果找到更短的时间，更新时间并记录路径
                         if (newTime < timesWithAll[neighbor]) {
                             timesWithAll[neighbor] = newTime;
                             previousWithAll[neighbor] = [{
@@ -1161,19 +1388,7 @@ function findShortestRoutes(startCode, endCode) {
                                 distance: edge.distance,
                                 duration: edge.duration
                             }];
-                        } 
-                        // 如果时间相等，也记录这个路径选项（添加到现有路径中）
-                        else if (Math.abs(newTime - timesWithAll[neighbor]) < 1e-6) {
-                            previousWithAll[neighbor].push({
-                                station: minStation,
-                                line: edge.line,
-                                distance: edge.distance,
-                                duration: edge.duration
-                            });
-                        }
-                        // 即使不是最短路径，我们也记录这个可能的路径（扩展搜索范围）
-                        else {
-                            // 添加非最优但有效的路径
+                        } else if (Math.abs(newTime - timesWithAll[neighbor]) < 1e-6) {
                             previousWithAll[neighbor].push({
                                 station: minStation,
                                 line: edge.line,
@@ -1189,11 +1404,8 @@ function findShortestRoutes(startCode, endCode) {
     
     // 重构所有路径（含所有线路）
     const allRoutes = [];
-    
-    // 通过回溯找到所有可能的路径
     const paths = buildAllPaths(previousWithAll, startCode, endCode);
     
-    // 格式化路径
     paths.forEach(path => {
         const formattedPath = formatPath(path.path, false, graphWithAll);
         if (formattedPath) {
@@ -1205,32 +1417,25 @@ function findShortestRoutes(startCode, endCode) {
     // 如果起点站有多于一条线路，则在寻路时找出从每条线路出发的路径
     const startStationLines = getStationLines(startCode);
     if (startStationLines.length > 1) {
-        // 为起点站的每条线路分别寻路
         for (const lineInfo of startStationLines) {
             const routesFromLine = findRoutesFromStartLine(startCode, endCode, lineInfo, graphWithAll, false);
             routesFromLine.forEach(route => {
-                // 检查是否已存在相同路径
                 const isDuplicate = allRoutes.some(existingRoute => 
                     existingRoute.path.join('-') === route.path.join('-') && 
                     Math.abs(existingRoute.totalDuration - route.totalDuration) < 1e-6
                 );
-                
-                if (!isDuplicate) {
-                    allRoutes.push(route);
-                }
+                if (!isDuplicate) allRoutes.push(route);
             });
         }
     }
     
-    // 计算每条路线的用时（暂不计算票价）
+    // 计算每条路线的用时
     allRoutes.forEach(route => {
-        // 计算用时
         route.totalDuration = calculateRouteDuration(route);
     });
     
     // 按用时排序所有路线
     allRoutes.sort((a, b) => a.totalDuration - b.totalDuration);
-    console.log(allRoutes);
     
     // 找到计费基准路线（总时间最短且换乘次数最少的不使用GX线路的路线）
     let billingRoute = null;
@@ -1244,7 +1449,6 @@ function findShortestRoutes(startCode, endCode) {
     const visitedWithoutGX = {};
     const queueWithoutGX = [];
     
-    // 初始化时间
     Object.keys(graphWithoutGX).forEach(station => {
         timesWithoutGX[station] = station === startCode ? 0 : Infinity;
         previousWithoutGX[station] = [];
@@ -1253,7 +1457,6 @@ function findShortestRoutes(startCode, endCode) {
     });
     
     while (queueWithoutGX.length > 0) {
-        // 找到未访问的最短时间节点
         let minTime = Infinity;
         let minStation = null;
         
@@ -1264,23 +1467,17 @@ function findShortestRoutes(startCode, endCode) {
             }
         }
         
-        if (minStation === null) {
-            break;
-        }
+        if (minStation === null) break;
         
         visitedWithoutGX[minStation] = true;
         queueWithoutGX.splice(queueWithoutGX.indexOf(minStation), 1);
         
-        // 更新相邻节点的时间
         if (graphWithoutGX[minStation]) {
             Object.keys(graphWithoutGX[minStation]).forEach(neighbor => {
                 if (!visitedWithoutGX[neighbor]) {
-                    // 修改：处理多条线路的情况
                     graphWithoutGX[minStation][neighbor].forEach(edge => {
-                        // 计算到邻居节点的总时间（包括行驶时间和站点/换乘时间）
-                        const newTime = timesWithoutGX[minStation] + edge.duration + 30; // 30秒站点停留时间
+                        const newTime = timesWithoutGX[minStation] + edge.duration + 30;
                         
-                        // 如果找到更短的时间，更新时间并记录路径
                         if (newTime < timesWithoutGX[neighbor]) {
                             timesWithoutGX[neighbor] = newTime;
                             previousWithoutGX[neighbor] = [{
@@ -1289,19 +1486,7 @@ function findShortestRoutes(startCode, endCode) {
                                 distance: edge.distance,
                                 duration: edge.duration
                             }];
-                        } 
-                        // 如果时间相等，也记录这个路径选项（添加到现有路径中）
-                        else if (Math.abs(newTime - timesWithoutGX[neighbor]) < 1e-6) {
-                            previousWithoutGX[neighbor].push({
-                                station: minStation,
-                                line: edge.line,
-                                distance: edge.distance,
-                                duration: edge.duration
-                            });
-                        }
-                        // 即使不是最短路径，我们也记录这个可能的路径（扩展搜索范围）
-                        else {
-                            // 添加非最优但有效的路径
+                        } else if (Math.abs(newTime - timesWithoutGX[neighbor]) < 1e-6) {
                             previousWithoutGX[neighbor].push({
                                 station: minStation,
                                 line: edge.line,
@@ -1317,11 +1502,8 @@ function findShortestRoutes(startCode, endCode) {
     
     // 重构路径（不含GX开头的线路）
     const routesWithoutGX = [];
-    
-    // 通过回溯找到所有可能的路径
     const pathsWithoutGX = buildAllPaths(previousWithoutGX, startCode, endCode);
     
-    // 格式化路径
     pathsWithoutGX.forEach(path => {
         const formattedPath = formatPath(path.path, true, graphWithoutGX);
         if (formattedPath) {
@@ -1333,37 +1515,26 @@ function findShortestRoutes(startCode, endCode) {
     // 如果起点站有多于一条线路，则在寻路时找出从每条线路出发的路径（不含GX线路）
     const startStationLinesWithoutGX = getStationLines(startCode, true);
     if (startStationLinesWithoutGX.length > 1) {
-        // 为起点站的每条不含GX的线路分别寻路
         for (const lineInfo of startStationLinesWithoutGX) {
             const routesFromLine = findRoutesFromStartLine(startCode, endCode, lineInfo, graphWithoutGX, true);
             routesFromLine.forEach(route => {
-                // 检查是否已存在相同路径
                 const isDuplicate = routesWithoutGX.some(existingRoute => 
                     existingRoute.path.join('-') === route.path.join('-') && 
                     Math.abs(existingRoute.totalDuration - route.totalDuration) < 1e-6
                 );
-                
-                if (!isDuplicate) {
-                    routesWithoutGX.push(route);
-                }
+                if (!isDuplicate) routesWithoutGX.push(route);
             });
         }
     }
     
-    // 从不含GX线路的路线中找到计费基准路线（总时间最短且换乘次数最少的路线）
+    // 从不含GX线路的路线中找到计费基准路线
     if (routesWithoutGX.length > 0) {
-        // 计算每条路线的总用时
         routesWithoutGX.forEach(route => {
             route.totalDuration = calculateRouteDuration(route);
         });
         
-        // 选择总时间最短且换乘次数最少的路线作为计费基准路线
         routesWithoutGX.sort((a, b) => {
-            // 首先按总时间排序
-            if (a.totalDuration !== b.totalDuration) {
-                return a.totalDuration - b.totalDuration;
-            }
-            // 时间相同时按换乘次数排序
+            if (a.totalDuration !== b.totalDuration) return a.totalDuration - b.totalDuration;
             return a.segments.length - b.segments.length;
         });
         billingRoute = routesWithoutGX[0];
@@ -1371,7 +1542,6 @@ function findShortestRoutes(startCode, endCode) {
     
     // 确保计费基准路线也在结果中
     if (billingRoute && !allRoutes.includes(billingRoute)) {
-        // 确保计费基准路线有计算好的总用时和费用
         billingRoute.totalDuration = calculateRouteDuration(billingRoute);
         billingRoute.fare = calculateFare(billingRoute.totalDistance);
         allRoutes.push(billingRoute);
@@ -1379,14 +1549,12 @@ function findShortestRoutes(startCode, endCode) {
     
     // 为所有路线计算票价
     allRoutes.forEach(route => {
-        // 如果有计费基准路线，则计算加快费
         if (billingRoute) {
             route.fare = calculateFareWithBillingRoute(route, billingRoute);
         } else {
-            // 没有计费基准路线时，按距离计算费用
             route.fare = calculateFare(route.totalDistance);
         }
-        route.basicFare = billingRoute?billingRoute.fare:calculateFare(route.totalDistance);
+        route.basicFare = billingRoute ? billingRoute.fare : calculateFare(route.totalDistance);
     });
     
     // 去重处理
@@ -1394,14 +1562,9 @@ function findShortestRoutes(startCode, endCode) {
     const routeSignatures = new Set();
 
     allRoutes.forEach(route => {
-        // 使用基本路径签名
         let signature = route.path.join('-');
-
-        // 检查是否包含GX线路，如果包含，则在签名中添加标识以避免被去重
         const hasGXLine = route.segments.some(segment => segment.line.startsWith('GX'));
-        if (hasGXLine) {
-            signature += '-with-GX'; // 为包含GX线路的路径添加特殊标识
-        }
+        if (hasGXLine) signature += '-with-GX';
 
         if (!routeSignatures.has(signature)) {
             routeSignatures.add(signature);
@@ -1409,10 +1572,8 @@ function findShortestRoutes(startCode, endCode) {
         }
     });
 
-    // 在去重之后、返回之前对结果进行排序（按总用时升序）
+    // 排序并限制数量
     uniqueRoutes.sort((a, b) => a.totalDuration - b.totalDuration);
-
-    // 限制最大显示数量为20条
     return uniqueRoutes.slice(0, 20);
 }
 
@@ -1532,7 +1693,7 @@ function calculateSegmentDistanceAndDuration(line, fromIndex, toIndex) {
     return { distance: totalDistance, duration: totalDuration };
 }
 
-// 构建所有可能的路径
+// 构建所有可能的路径（兼容旧的 previous[station]=[array] 格式）
 function buildAllPaths(previous, startCode, endCode) {
     const paths = [];
     
@@ -1557,6 +1718,49 @@ function buildAllPaths(previous, startCode, endCode) {
     }
     
     dfs(endCode, [], 0);
+    return paths;
+}
+
+// 从新的状态扩展 previous 数据中构建所有路径
+// previous 格式: previous["station:line"] = { station, line, distance, duration }
+function buildAllPathsWithTransfer(previous, times, startCode, endCode) {
+    const paths = [];
+    
+    // 找到终点站的所有状态（可能通过不同线路到达）
+    const endStates = Object.keys(previous).filter(key => key.startsWith(endCode + ':'));
+    
+    for (const endStateKey of endStates) {
+        const path = [];
+        let currentStateKey = endStateKey;
+        let totalTime = times[endStateKey] || 0;
+        
+        // 回溯路径
+        while (currentStateKey && previous[currentStateKey]) {
+            const prev = previous[currentStateKey];
+            const currentStation = currentStateKey.split(':')[0];
+            path.push(currentStation);
+            currentStateKey = `${prev.station}:${prev.line}`;
+        }
+        
+        // 添加起点
+        const startStation = currentStateKey ? currentStateKey.split(':')[0] : startCode;
+        if (startStation === startCode) {
+            path.push(startCode);
+            path.reverse();
+            
+            // 检查是否已存在相同路径
+            const pathKey = path.join('-');
+            const isDuplicate = paths.some(p => p.path.join('-') === pathKey);
+            
+            if (!isDuplicate) {
+                paths.push({
+                    path: path,
+                    time: totalTime
+                });
+            }
+        }
+    }
+    
     return paths;
 }
 
@@ -1920,7 +2124,10 @@ function renderSearchResults(routes, container) {
             </div>
             <div class="route-details">
         `;
-        
+
+        // 跨段时间依赖：记录前一段到达时间，约束后续段出发时间
+        let previousSegmentArrivalTime = null;
+
         route.segments.forEach((segment, segIndex) => {
             const line = window.lines.find(l => l.id === segment.line);
             const onStationIndex = line.route.findIndex(step => step.type === 'station' && step.code === route.segments[segIndex].stations[0]);
@@ -1938,72 +2145,94 @@ function renderSearchResults(routes, container) {
                         </div>`
                 }
 
-                // 获取该段的班次信息（优先实时数据，补充推算数据含第二辆列车）
+                // 获取该段的班次信息（优先实时数据，补充推算数据）
                 let tripInfoHTML = '';
-                let primaryTrip = null;
-                let secondTrip = null;
-                let dataSource = ''; // 'realtime' | 'scheduled'
+                let allTrips = [];
+                let dataSource = ''; // 'realtime' | 'scheduled' | 'mixed'
 
-                // 1. 尝试从实时多段换乘数据获取
+                // 1. 收集实时班次
+                let realtimeTrips = [];
                 if (route.multiSegmentTrips && route.multiSegmentTrips.segments && route.multiSegmentTrips.segments[segIndex]) {
                     const segTrips = route.multiSegmentTrips.segments[segIndex];
                     if (segTrips.available && segTrips.trips.length > 0) {
-                        primaryTrip = segTrips.trips[0];
-                        dataSource = 'realtime';
+                        realtimeTrips = segTrips.trips;
                     }
                 }
-                // 2. 尝试从实时单线数据获取
-                if (!primaryTrip && route.matchingTrips && route.matchingTrips.length > 0 && route.segments.length === 1) {
-                    primaryTrip = route.matchingTrips[0];
-                    dataSource = 'realtime';
+                if (realtimeTrips.length === 0 && route.matchingTrips && route.matchingTrips.length > 0 && route.segments.length === 1) {
+                    realtimeTrips = route.matchingTrips;
                 }
-                // 3. 尝试从推算多段换乘数据获取
-                if (!primaryTrip && route.scheduledMultiSegmentTrips && route.scheduledMultiSegmentTrips.segments && route.scheduledMultiSegmentTrips.segments[segIndex]) {
+
+                // 2. 收集推算班次
+                let scheduledTrips = [];
+                if (route.scheduledMultiSegmentTrips && route.scheduledMultiSegmentTrips.segments && route.scheduledMultiSegmentTrips.segments[segIndex]) {
                     const schedSeg = route.scheduledMultiSegmentTrips.segments[segIndex];
                     if (schedSeg.available && schedSeg.trips.length > 0) {
-                        primaryTrip = schedSeg.trips[0];
-                        dataSource = 'scheduled';
+                        scheduledTrips = schedSeg.trips;
                     }
                 }
-                // 4. 尝试从推算单线数据获取
-                if (!primaryTrip && route.scheduledTrips && route.scheduledTrips.length > 0 && route.segments.length === 1) {
-                    primaryTrip = route.scheduledTrips[0];
+                if (scheduledTrips.length === 0 && route.scheduledTrips && route.scheduledTrips.length > 0 && route.segments.length === 1) {
+                    scheduledTrips = route.scheduledTrips;
+                }
+
+                // 3. 智能合并：实时数据优先，不足时补充推算数据
+                const realtimeNames = new Set(realtimeTrips.map(t => t.trainName));
+                const mergedScheduled = scheduledTrips.filter(t => !realtimeNames.has(t.trainName));
+
+                if (realtimeTrips.length > 0 && mergedScheduled.length > 0) {
+                    // 合并：实时 + 不重复的推算班次
+                    allTrips = [...realtimeTrips, ...mergedScheduled];
+                    dataSource = 'mixed';
+                } else if (realtimeTrips.length > 0) {
+                    allTrips = realtimeTrips;
+                    dataSource = 'realtime';
+                } else if (scheduledTrips.length > 0) {
+                    allTrips = scheduledTrips;
                     dataSource = 'scheduled';
                 }
 
-                // 获取第二辆列车信息
-                if (primaryTrip) {
-                    // 从推算多段换乘数据获取第二辆
-                    if (route.scheduledMultiSegmentTrips && route.scheduledMultiSegmentTrips.segments && route.scheduledMultiSegmentTrips.segments[segIndex]) {
-                        const schedSeg = route.scheduledMultiSegmentTrips.segments[segIndex];
-                        if (schedSeg.nextTrip) {
-                            secondTrip = schedSeg.nextTrip;
-                        } else if (schedSeg.trips && schedSeg.trips.length >= 2) {
-                            secondTrip = schedSeg.trips[1];
-                        }
-                    }
-                    // 从推算单线数据获取第二辆
-                    if (!secondTrip && route.scheduledNextTrip) {
-                        secondTrip = route.scheduledNextTrip;
-                    }
-                    if (!secondTrip && route.scheduledTrips && route.scheduledTrips.length >= 2) {
-                        secondTrip = route.scheduledTrips[1];
-                    }
+                // 按出发时间排序
+                allTrips.sort((a, b) => new Date(a.departureTime) - new Date(b.departureTime));
+
+                // 跨段时间校验：过滤掉出发时间早于前段到达时间的班次
+                const tripsBeforeFilter = allTrips.length;
+                if (segIndex > 0 && previousSegmentArrivalTime !== null && allTrips.length > 0) {
+                    allTrips = allTrips.filter(t => new Date(t.departureTime).getTime() > previousSegmentArrivalTime);
                 }
 
-                // 生成 HTML
-                if (primaryTrip) {
-                    const depTime = formatTime(primaryTrip.departureTime);
-                    const durMin = Math.ceil(primaryTrip.duration / 60);
-                    const schedTag = dataSource === 'scheduled' ? ' ..' : '';
-                    tripInfoHTML = `<br /><span class="line-trip-info"><span class="material-symbols-outlined">cast</span> <b>${primaryTrip.trainName}</b>${schedTag} ${depTime} (+${durMin}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>`;
-                    // 显示第二辆列车出发时刻
-                    if (secondTrip) {
-                        const nextDepTime = formatTime(secondTrip.departureTime);
-                        tripInfoHTML += `<br /><span class="line-trip-info line-trip-next"><span class="material-symbols-outlined">fast_forward</span> <b>${secondTrip.trainName || ''}</b> ${nextDepTime}</span>`;
+                // 记录本段第一班的到达时间，作为下段时间约束
+                if (allTrips.length > 0) {
+                    previousSegmentArrivalTime = new Date(allTrips[0].arrivalTime).getTime();
+                }
+
+                // 生成 HTML：显示所有匹配的列车（最多显示前12辆）
+                const maxDisplayTrips = 12;
+                const displayTrips = allTrips.slice(0, maxDisplayTrips);
+
+                if (displayTrips.length > 0) {
+                    tripInfoHTML = '<div class="line-trip-list">';
+                    displayTrips.forEach((trip, tripIdx) => {
+                        const depTime = formatTime(trip.departureTime);
+                        const arrTime = formatTime(trip.arrivalTime);
+                        const durMin = Math.ceil(trip.duration / 60);
+                        const iconClass = tripIdx === 0 ? 'cast' : 'fast_forward';
+                        const itemClass = tripIdx === 0 ? 'line-trip-info' : 'line-trip-info line-trip-next';
+                        // 混合模式下仅对推算班次标注
+                        const isScheduled = dataSource === 'scheduled' || (dataSource === 'mixed' && realtimeNames.has(trip.trainName) === false);
+                        const schedTag = isScheduled ? ' ..' : '';
+                        tripInfoHTML += `${tripIdx > 0 ? '<br />' : ''}<span class="${itemClass}"><span class="material-symbols-outlined">${iconClass}</span> <b>${trip.trainName}</b>${schedTag} ${depTime} (${durMin}${strings.ticket_calculator.min?.[lang] || '分钟'})</span>`;
+                    });
+                    if (allTrips.length > maxDisplayTrips) {
+                        tripInfoHTML += `<span class="line-trip-more">+${allTrips.length - maxDisplayTrips} ${strings.ticket_calculator.more_trips?.[lang] || '更多班次'}</span>`;
                     }
+                    tripInfoHTML += '</div>';
                 } else {
-                    tripInfoHTML = `<br /><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span>`;
+                    if (segIndex > 0 && tripsBeforeFilter > 0 && previousSegmentArrivalTime !== null) {
+                        // 有班次数据但因时间衔接被过滤
+                        const prevArrivalStr = formatTime(new Date(previousSegmentArrivalTime).toISOString());
+                        tripInfoHTML = `<br /><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_valid_connection?.[lang]?.replace('{time}', prevArrivalStr) || `暂无晚于 ${prevArrivalStr} 出发的有效衔接班次`}</span><br />`;
+                    } else {
+                        tripInfoHTML = `<br /><span class="line-trip-info line-trip-unavailable"><span class="material-symbols-outlined">cast_warning</span> ${strings.ticket_calculator.no_timetable_for_segment?.[lang] || '该区间暂无时刻表数据'}</span><br />`;
+                    }
                 }
 
                 routeHTML += `
@@ -2021,7 +2250,6 @@ function renderSearchResults(routes, container) {
                                 terminalAddr
                             )}</span>
                             ${tripInfoHTML}
-                            <br />
                             <span>${strings.ticket_calculator.pass_stations[lang]}${segment.stations.length - 1}${segment.stations.length > 2 ? strings.ticket_calculator.stations[lang] : strings.ticket_calculator._station[lang]},</span>
                             <span>${(segment.distance/1000).toFixed(1)}${strings.ticket_calculator.km[lang]},</span>
                             <span>${Math.ceil(segment.duration / 60)}${strings.ticket_calculator.min[lang]}</span>
@@ -2454,8 +2682,8 @@ function updateTripTimesDisplay(trips) {
         <div class="trip-times-list">
     `;
     
-    // 显示最近的几个班次（最多显示5个）
-    const displayTrips = trips.slice(0, 5);
+    // 显示最近的几个班次（最多显示15个）
+    const displayTrips = trips.slice(0, 15);
     
     displayTrips.forEach((trip, index) => {
         const departureTime = formatTime(trip.departureTime);
