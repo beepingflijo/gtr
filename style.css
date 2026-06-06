@@ -266,7 +266,8 @@
     .selection:not(.collapsed), 
     .tooltip, .side-bar:not(.collapsed),
     footer .selection.collapsed .selection-item.active,
-    footer .search-panel.collapsed { 
+    footer .search-panel.collapsed,
+    .dialog-container:has(.shortcut-list) { 
         border: 2px solid var(--color-border);
     }
 
@@ -349,7 +350,8 @@
 .effect-reduced .selection:not(.collapsed), 
 .effect-reduced .tooltip, .effect-reduced .side-bar:not(.collapsed),
 .effect-reduced footer .selection.collapsed .selection-item.active,
-.effect-reduced footer .search-panel.collapsed { 
+.effect-reduced footer .search-panel.collapsed,
+.effect-reduced .dialog-container:has(.shortcut-list) { 
     border: 2px solid var(--color-border);
 }
 
@@ -673,6 +675,20 @@ header * {
 
 .dialog-container { 
     overflow: hidden;
+}
+
+.dialog-container, .dialog-container.item { 
+    background-color: var(--color-background-card-solid);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 90%;
+    max-width: 480px;
+    max-height: 75dvh;
+    transition: all 0.2s ease-in-out;
+    margin: 0 18px;
+    padding: 8px 4px;
 }
 
 .dialog-container, .dialog-container.item { 
@@ -1023,7 +1039,7 @@ header * {
     flex-wrap: nowrap;
     background: var(--color-background-actions);
     border-radius: 24px;
-    margin: 0 6px;
+    margin: 0 4px;
     transition: all 0.35s ease;
     box-shadow: var(--item-shadow-inset);
     filter: var(--filter-item-shadow);
@@ -1163,6 +1179,7 @@ header * {
 
 .selection .selection-item.active:hover {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    background-color: var(--color-background-actions);
 }
 
 .selection:not(.collapsed) .selection-item.active, .icon-btn.active {

@@ -72,7 +72,7 @@ footer.swapped .search-controls{
     filter: blur(24px);
 }
 
-.search-panel.collapsed .input-section,
+.search-panel.collapsed .input-container,
 .search-panel.collapsed .search-actions {
     height: 0;
     width: 0;
@@ -101,28 +101,22 @@ footer.swapped .search-controls{
     padding: initial;
     overflow: visible;
     width: fit-content;
+    min-width: 0;
 }
 
-footer .search-panel:not(.collapsed) .input-section,
-footer .search-panel:not(.collapsed) .search-actions {
-    width: -webkit-fill-available;
+footer .search-panel:not(.collapsed) .sort-selector {
+    min-width: 0;
 }
 
 footer .search-panel:not(.collapsed) {
     width: calc(100% - 12em);
-    max-width: 18em;
+    max-width: 16em;
 }
 
 @media (width < 540px) {
     footer .search-panel:not(.collapsed) {
         width: calc(100% - 5em);
         max-width: 18em;
-    }
-}
-
-@media (width < 440px) {
-    footer .search-panel:not(.collapsed) .sort-selector .icon-btn {
-        padding-inline: 0;
     }
 }
 
@@ -146,6 +140,14 @@ footer .search-panel .selection .selection-item.active:hover {
     background-color: var(--color-background-actions);
 }
 
+.input-container { 
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    max-width: -webkit-fill-available;
+}
+
 .input-section {
     display: flex;
     flex-direction: column;
@@ -155,6 +157,10 @@ footer .search-panel .selection .selection-item.active:hover {
     max-width: -webkit-fill-available;
     width: fit-content;
     min-width: unset;
+}
+
+footer .search-panel .input-section { 
+    gap: 8px;
 }
 
 .search-actions {
@@ -350,6 +356,21 @@ footer .search-panel .selection .selection-item.active:hover {
 .line-trip-list {
     display: block;
     margin: 4px 0;
+    overflow: hidden;
+    max-height: 50em;
+    opacity: 1;
+    transition: max-height 0.35s ease, opacity 0.35s ease, filter 0.35s ease;
+}
+
+.line-trip-list.collapsed {
+    max-height: 0;
+    opacity: 0;
+    filter: blur(4px);
+    padding: 0;
+    margin: 0;
+    height: 0;
+    line-height: 0;
+    overflow: hidden;
 }
 
 .line-meta {

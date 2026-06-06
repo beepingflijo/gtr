@@ -86,7 +86,7 @@ function init() {
                     </div>
                     <div class="line-name-container">
                         <span class="line-name">${line.name[lang]}</span>
-                        <span class="line-name-original">${!lang.startsWith('zh') ? line.name['zh_hans'] : ''}</span>
+                        <span class="line-name-original">${!lang.startsWith('zh') ? (line.name.original || line.name['zh_hans']) : ''}</span>
                     </div>
                 </a>
                 `;

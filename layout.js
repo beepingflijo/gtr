@@ -288,6 +288,7 @@ function handleActions() {
     // 调整actions样式
     document.querySelectorAll('.actions:not(.search-bar,.tabs)').forEach(actions => {
         if (Array.from(actions.children).filter(child => !child.classList.contains('cursor')&&!child.classList.contains('hidden-btn')).length >= 2) actions.style.padding = '2px 8px';
+        else actions.style.padding = '';
     });
 }
 
@@ -610,16 +611,18 @@ function initSearchPanel() {
                 </span>
                 <h4>${window.strings?.ticket_calculator.search[lang] || 'Search'}</h4>
             </div>
-            <section class="input-section">
-                <input type="text" placeholder="${window.strings?.ticket_calculator.start_station[lang] || 'Origin'}" id="startInput" list="start-stations"></input>
+            <div class="input-container">
+                <section class="input-section">
+                    <input type="text" placeholder="${window.strings?.ticket_calculator.start_station[lang] || 'Origin'}" id="startInput" list="start-stations"></input>
+                    <input type="text" placeholder="${window.strings?.ticket_calculator.end_station[lang] || 'Destination'}" id="endInput" list="end-stations"></input>
+                </section>
                 <div class="icon-btn swap-btn">
                     <span class="material-symbols-outlined">
                     swap_vert
                     </span>
                     <span>${window.strings?.ticket_calculator.swap[lang] || 'Swap'}</span>
                 </div>
-                <input type="text" placeholder="${window.strings?.ticket_calculator.end_station[lang] || 'Destination'}" id="endInput" list="end-stations"></input>
-            </section>
+            </div>
             <section class="search-actions">
                 <button id="searchBtn" class="active">${window.strings?.ticket_calculator.search[lang] || 'Search'}</button>
                 <button id="clearBtn">${window.strings?.ticket_calculator.clear_input[lang] || 'Clear'}</button>
@@ -1096,8 +1099,8 @@ function positionDropdown(dropdown, triggerBtn) {
     // 确保不超出顶部
     if (top < padding) top = padding;
     
-    dropdown.style.left = `${left}px`;
-    dropdown.style.top = `${top}px`;
+    dropdown.style.left = `${left + (viewportWidth < 360 ? 360 - viewportWidth : 0)}px`;
+    dropdown.style.top = `${top / (Math.min(1, viewportWidth / 360))}px`;
 }
 
 // 创建 more-btn 下拉菜单
@@ -1228,7 +1231,6 @@ function handleActionsOverflow() {
                     btn.classList.add('hidden-btn');
                     btn.style.display = 'none';
                     hiddenBtns.push(btn);
-                    handleActions();
                 } else {
                     currentWidth += btnWidth;
                 }

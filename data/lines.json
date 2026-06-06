@@ -560,7 +560,7 @@
         },          
         {
             "id": "GX03",
-            "name": {"zh_hans": "急行 广阳西-格林布希","en": "Exp. GYX-AGS", "zh_hant": "急行 廣陽西-格林布希", "uk":"Експрес GYX-AGS"},
+            "name": {"original": "由崎司號", "zh_hans": "由崎司号","en": "Exp. Yuzaki Tsukasa", "zh_hant": "由崎司號", "uk":"Експрес Юдзакі Цукаса"},
             "color": "#f98425",
             "route": [
                 {"type": "station", "code": "AGS"},

@@ -27,11 +27,16 @@ function listenKeyboardShortcuts() {
         const sortByTime = document.querySelector('.side-bar .sort-by-time');
         const sortByTransfers = document.querySelector('.side-bar .sort-by-transfers');
         const sortByPrice = document.querySelector('.side-bar .sort-by-price');
+        const sortByDepartureEarly = document.querySelector('.side-bar .sort-by-departure-early');
+        const sortByArrivalEarly = document.querySelector('.side-bar .sort-by-arrival-early');
+        const mapEntry = document.querySelector('.map-entry');
         const modalOverlay = document.querySelectorAll('.modal-overlay');
         const backBtn = document.querySelector('.back-btn');
         const nextBtn = document.querySelector('.next-btn');
         const prevBtn = document.querySelector('.prev-btn');
         const setUpwardsSwitch = document.querySelector('.switch.set-upwards');
+        const linesWithoutR = window.lines?.filter(line => !line.id.includes('-R'));
+        const lineCodeLastLetters = linesWithoutR?.map(line => line.id.slice(-1));
         // Alt 触发快捷键操作
         if (event.altKey) { 
             switch (event.key) {
@@ -112,6 +117,13 @@ function listenKeyboardShortcuts() {
                 case 'C':
                     sortByPrice?.click();
                     break;
+                case 'L':
+                    sortByDepartureEarly?.click();
+                    break;
+                case 'A':
+                    sortByArrivalEarly?.click();
+                    mapEntry?.click();
+                    break;
                 case 'Enter': 
                     if (currentPage!=='content.html') backBtn?.click();
                     break;
@@ -135,7 +147,6 @@ function listenKeyboardShortcuts() {
                     break;
             }
             if (currentPage === 'lines_info.html') {
-                const linesWithoutR = window.lines.filter(line => !line.id.includes('-R'));
                 // 处理 Shift + 数字键的情况,将特殊字符转换回数字
                 let searchKey = event.key;
                 const shiftNumberMap = {
@@ -291,7 +302,13 @@ function listenKeyboardShortcuts() {
                 <div class="shortcut-item" ${currentPage === 'lines_info.html' ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${strings.lines_info.show_other_line[lang]}</span>
                     <span class="shortcut-key">⇧</span>
-                    <span>${strings.lines_info.last_of_code[lang]}</span>
+                    <span class="shortcut-key">${lineCodeLastLetters?.join('/') || ''}</span>
+                </div>
+                <div class="shortcut-item" ${currentPage === 'lines_info.html' ? '' : 'style="display: none;"'}>
+                    <span class="shortcut-description">${strings.lines_info.route_map[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">A</span>
                 </div>
                 <div class="shortcut-item" ${searchBar.length > 0 || (sidebarSearchPanel && sidebarSearchPanel.style.display !== 'none' && sidebar.style.opacity > 0) ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${searchBar.length > 0 ? strings.ticket_calculator.search[lang] : strings.ticket_calculator.input[lang]}</span>
@@ -323,7 +340,7 @@ function listenKeyboardShortcuts() {
                     <span class="shortcut-key">⇧</span>
                     <span class="shortcut-key">${enterKeyName}</span>
                 </div>` : ''}
-                <div class="shortcut-item" ${clearBtn.length>0 || searchBar.length>0 ? '' : 'style="display: none;"'}>
+                <div class="shortcut-item" ${currentPage !== 'preferences.html' && (clearBtn.length>0 || searchBar.length>0) ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${strings.ticket_calculator.clear_input[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key">${backspaceKeyName}</span>
@@ -361,6 +378,18 @@ function listenKeyboardShortcuts() {
                     <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key">⇧</span>
                     <span class="shortcut-key">C</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.sort_by_departure_early[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">L</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.sort_by_arrival_early[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key">A</span>
                 </div>` : ''}
                 <div class="shortcut-item" ${!['lines_info.html', 'trains_info.html'].includes(currentPage) ? 'style="display: none;"' : ''}>
                     <span class="shortcut-description">${strings.general.toggle_compact_mode[lang]}</span>
@@ -407,7 +436,7 @@ function listenKeyboardShortcuts() {
                     listParent.appendChild(listShortcut);
                     listShortcut.style.width = '-webkit-fill-available';
                     listShortcut.style.maxWidth = '-webkit-fill-available';
-                    listShortcut.style.paddingTop = '12px';
+                    //listShortcut.style.paddingTop = '12px';
                     listShortcut.style.borderTop = '1px solid var(--color-text-secondary)';
                 }
             }, 1000);
