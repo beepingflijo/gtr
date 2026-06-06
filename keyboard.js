@@ -249,12 +249,12 @@ function listenKeyboardShortcuts() {
         }
         if (event.ctrlKey || event.altKey || event.shiftKey) { 
             // 根据系统判断显示alt还是option
-            const altKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌥' : 'Alt';
-            const ctrlKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '^' : 'Ctrl';
-            const metaKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌘' : '⊞';
+            const altKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '<span class="material-symbols-outlined">keyboard_option_key</span>' : 'Alt';
+            const ctrlKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '<span class="material-symbols-outlined">keyboard_control_key</span>' : 'Ctrl';
+            const metaKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '<span class="material-symbols-outlined">keyboard_command_key</span>' : '<span class="material-symbols-outlined">window</span>';
             const enterKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? 'return' : 'Enter';
-            const deleteKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌦' : 'Del';
-            const backspaceKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '⌫' : 'Backspace';
+            const deleteKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '<span class="material-symbols-outlined" style="transform: rotate(180deg);">backspace</span>' : 'Del';
+            const backspaceKeyName = navigator.platform.includes('Mac') || navigator.platform.includes('iPhone') ? '<span class="material-symbols-outlined">backspace</span>' : 'Backspace';
             const shortcutList = document.createElement('div');
             shortcutList.className = 'shortcut-list';
             const sideBarBtn = document.querySelector('.side-bar-btn');
@@ -278,42 +278,42 @@ function listenKeyboardShortcuts() {
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.preferences.page_title[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">R</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.general.history[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">H</span>
                 </div>
                 <div class="shortcut-item" ${sideBarBtnTitle ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${sideBarBtnTitle}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">\\</span>
                 </div>
                 <div class="shortcut-item" ${shareBtn ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${shareBtn?.getAttribute('title')}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">S</span>
                 </div>` : ''}
                 <div class="shortcut-item" ${currentPage === 'lines_info.html' ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${strings.lines_info.show_other_line[lang]}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">${lineCodeLastLetters?.join('/') || ''}</span>
                 </div>
                 <div class="shortcut-item" ${currentPage === 'lines_info.html' ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${strings.lines_info.route_map[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">A</span>
                 </div>
                 <div class="shortcut-item" ${searchBar.length > 0 || (sidebarSearchPanel && sidebarSearchPanel.style.display !== 'none' && sidebar.style.opacity > 0) ? '' : 'style="display: none;"'}>
                     <span class="shortcut-description">${searchBar.length > 0 ? strings.ticket_calculator.search[lang] : strings.ticket_calculator.input[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">Q</span>
                 </div>
                 <div class="shortcut-item" ${(backBtn && currentPage!=='content.html') ? '' : 'style="display: none;"'}>
@@ -337,7 +337,7 @@ function listenKeyboardShortcuts() {
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.swap[lang]}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">${enterKeyName}</span>
                 </div>` : ''}
                 <div class="shortcut-item" ${currentPage !== 'preferences.html' && (clearBtn.length>0 || searchBar.length>0) ? '' : 'style="display: none;"'}>
@@ -348,7 +348,7 @@ function listenKeyboardShortcuts() {
                 ${currentPage === 'pov-frame.html' ? `
                 <div class="shortcut-item">
                     <span class="shortcut-description">上一张</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">${enterKeyName}</span>
                 </div>
                 <div class="shortcut-item">
@@ -364,37 +364,37 @@ function listenKeyboardShortcuts() {
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.faster[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">F</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.direct[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">D</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.cheaper[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">C</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.sort_by_departure_early[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">L</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.sort_by_arrival_early[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">A</span>
                 </div>` : ''}
                 <div class="shortcut-item" ${!['lines_info.html', 'trains_info.html'].includes(currentPage) ? 'style="display: none;"' : ''}>
                     <span class="shortcut-description">${strings.general.toggle_compact_mode[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
-                    <span class="shortcut-key">⇧</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     <span class="shortcut-key">M</span>
                 </div>
                 <div class="shortcut-item" ${!document.querySelector('.modal-overlay') ? 'style="display: none;"' : ''}>
@@ -431,7 +431,7 @@ function listenKeyboardShortcuts() {
                         <span>/</span>
                         <span class="shortcut-key">${altKeyName}</span>
                         <span>/</span>
-                        <span class="shortcut-key">⇧</span>
+                        <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
                     </div>`;
                     listParent.appendChild(listShortcut);
                     listShortcut.style.width = '-webkit-fill-available';

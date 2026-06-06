@@ -1574,6 +1574,15 @@ footer .search-bar.collapsed {
     margin-inline-start: 2px;
 }
 
+.shortcut-key:has(.material-symbols-outlined) {
+    padding: 0;
+}
+
+.shortcut-key .material-symbols-outlined {
+    font-size: 12px;
+    padding: 2px;
+}
+
 .modal-overlay:has(.shortcut-key) { 
     filter: none;
     -webkit-backdrop-filter: none;
