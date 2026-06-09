@@ -1,4 +1,4 @@
-﻿let activeLineId;
+let activeLineId;
 let __povViewOnly = false;
 let __povShareId = null;
 let __originalTitle = '';
@@ -1217,6 +1217,7 @@ async function synthesizeAnnouncement(step) {
         infoElement.innerHTML = content.innerHTML;
         infoElement.classList.add('item');
         infoElement.style.backgroundColor = 'var(--color-background-card)';
+        infoElement.style.webkitBackdropFilter = 'var(--background-filter-transparent)';
         infoElement.style.backdropFilter = 'var(--background-filter-transparent)';
         infoElement.style.width = 'max-content';
         infoElement.style.height = 'fit-content';

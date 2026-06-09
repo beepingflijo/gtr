@@ -127,6 +127,7 @@ footer .search-panel .selection:not(.collapsed) {
     padding: 0;
     background: transparent;
     background-color: transparent;
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
 

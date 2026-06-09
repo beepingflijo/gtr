@@ -203,3 +203,233 @@ button {
     color: var(--color-text-secondary);
     font-size: 0.6em;
 }
+
+/* 背景模糊强度滑杆样式 */
+.backdrop-filter-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 0;
+}
+
+.backdrop-filter-slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--color-secondary);
+    border-radius: 3px;
+    outline: none;
+    transition: background 0.2s ease;
+}
+
+.backdrop-filter-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--item-shadow-inset);
+}
+
+.backdrop-filter-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+.backdrop-filter-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: var(--item-shadow-inset);
+}
+
+.backdrop-filter-slider::-moz-range-thumb:hover {
+    transform: scale(1.1);
+}
+
+.slider-label {
+    font-size: 0.85em;
+    color: var(--color-text-secondary);
+    min-width: 30px;
+    text-align: center;
+}
+
+.backdrop-filter-value,
+.history-limit-value {
+    font-size: 0.85em;
+    color: var(--color-text-secondary);
+    margin-inline-start: 0.5em;
+}
+
+.pref-item-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* 背景模糊强度弹窗样式 */
+.backdrop-filter-dialog {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 0;
+}
+
+.backdrop-filter-preview {
+    width: 100%;
+    height: 180px;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.backdrop-filter-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-secondary);
+    z-index: 1;
+}
+
+.backdrop-filter-preview-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.backdrop-filter-preview-card {
+    background: var(--color-background-card);
+    -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
+    border-radius: 12px;
+    padding: 16px 24px;
+    margin: 0 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    box-shadow: var(--item-shadow-inset);
+}
+
+.backdrop-filter-preview-card h4 {
+    margin: 0;
+    font-size: 1em;
+    color: var(--color-text);
+}
+
+.backdrop-filter-preview-card p {
+    margin: 0;
+    font-size: 0.85em;
+    color: var(--color-text-secondary);
+}
+
+.backdrop-filter-preview-actions {
+    display: flex;
+    gap: 12px;
+    position: absolute;
+    right: 18px;
+    top: 15%;
+}
+
+.backdrop-filter-dialog-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 0;
+}
+
+.backdrop-filter-dialog-slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) var(--slider-fill-percent, 50%), var(--color-secondary) var(--slider-fill-percent, 50%), var(--color-secondary) 100%);
+    border-radius: 3px;
+    outline: none;
+    transition: background 0.2s ease;
+}
+
+.backdrop-filter-dialog-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 
+        var(--item-shadow-inset),
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.backdrop-filter-dialog-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 
+        var(--item-shadow-inset),
+        0 4px 12px rgba(0, 0, 0, 0.25),
+        0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.backdrop-filter-dialog-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border-radius: 12px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 
+        var(--item-shadow-inset),
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.backdrop-filter-dialog-slider::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 
+        var(--item-shadow-inset),
+        0 4px 12px rgba(0, 0, 0, 0.25),
+        0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.backdrop-filter-dialog-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 0.8em;
+    color: var(--color-text-secondary);
+}
+
+.backdrop-filter-dialog-value {
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-top: 8px;
+}

@@ -1,6 +1,7 @@
 function listenKeyboardShortcuts() {
     let shortcutStartTime;
     let shortcutEndTime;
+    let shortcutDisabledToastShown = false;
     document.addEventListener('keydown', function(event) { 
         const currentPage = window.location.pathname.split('/').pop();
         shortcutStartTime = Date.now();
@@ -34,6 +35,13 @@ function listenKeyboardShortcuts() {
         const backBtn = document.querySelector('.back-btn');
         const nextBtn = document.querySelector('.next-btn');
         const prevBtn = document.querySelector('.prev-btn');
+        const showTimetableBtn = document.querySelector('.show-timetable-btn');
+        const showFareDetailBtn = document.querySelector('.show-fare-detail-btn');
+        const mapZoomIn = document.querySelector('#map-zoom-in');
+        const mapZoomOut = document.querySelector('#map-zoom-out');
+        const mapFitBtn = document.querySelector('#map-fit-btn');
+        const mapTrainsToggle = document.querySelector('#map-trains-toggle');
+        const mapLayerToggle = document.querySelector('#map-layer-toggle');
         const setUpwardsSwitch = document.querySelector('.switch.set-upwards');
         const linesWithoutR = window.lines?.filter(line => !line.id.includes('-R'));
         const lineCodeLastLetters = linesWithoutR?.map(line => line.id.slice(-1));
@@ -75,6 +83,16 @@ function listenKeyboardShortcuts() {
                         shareBtn.click();
                     }
                     break;
+                case 'N':
+                    showTimetableBtn?.click();
+                    mapTrainsToggle?.click();
+                    break;
+                case 'L':
+                    //mapLayerToggle?.click();
+                    break;
+                case 'F':
+                    showFareDetailBtn?.click();
+                    break;
                 case 'Q':
                     if (searchBar.length > 0) {
                         const footer = document.querySelector('footer');
@@ -108,20 +126,7 @@ function listenKeyboardShortcuts() {
                 case 'Delete':
                     if (currentPage === 'preferences.html') {window.resetPreferences()};
                     break;
-                case 'F':
-                    sortByTime?.click();
-                    break;
-                case 'D':
-                    sortByTransfers?.click();
-                    break;
-                case 'C':
-                    sortByPrice?.click();
-                    break;
-                case 'L':
-                    sortByDepartureEarly?.click();
-                    break;
                 case 'A':
-                    sortByArrivalEarly?.click();
                     mapEntry?.click();
                     break;
                 case 'Enter': 
@@ -140,22 +145,47 @@ function listenKeyboardShortcuts() {
                     break;
             }
         } else if (event.shiftKey) { 
-            switch (event.key) { 
+            // 输入过程中不要响应只有shift和其他按键触发的快捷键
+            const composingInput = document.querySelector('input:focus');
+            console.log(composingInput);
+            if (composingInput) {
+                if (!shortcutDisabledToastShown) {
+                    showToast(strings.general.shortcut_key_disabled_while_typing[lang]);
+                    shortcutDisabledToastShown = true;
+                }
+                return;
+            }
+            // 处理 Shift + 数字键的情况,将特殊字符转换回数字
+            let searchKey = event.key;
+            const shiftNumberMap = {
+                '!': '1', '@': '2', '#': '3', '$': '4', '%': '5',
+                '^': '6', '&': '7', '*': '8', '(': '9', ')': '0'
+            };
+            if (event.shiftKey && shiftNumberMap[event.key]) {
+                searchKey = shiftNumberMap[event.key];
+            }
+            switch (searchKey) { 
                 case 'Enter': 
                     swapBtn?.click();
                     prevBtn?.click();
                     break;
+                case '1':
+                    sortByTime?.click();
+                    break;
+                case '2':
+                    sortByTransfers?.click();
+                    break;
+                case '3':
+                    sortByPrice?.click();
+                    break;
+                case '4':
+                    sortByDepartureEarly?.click();
+                    break;
+                case '5':
+                    sortByArrivalEarly?.click();
+                    break;
             }
             if (currentPage === 'lines_info.html') {
-                // 处理 Shift + 数字键的情况,将特殊字符转换回数字
-                let searchKey = event.key;
-                const shiftNumberMap = {
-                    '!': '1', '@': '2', '#': '3', '$': '4', '%': '5',
-                    '^': '6', '&': '7', '*': '8', '(': '9', ')': '0'
-                };
-                if (event.shiftKey && shiftNumberMap[event.key]) {
-                    searchKey = shiftNumberMap[event.key];
-                }
                 const matchedLine = linesWithoutR.find(line => line.id.slice(-1) === searchKey);
                 const newLineId = matchedLine?.id;
                 if (newLineId) {
@@ -244,6 +274,31 @@ function listenKeyboardShortcuts() {
                 case 'Enter': 
                     searchBtn?.click();
                     nextBtn?.click();
+                    break;
+                case '-':
+                    mapZoomOut?.click();
+                    break;
+                case '=':
+                    mapZoomIn?.click();
+                    break;
+                case '0':
+                    mapFitBtn?.click();
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                case 'ArrowLeft':
+                case 'ArrowRight':
+                    // 键盘方向键控制地图平移（屏幕像素步长，由 MapMode 内部转换为世界坐标）
+                    if (typeof MapMode !== 'undefined' && MapMode.isOpen()) {
+                        var PAN_STEP = 80;
+                        var dx = 0, dy = 0;
+                        if (event.key === 'ArrowLeft') dx = PAN_STEP;
+                        else if (event.key === 'ArrowRight') dx = -PAN_STEP;
+                        else if (event.key === 'ArrowUp') dy = PAN_STEP;
+                        else if (event.key === 'ArrowDown') dy = -PAN_STEP;
+                        MapMode.panBy(dx, dy);
+                        event.preventDefault();
+                    }
                     break;
             }
         }
@@ -363,33 +418,68 @@ function listenKeyboardShortcuts() {
                 ${sidebarSearchPanel && sidebarSearchPanel.style.display !== 'none' ? `
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.faster[lang]}</span>
-                    <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
-                    <span class="shortcut-key">F</span>
+                    <span class="shortcut-key">1</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.direct[lang]}</span>
-                    <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
-                    <span class="shortcut-key">D</span>
+                    <span class="shortcut-key">2</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.cheaper[lang]}</span>
-                    <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
-                    <span class="shortcut-key">C</span>
+                    <span class="shortcut-key">3</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.sort_by_departure_early[lang]}</span>
-                    <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
-                    <span class="shortcut-key">L</span>
+                    <span class="shortcut-key">4</span>
                 </div>
                 <div class="shortcut-item">
                     <span class="shortcut-description">${strings.ticket_calculator.show_[lang] + strings.ticket_calculator.sort_by_arrival_early[lang]}</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
+                    <span class="shortcut-key">5</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.toggle_[lang] + strings.ticket_calculator.show_timetable[lang]}</span>
                     <span class="shortcut-key">${altKeyName}</span>
                     <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
-                    <span class="shortcut-key">A</span>
+                    <span class="shortcut-key">N</span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-description">${strings.ticket_calculator.toggle_[lang] + strings.ticket_calculator.show_fare_detail[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
+                    <span class="shortcut-key">F</span>
+                </div>` : ''}
+                ${document.querySelector('.map-overlay.active') ? `
+                <div class="shortcut-item"> 
+                    <span class="shortcut-description">${strings.lines_info.map_zoom_in[lang]+' / '+strings.lines_info.map_zoom_out[lang]}</span>
+                    <span class="shortcut-key">=</span>/<span class="shortcut-key">-</span>
+                </div>
+                <div class="shortcut-item"> 
+                    <span class="shortcut-description">${strings.lines_info.map_fit_all[lang]}</span>
+                    <span class="shortcut-key">0</span>
+                </div>
+                <div class="shortcut-item"> 
+                    <span class="shortcut-description">${strings.lines_info.map_toggle_trains[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
+                    <span class="shortcut-key">N</span>
+                </div>
+                <!--<div class="shortcut-item"> 
+                    <span class="shortcut-description">${strings.lines_info.map_toggle_layer[lang]}</span>
+                    <span class="shortcut-key">${altKeyName}</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">shift</span></span>
+                    <span class="shortcut-key">L</span>
+                </div>-->
+                <div class="shortcut-item"> 
+                    <span class="shortcut-description">${strings.lines_info.map_pan[lang]}</span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">keyboard_arrow_up</span></span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">keyboard_arrow_left</span></span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">keyboard_arrow_right</span></span>
+                    <span class="shortcut-key"><span class="material-symbols-outlined">keyboard_arrow_down</span></span>
                 </div>` : ''}
                 <div class="shortcut-item" ${!['lines_info.html', 'trains_info.html'].includes(currentPage) ? 'style="display: none;"' : ''}>
                     <span class="shortcut-description">${strings.general.toggle_compact_mode[lang]}</span>
@@ -453,6 +543,10 @@ function listenKeyboardShortcuts() {
     });
     // 浏览器失去焦点时关闭窗口
     window.addEventListener('blur', function() {
+        // 如果当前IP为localhost，不关闭窗口
+        if (window.location.hostname === 'localhost') {
+            return;
+        }
         shortcutEndTime = Date.now();
         console.log('blur',shortcutEndTime);
         const modalOverlay = document.querySelectorAll('.modal-overlay');

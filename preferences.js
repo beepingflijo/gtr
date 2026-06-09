@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initSwapFooterSwitch();
             initShowCursorSwitch();
             initReduceMotionSwitch();
+            initBackdropFilterSlider();
             initStorageList();
             initDeviceSection();
             handleWindowResize();
@@ -121,7 +122,7 @@ function init() {
     const historyLimitPref = document.getElementById('historyLimitPref');
     historyLimitPref.textContent = strings.preferences.history_limit[lang];
     const setHistoryLimit = document.getElementById('setHistoryLimit');
-    setHistoryLimit.textContent = strings.general.set[lang];
+    //setHistoryLimit.textContent = strings.general.set[lang];
     setHistoryLimit.style.color = 'var(--color-primary)';
     const resumeOnLoadingPref = document.getElementById('resumeOnLoadingPref');
     resumeOnLoadingPref.textContent = strings.preferences.resume_on_loading[lang];
@@ -137,6 +138,8 @@ function init() {
     showCursorPref.textContent = strings.preferences.hover_effects[lang];
     const reduceMotionPref = document.getElementById('reduceMotionPref');
     reduceMotionPref.textContent = strings.preferences.reduce_motion_and_transparency[lang];
+    const backdropFilterIntensityPref = document.getElementById('backdropFilterIntensityPref');
+    backdropFilterIntensityPref.textContent = strings.preferences.backdrop_filter_intensity[lang];
     const storagePref = document.getElementById('storagePref');
     storagePref.textContent = strings.preferences.storage[lang];
     const managePref = document.getElementById('storageManagePref');
@@ -983,7 +986,16 @@ function applyFont(font) {
 
 function initHistoryLimitInput() { 
     const setHistoryLimit = document.getElementById('setHistoryLimit');
+    const historyLimitValue = document.getElementById('historyLimitValue');
     if (!setHistoryLimit) return;
+    
+    // 初始化显示当前值
+    const prefs = getPreferences();
+    const currentLimit = prefs.historyLimit || 5;
+    if (historyLimitValue) {
+        historyLimitValue.textContent = currentLimit;
+    }
+    
     setHistoryLimit.addEventListener('click', async function() { 
         const prefs = getPreferences();
         if (!prefs.historyLimit) {
@@ -1009,6 +1021,11 @@ function initHistoryLimitInput() {
         
         prefs.historyLimit = finalLimit;
         savePreferences(prefs);
+        
+        // 更新显示值
+        if (historyLimitValue) {
+            historyLimitValue.textContent = finalLimit;
+        }
     });
 }
 
@@ -1158,6 +1175,14 @@ function applyReduceMotion(reduceMotion) {
     } else {
         root.classList.remove('effect-reduced');
     }
+    
+    // 更新滑杆状态
+    const slider = document.getElementById('backdropFilterSlider');
+    if (slider) {
+        slider.disabled = reduceMotion;
+        slider.style.opacity = reduceMotion ? '0.5' : '1';
+        slider.style.cursor = reduceMotion ? 'not-allowed' : 'pointer';
+    }
 }
 
 function resetPreferences() { 
@@ -1274,3 +1299,145 @@ function handleWindowResize() {
 }
 
 window.handleWindowResize = handleWindowResize;
+
+// 初始化背景模糊强度滑杆
+function initBackdropFilterSlider() {
+    const valueDisplay = document.getElementById('backdropFilterValue');
+    const openDialogBtn = document.getElementById('openBackdropFilterDialog');
+    
+    if (!valueDisplay) return;
+    
+    // 从偏好设置中获取保存的值，默认为 50
+    const prefs = getPreferences();
+    const savedValue = prefs.backdropFilterIntensity !== undefined ? prefs.backdropFilterIntensity : 50;
+    
+    // 设置初始显示值
+    valueDisplay.textContent = savedValue;
+    
+    // 检查是否处于 effect-reduced 模式
+    const isEffectReduced = prefs.reduceMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    // 应用初始 CSS 变量（调用 layout.js 中的全局函数）
+    if (window.applyBackdropFilterIntensity) {
+        window.applyBackdropFilterIntensity(savedValue);
+    }
+    
+    // 打开弹窗按钮点击事件
+    if (openDialogBtn) {
+        openDialogBtn.addEventListener('click', function() {
+            openBackdropFilterDialog(savedValue, isEffectReduced);
+        });
+    }
+}
+
+// 打开背景模糊强度调整弹窗
+async function openBackdropFilterDialog(currentValue, isEffectReduced) {
+    const lang = window.lang || 'zh_hans';
+    
+    // 创建弹窗内容容器
+    const dialogContent = document.createElement('div');
+    dialogContent.className = 'backdrop-filter-dialog';
+    
+    // 创建预览区域
+    const preview = document.createElement('div');
+    preview.className = 'backdrop-filter-preview';
+    
+    // 尝试获取随机背景图片
+    let backgroundImage = '';
+    try {
+        const selectedImage = await window.getRandomCoverImage();
+        if (selectedImage && selectedImage.img) {
+            backgroundImage = selectedImage.img;
+        }
+    } catch (error) {
+        console.error('Failed to load cover image for preview:', error);
+    }
+    
+    // 如果有背景图片，设置为预览区域的背景
+    if (backgroundImage) {
+        preview.style.backgroundImage = `url(${backgroundImage})`;
+        preview.style.backgroundSize = 'cover';
+        preview.style.backgroundPosition = 'center';
+    }
+    
+    preview.innerHTML = `
+        <div class="backdrop-filter-preview-content">
+            <div class="item backdrop-filter-preview-card">
+                <h4>${strings.preferences.backdrop_filter_intensity[lang] || '背景模糊强度'}</h4>
+                <p>${strings.preferences.backdrop_filter_transparent[lang] || '通透'} ↔ ${strings.preferences.backdrop_filter_readable[lang] || '可读'}</p>
+            </div>
+            <div class="actions backdrop-filter-preview-actions"> 
+                <div class="icon-btn">
+                    <i class="material-symbols-outlined">arrow_forward</i>
+                </div>
+            </div>
+        </div>
+    `;
+    dialogContent.appendChild(preview);
+    
+    // 创建数值显示
+    const valueDisplay = document.createElement('div');
+    valueDisplay.className = 'backdrop-filter-dialog-value';
+    valueDisplay.textContent = currentValue;
+    dialogContent.appendChild(valueDisplay);
+    
+    // 创建滑杆容器
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'backdrop-filter-dialog-slider-container';
+    
+    // 创建滑杆
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'backdrop-filter-dialog-slider';
+    slider.min = '0';
+    slider.max = '100';
+    slider.value = currentValue;
+    slider.disabled = isEffectReduced;
+    if (isEffectReduced) {
+        slider.style.opacity = '0.5';
+        slider.style.cursor = 'not-allowed';
+    }
+    // 设置初始滑杆填充比例
+    slider.style.setProperty('--slider-fill-percent', currentValue + '%');
+    sliderContainer.appendChild(slider);
+    dialogContent.appendChild(sliderContainer);
+    
+    // 创建标签
+    const labels = document.createElement('div');
+    labels.className = 'backdrop-filter-dialog-labels';
+    labels.innerHTML = `
+        <span>${strings.preferences.backdrop_filter_transparent[lang] || '通透'}</span>
+        <span>${strings.preferences.backdrop_filter_blur[lang] || '模糊'}</span>
+    `;
+    dialogContent.appendChild(labels);
+    
+    // 创建预览卡片的独立样式作用域
+    const previewCard = preview.querySelector('.backdrop-filter-preview-card');
+    
+    // 滑杆 input 事件 - 实时预览
+    slider.addEventListener('input', function() {
+        const value = parseInt(this.value);
+        valueDisplay.textContent = value;
+        
+        // 更新滑杆填充比例
+        const fillPercent = value + '%';
+        this.style.setProperty('--slider-fill-percent', fillPercent);
+        
+        // 更新主页面的值显示
+        const mainValueDisplay = document.getElementById('backdropFilterValue');
+        if (mainValueDisplay) mainValueDisplay.textContent = value;
+        
+        // 实时应用 CSS 变量（调用 layout.js 中的全局函数）
+        if (window.applyBackdropFilterIntensity) {
+            window.applyBackdropFilterIntensity(value);
+        }
+        
+        // 保存到偏好设置
+        const prefs = getPreferences();
+        prefs.backdropFilterIntensity = value;
+        savePreferences(prefs);
+    });
+    
+    // 使用 pushDialog 显示弹窗
+    pushDialog(dialogContent, 'custom', strings.preferences.backdrop_filter_intensity[lang] || '背景模糊强度');
+}

@@ -1,3 +1,5 @@
+let visibleHeaderWidth = 0;
+
 // 延迟执行selection元素的处理，确保在所有脚本执行完毕后运行
 function hideNonActiveSelectionItems() {
     console.log('Hiding non-active selection items');
@@ -832,7 +834,8 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
                 }
             });
             modalOverlay.style.opacity = 0;
-            modalOverlay.style.backdropFilter = 'blur(1px)';
+            modalOverlay.style.webkitBackdropFilter = 'var(--background-filter-dialog-anim)';
+            modalOverlay.style.backdropFilter = 'var(--background-filter-dialog-anim)';
             
             const dialogContainer = document.createElement('div');
             dialogContainer.classList.add('dialog-container');
@@ -998,7 +1001,8 @@ function pushDialog(content, type = 'confirm', title = '', defaultValue = '', co
 function closeDialog(modalOverlay, callback) {
     modalOverlay.style.opacity = 0;
     // 同时设置标准属性和 -webkit- 前缀以确保兼容性
-    modalOverlay.style.backdropFilter = 'blur(1px)';
+    modalOverlay.style.webkitBackdropFilter = 'var(--background-filter-dialog-anim)';
+    modalOverlay.style.backdropFilter = 'var(--background-filter-dialog-anim)';
     const dialogContainer = modalOverlay.querySelector('.dialog-container');
     dialogContainer.classList.add('collapsed');
     setTimeout(() => {
@@ -1204,18 +1208,21 @@ function handleActionsOverflow() {
             const btnStyle = getComputedStyle(btn);
             const marginLeft = parseFloat(btnStyle.marginLeft);
             const marginRight = parseFloat(btnStyle.marginRight);
-            buttonWidths.push(btnWidth + marginLeft + marginRight);
-            totalButtonsWidth += btnWidth + marginLeft + marginRight;
+            const paddingLeft = parseFloat(btnStyle.paddingLeft);
+            const paddingRight = parseFloat(btnStyle.paddingRight);
+            buttonWidths.push(btnWidth + marginLeft + marginRight + paddingLeft + paddingRight);
+            totalButtonsWidth += btnWidth + marginLeft + marginRight + paddingLeft + paddingRight;
         });
         
         // 计算 more-btn 的宽度
         const moreBtnWidth = moreBtn.offsetWidth;
         const moreBtnStyle = getComputedStyle(moreBtn);
         const moreBtnMargin = parseFloat(moreBtnStyle.marginLeft) + parseFloat(moreBtnStyle.marginRight);
-        const moreBtnTotalWidth = moreBtnWidth + moreBtnMargin;
+        const moreBtnPadding = parseFloat(moreBtnStyle.paddingLeft) + parseFloat(moreBtnStyle.paddingRight);
+        const moreBtnTotalWidth = moreBtnWidth + moreBtnMargin + moreBtnPadding;
         
         // 判断是否需要隐藏按钮
-        if (totalButtonsWidth > availableWidth) {
+        if (totalButtonsWidth >= availableWidth) {
             // 需要隐藏按钮
             let currentWidth = 0;
             const hiddenBtns = [];
@@ -1237,16 +1244,21 @@ function handleActionsOverflow() {
             }
             
             // 如果有隐藏的按钮，显示 more-btn
-            if (hiddenBtns.length > 0) {
+            if (hiddenBtns.length > 1) {
                 moreBtn.style.display = '';
                 moreBtn.title = strings.general.more[lang]+` (${hiddenBtns.length})`;
             } else {
                 moreBtn.style.display = 'none';
+                hiddenBtns.forEach(btn => {
+                    btn.classList.remove('hidden-btn');
+                    btn.style.display = '';
+                });
             }
         } else {
             // 不需要隐藏按钮，隐藏 more-btn
             moreBtn.style.display = 'none';
         }
+        handleActions();
     });
 }
 
@@ -1267,6 +1279,8 @@ window.handleWindowResize = function() {
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     initActionsOverflow();
+    const blurIntensity = prefs.backdropFilterIntensity;
+    applyBackdropFilterIntensity(blurIntensity);
 });
 
 // 设置排序按钮的禁用/启用状态
@@ -1290,3 +1304,171 @@ function setSortButtonsDisabled(disabled) {
 window.addEventListener('resize', () => {
     handleActionsOverflow();
 });
+
+// 应用背景模糊强度的 CSS 变量
+function applyBackdropFilterIntensity(value) {
+    const root = document.documentElement;
+    const isDark = root.classList.contains('dark');
+    
+    // 将滑杆值 (0-100) 映射到各个参数
+    // 0 = 最通透（低模糊、适度饱和度对比度、强内阴影、强文本阴影）
+    // 50 = 默认值
+    // 100 = 最可读（高模糊、适度饱和度对比度、弱内阴影、弱文本阴影）
+    
+    // 模糊值映射 (px)
+    const blur1x = lerp(2, 10, value / 100);  // 2px -> 6px -> 10px
+    const blur2x = lerp(4, 20, value / 100);  // 4px -> 12px -> 20px
+    const blur4x = lerp(8, 40, value / 100);  // 8px -> 24px -> 40px
+    
+    // 滤镜参数映射（适度调整，避免过度）
+    // 滑杆值50时精确对应默认值
+    // Light 主题：默认 saturate(130%) contrast(110%) brightness(110%)
+    const lightSaturate = lerp(140, 120, value / 100);   // 140% -> 130% -> 120%
+    const lightContrast = lerp(115, 105, value / 100);   // 115% -> 110% -> 105%
+    const lightBrightness = lerp(105, 115, value / 100); // 105% -> 110% -> 115%（亮度方向反转）
+    
+    // Dark 主题：默认 saturate(140%) contrast(110%) brightness(90%)
+    const darkSaturate = lerp(150, 130, value / 100);    // 150% -> 140% -> 130%
+    const darkContrast = lerp(115, 105, value / 100);    // 115% -> 110% -> 105%
+    const darkBrightness = lerp(95, 85, value / 100);    // 95% -> 90% -> 85%（亮度方向反转）
+    
+    // 设置基础模糊变量
+    root.style.setProperty('--blur-1x', 'blur(' + blur1x + 'px)');
+    root.style.setProperty('--blur-2x', 'blur(' + blur2x + 'px)');
+    root.style.setProperty('--blur-4x', 'blur(' + blur4x + 'px)');
+    
+    // 设置 Light 主题滤镜
+    root.style.setProperty('--background-filter-light', 
+        'var(--blur-2x) saturate(' + lightSaturate + '%) contrast(' + lightContrast + '%) brightness(' + lightBrightness + '%)');
+    root.style.setProperty('--background-filter-light-contrast', 
+        'var(--blur-2x) saturate(' + lerp(70, 60, value / 100) + '%) contrast(' + lerp(65, 60, value / 100) + '%) brightness(' + lerp(190, 180, value / 100) + '%)');
+    
+    // 设置 Dark 主题滤镜
+    root.style.setProperty('--background-filter-dark', 
+        'var(--blur-2x) saturate(' + darkSaturate + '%) contrast(' + darkContrast + '%) brightness(' + darkBrightness + '%)');
+    root.style.setProperty('--background-filter-dark-contrast', 
+        'var(--blur-2x) saturate(' + lerp(70, 60, value / 100) + '%) contrast(' + lerp(65, 60, value / 100) + '%) brightness(' + lerp(35, 40, value / 100) + '%)');
+    
+    // 内阴影强度映射（模糊调低时加强内阴影，模糊调高时减弱）
+    // 浅色模式默认值: input-shadow rgba(0,0,0,0.05), item-shadow rgba(0,0,0,0.05)
+    // 深色模式默认值: input-shadow rgba(255,255,255,0.08), item-shadow rgba(255,255,255,0.05)
+    const shadowIntensityLight = lerp(0.10, 0.03, value / 100);  // 0.10 -> 0.05 -> 0.03
+    const shadowIntensityDark = lerp(0.12, 0.04, value / 100);   // 0.12 -> 0.08 -> 0.04
+    
+    // 设置内阴影变量
+    if (isDark) {
+        root.style.setProperty('--input-shadow-inset', 'inset 0 -3px 3px rgba(255, 255, 255, ' + shadowIntensityDark + ')');
+        root.style.setProperty('--item-shadow-inset', 'inset 0 3px 3px rgba(255, 255, 255, ' + shadowIntensityDark + ')');
+        root.style.setProperty('--item-shadow-inset-hover', 'inset 0 -3px 3px rgba(255, 255, 255, ' + (shadowIntensityDark * 1.5) + ')');
+    } else {
+        root.style.setProperty('--input-shadow-inset', 'inset 0 3px 3px rgba(0, 0, 0, ' + shadowIntensityLight + ')');
+        root.style.setProperty('--item-shadow-inset', 'inset 0 -3px 3px rgba(0, 0, 0, ' + shadowIntensityLight + ')');
+        root.style.setProperty('--item-shadow-inset-hover', 'inset 0 3px 3px rgba(255, 255, 255, ' + (shadowIntensityLight * 2) + ')');
+    }
+    
+    // 文本阴影映射（模糊调低时加强文本阴影以提高可读性）
+    // 默认值: h1 text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4)
+    // 浅色模式: 模糊低时阴影更强，模糊高时阴影更弱
+    // 深色模式: 类似调整
+    const textShadowBlur = lerp(16, 8, value / 100);  // 16px -> 12px -> 8px
+    const textShadowOpacity = lerp(0.6, 0.2, value / 100);  // 0.6 -> 0.4 -> 0.2
+    
+    // 设置文本阴影变量
+    if (isDark) {
+        root.style.setProperty('--text-shadow-normal', '0 2px ' + textShadowBlur + 'px rgba(0, 0, 0, ' + (textShadowOpacity * 1.2) + ')');
+        root.style.setProperty('--text-shadow-strong', '0 2px ' + (textShadowBlur * 1.5) + 'px rgba(0, 0, 0, ' + (textShadowOpacity * 1.5) + ')');
+    } else {
+        root.style.setProperty('--text-shadow-normal', '0 2px ' + textShadowBlur + 'px rgba(0, 0, 0, ' + textShadowOpacity + ')');
+        root.style.setProperty('--text-shadow-strong', '0 2px ' + (textShadowBlur * 1.5) + 'px rgba(0, 0, 0, ' + (textShadowOpacity * 1.3) + ')');
+    }
+    
+    // 颜色变量透明度映射
+    // 浅色模式默认值: actions=#fffffff0(240/255), card-transparent=#ffffff10(16/255), toast=#000000b0(176/255)
+    // 深色模式默认值: actions=#212121f0(240/255), card-transparent=#21212110(16/255), toast=#00000080(128/255)
+    
+    // 透明度映射 (0-255)
+    // 滑杆0(通透): 更透明
+    // 滑杆50(默认): 保持默认值
+    // 滑杆100(可读): 更不透明
+    
+    // 通过lerp确保滑杆值50时精确对应默认值
+    const actionsAlpha = Math.round(lerp(225, 255, value / 100));  // 225 -> 240 -> 255
+    const cardTransparentAlpha = Math.round(lerp(0, 32, value / 100));  // 0 -> 16 -> 32
+    const toastAlpha = isDark 
+        ? Math.round(lerp(76, 180, value / 100))   // 深色: 76 -> 128 -> 180
+        : Math.round(lerp(142, 210, value / 100)); // 浅色: 142 -> 176 -> 210
+    
+    // 转换为16进制
+    const actionsAlphaHex = actionsAlpha.toString(16).padStart(2, '0');
+    const cardTransparentAlphaHex = cardTransparentAlpha.toString(16).padStart(2, '0');
+    const toastAlphaHex = toastAlpha.toString(16).padStart(2, '0');
+    
+    // 设置颜色变量
+    if (isDark) {
+        root.style.setProperty('--color-background-actions', '#212121' + actionsAlphaHex);
+        root.style.setProperty('--color-background-card-transparent', '#212121' + cardTransparentAlphaHex);
+        root.style.setProperty('--color-toast-background', '#000000' + toastAlphaHex);
+    } else {
+        root.style.setProperty('--color-background-actions', '#ffffff' + actionsAlphaHex);
+        root.style.setProperty('--color-background-card-transparent', '#ffffff' + cardTransparentAlphaHex);
+        root.style.setProperty('--color-toast-background', '#000000' + toastAlphaHex);
+    }
+}
+
+// 线性插值函数
+function lerp(start, end, t) {
+    return start + (end - start) * t;
+}
+
+// 随机获取封面图片（复用于登录对话框和背景模糊预览）
+async function getRandomCoverImage() {
+    try {
+        const stationsData = await window.getStationData();
+        const trainData = await window.getTrainData();
+        if (stationsData && typeof stationsData === 'object') {
+            // stations_info.json 是对象结构，需要转换为数组
+            const stationsArray = Object.values(stationsData);
+            if (Array.isArray(stationsArray) && stationsArray.length > 0) {
+                // 提取所有有cover的图片URL，并构建统一格式
+                const stationImages = stationsArray
+                    .filter(station => station.cover)
+                    .map(station => {
+                        const stationCode = Object.keys(stationsData).find(key => stationsData[key] === station);
+                        const name = getStationName(stationCode, lang);
+                        const desc = name + (name.includes(strings.ticket_calculator._station[lang]) ? '' : strings.ticket_calculator._station[lang]);
+                        const link = `content.html?type=station&q=${stationCode}`;
+                        return { img: station.cover, desc, link };
+                    });
+
+                // 提取所有列车的封面图片，并构建统一格式
+                const trainImages = trainData.series
+                    .filter(train => train.gallery && Array.isArray(train.gallery))
+                    .flatMap(train => {
+                        const coverImages = train.gallery.filter(img => img.class === 'cover');
+                        if (!coverImages.length) return [];
+                        // 查找该列车对应的系列信息以获取系列名称
+                        const seriesInfo = trainData.series?.find(series => series.name === train.series);
+                        const desc = train.name + strings.trains_info._series[lang];
+                        const link = `content.html?type=series&q=${train.name}`;
+                        return coverImages.map(img => ({ img: img.image, desc, link }));
+                    });
+                
+                // 合并车站和列车图片数组
+                const allImages = [...stationImages, ...trainImages];
+                
+                if (allImages.length > 0) {
+                    const selectedImage = allImages[Math.floor(Math.random() * allImages.length)];
+                    return selectedImage;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load cover image:', error);
+    }
+    return null;
+}
+
+// 将函数挂载到全局
+window.applyBackdropFilterIntensity = applyBackdropFilterIntensity;
+window.lerp = lerp;
+window.getRandomCoverImage = getRandomCoverImage;

@@ -431,49 +431,14 @@ async function showLoginDialog() {
     let stationName = '';
     let stationCode = '';
     try {
-        const stationsData = await window.getStationData();
-        const trainData = await window.getTrainData();
-        if (stationsData && typeof stationsData === 'object') {
-            // stations_info.json 是对象结构，需要转换为数组
-            const stationsArray = Object.values(stationsData);
-            if (Array.isArray(stationsArray) && stationsArray.length > 0) {
-                // 提取所有有cover的图片URL，并构建统一格式
-                const stationImages = stationsArray
-                    .filter(station => station.cover)
-                    .map(station => {
-                        const stationCode = Object.keys(stationsData).find(key => stationsData[key] === station);
-                        const name = getStationName(stationCode, lang);
-                        const desc = name + (name.includes(strings.ticket_calculator._station[lang]) ? '' : strings.ticket_calculator._station[lang]);
-                        const link = `content.html?type=station&q=${stationCode}`;
-                        return { img: station.cover, desc, link };
-                    });
-
-                // 提取所有列车的封面图片，并构建统一格式
-                const trainImages = trainData.series
-                    .filter(train => train.gallery && Array.isArray(train.gallery))
-                    .flatMap(train => {
-                        const coverImages = train.gallery.filter(img => img.class === 'cover');
-                        if (!coverImages.length) return [];
-                        // 查找该列车对应的系列信息以获取系列名称
-                        const seriesInfo = trainData.series?.find(series => series.name === train.series);
-                        const desc = train.name+strings.trains_info._series[lang];
-                        const link = `content.html?type=series&q=${train.name}`;
-                        return coverImages.map(img => ({ img: img.image, desc, link }));
-                    });
-                
-                // 合并车站和列车图片数组
-                const allImages = [...stationImages, ...trainImages];
-                
-                if (allImages.length > 0) {
-                    const selectedImage = allImages[Math.floor(Math.random() * allImages.length)];
-                    backgroundImage = selectedImage.img;
-                    stationName = selectedImage.desc;
-                    stationCode = selectedImage.link;
-                }
-            }
+        const selectedImage = await window.getRandomCoverImage();
+        if (selectedImage) {
+            backgroundImage = selectedImage.img;
+            stationName = selectedImage.desc;
+            stationCode = selectedImage.link;
         }
     } catch (error) {
-        console.error('Failed to load station data:', error);
+        console.error('Failed to load cover image:', error);
     }
 
     return new Promise((resolve) => {

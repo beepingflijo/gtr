@@ -418,6 +418,7 @@
 
 .map-ctrl-btn {
     background: var(--color-background-card-solid);
+    -webkit-backdrop-filter: var(--background-filter-transparent);
     backdrop-filter: var(--background-filter-transparent);
     display: flex;
     align-items: center;
@@ -445,6 +446,7 @@
     padding: 10px 14px;
     border-radius: 10px;
     background: var(--color-background-card-transparent);
+    -webkit-backdrop-filter: var(--background-filter-transparent);
     backdrop-filter: var(--background-filter-transparent);
     filter: var(--filter-item-shadow);
     z-index: 20;
@@ -489,6 +491,7 @@
     padding: 4px 10px;
     border-radius: 6px;
     background: var(--color-background-card);
+    -webkit-backdrop-filter: var(--background-filter-transparent);
     backdrop-filter: var(--background-filter-transparent);
     font-size: 11px;
     color: var(--color-text-secondary);
@@ -505,6 +508,7 @@
     padding: 4px 10px;
     border-radius: 6px;
     background: var(--color-background-card);
+    -webkit-backdrop-filter: var(--background-filter-transparent);
     backdrop-filter: var(--background-filter-transparent);
     font-size: 12px;
     color: var(--color-text);

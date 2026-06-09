@@ -26,11 +26,27 @@
     --filter-item-shadow-hover: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.2));
     --icon-btn-hover: radial-gradient(#ffffffd0 8px, transparent 80%);
     --active-icon-btn-hover: radial-gradient(#ffc88ed0 8px, transparent 80%);
+    --blur-1x: blur(6px);
+    --blur-2x: blur(12px);
+    --blur-4x: blur(24px);
     --icon-filter-active: invert(39%) sepia(83%) saturate(7493%) hue-rotate(395deg) brightness(130%) contrast(101%);
-    --background-filter-light: blur(12px) saturate(130%) contrast(110%) brightness(110%);
-    --background-filter-dark: blur(12px) saturate(140%) contrast(110%) brightness(90%);
+    --background-filter-light: var(--blur-2x) saturate(130%) contrast(110%) brightness(110%);
+    --background-filter-light-contrast: var(--blur-2x) saturate(60%) contrast(60%) brightness(180%);
+    --background-filter-dark: var(--blur-2x) saturate(140%) contrast(110%) brightness(90%);
+    --background-filter-dark-contrast: var(--blur-2x) saturate(60%) contrast(60%) brightness(40%);
     --background-filter-transparent: var(--background-filter-light);
+    --background-filter-transparent-contrast: var(--background-filter-light-contrast);
     --background-filter-transparent-invert: var(--background-filter-dark);
+    --background-filter-toast: var(--blur-1x) saturate(140%) contrast(160%) brightness(90%);
+    --background-filter-modal: var(--blur-2x);
+    --background-filter-selection: var(--blur-1x);
+    --background-filter-dropdown: var(--blur-2x);
+    --text-shadow-normal: 0 2px 12px rgba(0, 0, 0, 0.4);
+    --text-shadow-strong: 0 2px 18px rgba(0, 0, 0, 0.52);
+    --background-filter-gradient-layer-1: blur(7px);
+    --background-filter-gradient-layer-2: blur(3px);
+    --background-filter-gradient-layer-3: blur(1px);
+    --background-filter-dialog-anim: blur(1px);
     --color-border: #00000044;
     --color-text: #000000ee;
     --color-text-secondary: #00000088;
@@ -159,6 +175,7 @@
     --active-icon-btn-hover: radial-gradient(#ff840020 8px, transparent 80%);
     --icon-btn-hover: radial-gradient(#ffffff20 8px, transparent 80%);
     --background-filter-transparent: var(--background-filter-dark);
+    --background-filter-transparent-contrast: var(--background-filter-dark-contrast);
     --background-filter-transparent-invert: var(--background-filter-dark);
     --color-border: #ffffff44;
     --color-text: #ffffffee;
@@ -183,6 +200,7 @@
         --active-icon-btn-hover: radial-gradient(#ff840020 8px, transparent 80%);
         --icon-btn-hover: radial-gradient(#ffffff20 8px, transparent 80%);
         --background-filter-transparent: var(--background-filter-dark);
+        --background-filter-transparent-contrast: var(--background-filter-dark-contrast);
         --background-filter-transparent-invert: var(--background-filter-dark);
         --color-border: #ffffff44;
         --color-text: #ffffffee;
@@ -239,8 +257,8 @@
     *, *::before, *::after { 
         box-shadow: none !important;
         transition: none !important;
-        backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
         box-shadow: none !important;
         text-shadow: none !important;
         --color-background-card: var(--color-background-card-solid);
@@ -384,8 +402,8 @@
 .effect-reduced *, .effect-reduced *::before, .effect-reduced *::after { 
     box-shadow: none !important;
     transition: none !important;
-    backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
     box-shadow: none !important;
     text-shadow: none !important;
     --color-background-card: var(--color-background-card-solid);
@@ -409,13 +427,13 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, input, textarea, select {
     font-family: var(--font-family);
 }
 
-h1 { 
+h1 {
     margin: 0;
     font-size: 24px;
     text-align: left;
     color: var(--color-text);
     font-weight: 600;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    text-shadow: var(--text-shadow-normal);
 }
 
 button { 
@@ -514,8 +532,8 @@ header .gradient-blur {
     top: 0;
     left: 0;
     z-index: 996;
-    backdrop-filter: blur(7px);
-    -webkit-backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: var(--background-filter-gradient-layer-1);
+    backdrop-filter: var(--background-filter-gradient-layer-1);
     -webkit-mask-image: -webkit-linear-gradient(white 30%, transparent 60%);
     mask-image: linear-gradient(white 30%, transparent 60%);
 }
@@ -527,8 +545,8 @@ header .gradient-blur {
     top: 0;
     left: 0;
     z-index: 997;
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: var(--background-filter-gradient-layer-2);
+    backdrop-filter: var(--background-filter-gradient-layer-2);
     -webkit-mask-image: -webkit-linear-gradient(white 50%, transparent 80%);
     mask-image: linear-gradient(white 50%, transparent 80%);
 }
@@ -540,8 +558,8 @@ header .gradient-blur {
     top: 0;
     left: 0;
     z-index: 998;
-    backdrop-filter: blur(1px);
-    -webkit-backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: var(--background-filter-gradient-layer-3);
+    backdrop-filter: var(--background-filter-gradient-layer-3);
     -webkit-mask-image: -webkit-linear-gradient(white 75%, transparent 90%);
     mask-image: linear-gradient(white 75%, transparent 90%);
 }
@@ -652,8 +670,8 @@ header * {
     text-wrap: wrap;
     font-weight: normal;
     box-shadow: inset 0 -3px 3px rgba(255, 255, 255, 0.15);
-    -webkit-backdrop-filter: blur(6px) saturate(140%) contrast(160%) brightness(90%);
-    backdrop-filter: blur(6px) saturate(140%) contrast(160%) brightness(90%);    
+    -webkit-backdrop-filter: var(--background-filter-toast);
+    backdrop-filter: var(--background-filter-toast);    
     max-width: 90vw;
 }
 
@@ -665,8 +683,8 @@ header * {
     width: 100%;
     height: 100%;
     z-index: 2000;
-    -webkit-backdrop-filter: blur(24px);
-    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: var(--background-filter-modal);
+    backdrop-filter: var(--background-filter-modal);
     transition: all 0.2s ease-in-out;
     display: flex;
     align-items: center;
@@ -689,20 +707,8 @@ header * {
     transition: all 0.2s ease-in-out;
     margin: 0 18px;
     padding: 8px 4px;
-}
-
-.dialog-container, .dialog-container.item { 
-    background-color: var(--color-background-card-solid);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    width: 90%;
-    max-width: 480px;
-    max-height: 75dvh;
-    transition: all 0.2s ease-in-out;
-    margin: 0 18px;
-    padding: 8px 4px;
+    -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
 }
 
 .dialog-container.item.collapsed { 
@@ -812,7 +818,7 @@ header * {
     align-items: center;
     justify-content: flex-start;
     flex-wrap: nowrap;
-    width: 100%;
+    width: calc(100% - 24px);
     padding: 0 12px;
     min-height: 42px;
     min-width: 8em;
@@ -1045,8 +1051,8 @@ header * {
     filter: var(--filter-item-shadow);
     color: var(--color-text);
     z-index: 999;
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: var(--background-filter-selection);
+    backdrop-filter: var(--background-filter-selection);
 }
 
 .selection.segment, .tabs { 
@@ -1360,7 +1366,7 @@ button.active {
     letter-spacing: 0.01em;
 }
 
-input, input#endInput, textarea, select { 
+input:not(.backdrop-filter-dialog-slider), input#endInput, textarea, select { 
     padding: 6px 16px;
     border-radius: 16px;
     border: 1px solid var(--color-text-secondary);
@@ -1414,8 +1420,8 @@ datalist {
     width: fit-content;
     transition: all 0.3s ease;
     background-color: var(--color-background-card);
-    backdrop-filter: var(--background-filter-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
     justify-content: flex-start;
     border-radius: 36px;
 }
@@ -1488,15 +1494,15 @@ footer .search-bar.collapsed {
     min-width: 120px;
     max-height: 300px;
     overflow-y: auto;
-    z-index: 10000;
+    z-index: 1999;
     transform-origin: top right;
     transition: opacity 0.2s ease, transform 0.2s ease;
     opacity: 1;
     transform: scale(1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     background: var(--color-background-card-transparent);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: var(--background-filter-dropdown);
+    backdrop-filter: var(--background-filter-dropdown);
     border-radius: 16px;
     padding: 4px;
 }
@@ -1591,7 +1597,11 @@ footer .search-bar.collapsed {
 }
 
 .dialog-container:has(.shortcut-key) { 
-    background: var(--color-background-card-transparent);
+    background: var(--color-background-card);
+}
+
+.dialog-container:has(.shortcut-key) .content-container { 
+    overflow: visible;
 }
 
 .dialog-container:has(.shortcut-key) .dialog-header{

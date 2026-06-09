@@ -107,8 +107,13 @@
                 <div class="selection language-selection collapsed"></div>
             </div>
             <div class="pref-item"> 
-                <span id="historyLimitPref">历史记录容量</span>
-                <div class="icon-btn" id="setHistoryLimit">设置</div>
+                <div class="pref-item-header">
+                    <span id="historyLimitPref">历史记录容量</span>
+                    <span class="history-limit-value" id="historyLimitValue">5</span>
+                </div>
+                <div class="icon-btn" id="setHistoryLimit" style="color:var(--color-primary);">
+                    <span class="material-symbols-outlined">tune</span>
+                </div>
             </div>
             <div class="pref-item"> 
                 <span id="resumeOnLoadingPref">从离开的位置继续</span>
@@ -153,6 +158,15 @@
             <div class="pref-item"> 
                 <span id="reduceMotionPref">减弱透明度及动态效果</span>
                 <div class="switch reduce-motion"></div>
+            </div>
+            <div class="pref-item"> 
+                <div class="pref-item-header">
+                    <span id="backdropFilterIntensityPref">背景模糊强度</span>
+                    <span class="backdrop-filter-value" id="backdropFilterValue">50</span>
+                </div>
+                <div class="icon-btn" id="openBackdropFilterDialog" style="color:var(--color-primary);">
+                    <span class="material-symbols-outlined">tune</span>
+                </div>
             </div>
         </div>
         <div class="item pref-list"> 

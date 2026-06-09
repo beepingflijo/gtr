@@ -1941,11 +1941,18 @@ function checkIfTrainAtAnyStation(trainName) {
     return false;
 }
 
-var MapMode = (function () {
+var MapMode = window.MapMode = (function () {
     var overlay, canvas, ctx, container, tooltip, tooltipTitle, tooltipBody;
     var zoomIndicator;
     var isOpen = false;
     var showTrains = true;
+    var showLayer = false;
+    var tileImageCache = {};
+    var tileLoadQueue = [];
+    var tileLoadingSet = {};
+    var MAX_TILE_CONCURRENT = 8;
+    var tileRenderQueued = false;
+    var failedTileCache = {};
     var interactionsSetup = false;
     var dragMoved = false;
 
@@ -3048,6 +3055,134 @@ var MapMode = (function () {
         ctx.restore();
     }
 
+    // DynMap 图块渲染
+    // URL 格式: tiles/world/flat/{dirX}_{dirZ}/{zz...}_{tileX}_{tileZ}.jpg
+    // 缩放级别: z 的数量越多，地图越远（越小）
+    // 坐标映射: zoom=0 时每个图块覆盖 128x128 方块
+    //           zoom=n 时每个图块覆盖 2^(5-n) x 2^(5-n) 方块
+    // 目录分组: floor(tileX/32)_floor(tileZ/32)
+    var TILE_BASE_URL = 'https://map.nitrogen.hydcraft.cn/tiles/world/flat';
+    var TILE_PIXEL_SIZE = 128;
+    var MAX_ZOOM_LEVEL = 5;
+
+    function zoomToTileZoom(zoom) {
+        // 根据当前缩放级别选择合适的 DynMap 图块缩放级别
+        // 目标：确保图块在屏幕上有足够的像素细节，但不要请求过大范围
+        // tileZoom=0: 128 blocks/tile, 适用于大多数缩放级别
+        // tileZoom=n: 128/2^n blocks/tile, 仅在用户放大到足够近时使用
+        var blocksPerPixel = 1 / zoom;
+        // 图块覆盖的方块数 = 128 / 2^tileZoom
+        // 图块在屏幕上的像素 = tileBlocks / blocksPerPixel
+        // 要求: tileBlocks / blocksPerPixel >= 16（图块至少 16 像素才有意义）
+        // → tileBlocks >= 16 * blocksPerPixel
+        // → 128 / 2^tileZoom >= 16 / zoom
+        // → 2^tileZoom <= 128 * zoom / 16 = 8 * zoom
+        // → tileZoom <= log2(8 * zoom)
+        var level = Math.floor(Math.log2(Math.max(8 * zoom, 0.001)));
+        return Math.max(0, Math.min(MAX_ZOOM_LEVEL, level));
+    }
+
+    function buildTileUrl(tileX, tileZ, tileZoom) {
+        var dirX = tileX >> 5;
+        var dirZ = tileZ >> 5;
+        var zPrefix = '';
+        for (var i = 0; i < tileZoom; i++) zPrefix += 'z';
+        return TILE_BASE_URL + '/' + dirX + '_' + dirZ + '/' + zPrefix + '_' + tileX + '_' + tileZ + '.jpg';
+    }
+
+    function queueTileRender() {
+        if (!tileRenderQueued) {
+            tileRenderQueued = true;
+            requestAnimationFrame(function () {
+                tileRenderQueued = false;
+                if (isOpen && showLayer) render();
+            });
+        }
+    }
+
+    function processTileQueue() {
+        var loading = 0;
+        for (var k in tileLoadingSet) {
+            if (tileImageCache[k] === undefined && !failedTileCache[k]) loading++;
+        }
+        while (loading < MAX_TILE_CONCURRENT && tileLoadQueue.length > 0) {
+            var url = tileLoadQueue.shift();
+            if (tileImageCache[url] || failedTileCache[url]) continue;
+            (function (tileUrl) {
+                var img = new Image();
+                img.onload = function () {
+                    tileImageCache[tileUrl] = img;
+                    delete tileLoadingSet[tileUrl];
+                    queueTileRender();
+                    processTileQueue();
+                };
+                img.onerror = function () {
+                    failedTileCache[tileUrl] = true;
+                    delete tileLoadingSet[tileUrl];
+                    processTileQueue();
+                };
+                img.src = tileUrl;
+            })(url);
+            loading++;
+        }
+    }
+
+    function drawTiles() {
+        if (!showLayer || !container) return;
+
+        var cw = getCanvasCssWidth();
+        var ch = getCanvasCssHeight();
+        var tileZoom = zoomToTileZoom(viewState.zoom);
+        var tileWorldSize = 128 / Math.pow(2, tileZoom);
+
+        // 缩放过小时图块数量爆炸，跳过渲染
+        if (viewState.zoom < 0.10) return;
+
+        // 使用 screenToWorld 计算视口四角的世界坐标
+        var topLeft = screenToWorld(0, 0);
+        var bottomRight = screenToWorld(cw, ch);
+        var wl = topLeft.x, wt = topLeft.z;
+        var wr = bottomRight.x, wb = bottomRight.z;
+
+        // 计算需要加载的图块坐标范围
+        var minTX = Math.floor(wl / tileWorldSize);
+        var maxTX = Math.floor(wr / tileWorldSize);
+        var minTZ = Math.floor(wt / tileWorldSize);
+        var maxTZ = Math.floor(wb / tileWorldSize);
+
+        var tileCount = (maxTX - minTX + 1) * (maxTZ - minTZ + 1);
+        if (tileCount > 15000) return;
+
+        var needsLoad = false;
+
+        for (var tx = minTX; tx <= maxTX; tx++) {
+            for (var tz = minTZ; tz <= maxTZ; tz++) {
+                var url = buildTileUrl(tx, tz, tileZoom);
+                var tileWorldX = tx * tileWorldSize;
+                var tileWorldZ = tz * tileWorldSize;
+                var s1 = worldToScreen(tileWorldX, tileWorldZ);
+                var s2 = worldToScreen(tileWorldX + tileWorldSize, tileWorldZ + tileWorldSize);
+                var drawX = s1.x;
+                var drawY = s2.y;
+                var drawW = s2.x - s1.x;
+                var drawH = s1.y - s2.y;
+
+                if (drawX + drawW < 0 || drawX > cw || drawY + drawH < 0 || drawY > ch) continue;
+
+                var cached = tileImageCache[url];
+                if (cached && cached.complete && cached.naturalWidth > 0) {
+                    ctx.drawImage(cached, drawX, drawY, drawW, drawH);
+                } else if (!cached && !tileLoadingSet[url]) {
+                    tileLoadQueue.push(url);
+                    tileLoadingSet[url] = true;
+                    needsLoad = true;
+                }
+            }
+        }
+
+        if (needsLoad) processTileQueue();
+    }
+
     function render() {
         if (!canvas || !ctx) return;
 
@@ -3065,6 +3200,7 @@ var MapMode = (function () {
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, rect.width, rect.height);
 
+        drawTiles(); // DynMap 卫星图层
         drawGrid();
         drawLines();
         drawStations();
@@ -3403,13 +3539,15 @@ var MapMode = (function () {
             lastTouchDist = 0;
         });
 
-        document.getElementById('map-zoom-in').addEventListener('click', function () {
+        document.getElementById('map-zoom-in').addEventListener('click', function (e) {
+            e.preventDefault();
             viewState.zoom = Math.min(MAX_ZOOM, viewState.zoom * 1.3);
             hasUserZoomed = true;
             render();
         });
 
-        document.getElementById('map-zoom-out').addEventListener('click', function () {
+        document.getElementById('map-zoom-out').addEventListener('click', function (e) {
+            e.preventDefault();
             viewState.zoom = Math.max(MIN_ZOOM, viewState.zoom / 1.3);
             hasUserZoomed = true;
             render();
@@ -3423,6 +3561,12 @@ var MapMode = (function () {
         document.getElementById('map-trains-toggle').addEventListener('click', function () {
             showTrains = !showTrains;
             this.classList.toggle('active', showTrains);
+            render();
+        });
+
+        document.getElementById('map-layer-toggle')?.addEventListener('click', function () { 
+            showLayer = !showLayer;
+            this.classList.toggle('active', showLayer);
             render();
         });
 
@@ -3446,6 +3590,7 @@ var MapMode = (function () {
 
         document.getElementById('map-fit-btn').title = strings.lines_info.map_fit_all[lang];
         document.getElementById('map-trains-toggle').title = strings.lines_info.map_toggle_trains[lang];
+        //document.getElementById('map-layer-toggle').title = strings.lines_info.map_toggle_layer[lang];
         document.getElementById('map-zoom-in').title = strings.lines_info.map_zoom_in[lang];
         document.getElementById('map-zoom-out').title = strings.lines_info.map_zoom_out[lang];
 
@@ -3496,8 +3641,13 @@ var MapMode = (function () {
     function closeMapMode() {
         overlay.classList.remove('active');
         isOpen = false;
+        cancelPanAnimation();
         hideTooltip();
         stopPlayersRefresh();
+        tileImageCache = {};
+        tileLoadQueue = [];
+        tileLoadingSet = {};
+        failedTileCache = {};
         if (storageListener) {
             window.removeEventListener('storage', storageListener);
             storageListener = null;
@@ -3534,12 +3684,64 @@ var MapMode = (function () {
         };
     }
 
+    // 键盘方向键平移地图：screenDeltaX/screenDeltaY 为屏幕像素偏移量，内部转换为世界坐标并平滑动画
+    var panAnimId = null;
+    var panRemainX = 0;
+    var panRemainY = 0;
+    var PAN_SPEED = 800; // 世界坐标/秒
+
+    function panBy(screenDeltaX, screenDeltaY) {
+        if (!isOpen) return;
+        panRemainX += screenDeltaX / viewState.zoom;
+        panRemainY += screenDeltaY / viewState.zoom;
+        hasUserZoomed = true;
+        hideTooltip();
+        if (!panAnimId) {
+            var lastTime = performance.now();
+            panAnimId = requestAnimationFrame(function tick(now) {
+                var dt = Math.min(now - lastTime, 50) / 1000;
+                lastTime = now;
+                var speed = PAN_SPEED / viewState.zoom;
+                var maxStep = speed * dt;
+                var dx = Math.sign(panRemainX) * Math.min(Math.abs(panRemainX), maxStep);
+                var dy = Math.sign(panRemainY) * Math.min(Math.abs(panRemainY), maxStep);
+                viewState.offsetX += dx;
+                viewState.offsetY += dy;
+                panRemainX -= dx;
+                panRemainY -= dy;
+                render();
+                if (Math.abs(panRemainX) > 0.1 || Math.abs(panRemainY) > 0.1) {
+                    panAnimId = requestAnimationFrame(tick);
+                } else {
+                    viewState.offsetX += panRemainX;
+                    viewState.offsetY += panRemainY;
+                    panRemainX = 0;
+                    panRemainY = 0;
+                    panAnimId = null;
+                    render();
+                }
+            });
+        }
+    }
+
+    function cancelPanAnimation() {
+        if (panAnimId) {
+            cancelAnimationFrame(panAnimId);
+            panAnimId = null;
+        }
+        viewState.offsetX += panRemainX;
+        viewState.offsetY += panRemainY;
+        panRemainX = 0;
+        panRemainY = 0;
+    }
+
     return {
         init: init,
         open: openMapMode,
         close: closeMapMode,
         updateTrains: updateMapTrains,
         isOpen: function () { return isOpen; },
+        panBy: panBy,
         refreshPlayers: fetchPlayersData,
         onPlayerPrefChange: function () {
             if (!isShowPlayers()) {
