@@ -1335,7 +1335,9 @@ function initBackdropFilterSlider() {
     // 打开弹窗按钮点击事件
     if (openDialogBtn) {
         openDialogBtn.addEventListener('click', function() {
-            openBackdropFilterDialog(savedValue, isEffectReduced);
+            const currentPrefs = getPreferences();
+            const currentValue = currentPrefs.backdropFilterIntensity;
+            openBackdropFilterDialog(currentValue, isEffectReduced);
         });
     }
 }
