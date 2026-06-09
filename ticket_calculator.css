@@ -254,7 +254,7 @@ footer .search-panel .input-section {
     display: flex;
     justify-content: flex-start;
     flex-wrap: wrap;
-    gap: 4px 24px;
+    gap: 4px 0.2em;
 }
 
 .route-summary span {

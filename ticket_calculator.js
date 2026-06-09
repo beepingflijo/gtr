@@ -2284,9 +2284,9 @@ function renderSearchResults(routes, container) {
                     <span class="fare">¥<b>${(Math.floor(route.fare*20)/20).toFixed(2)}</b></span>
                 </div>
                 <div class="route-summary">
-                    <span>${strings.ticket_calculator.total_distance[lang] || '总距离'}: ${(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]}</span>
-                    <span>${strings.ticket_calculator.estimated_time[lang] || '预计用时'}: ${durationText}</span>
-                    <span>${strings.ticket_calculator.station_count[lang] || '站点数'}: ${route.stationCount - 1}</span>
+                    <span>${durationText}</span>
+                    <span>(${route.stationCount - 1}${strings.ticket_calculator[route.stationCount > 2 ? 'stations' : '_station'][lang] || '站'},</span>
+                    <span>${(route.totalDistance / 1000).toFixed(1)+strings.ticket_calculator.km[lang]})</span>
                 </div>
             </div>
             <div class="route-details">
