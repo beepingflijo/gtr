@@ -1279,7 +1279,8 @@ window.handleWindowResize = function() {
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
     initActionsOverflow();
-    const blurIntensity = prefs.backdropFilterIntensity;
+    let blurIntensity = 50;
+    blurIntensity = prefs.backdropFilterIntensity;
     applyBackdropFilterIntensity(blurIntensity);
 });
 
