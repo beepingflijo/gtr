@@ -80,6 +80,11 @@ button {
     color:var(--color-text-secondary);
     margin-right: 6px;
     min-width: fit-content;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    flex-direction: row;
 }
 
 #languagePref { 
@@ -234,10 +239,13 @@ button {
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: var(--item-shadow-inset);
+    -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
 }
 
 .backdrop-filter-slider::-webkit-slider-thumb:hover {
     transform: scale(1.1);
+    background-color: var(--color-background-card-transparent);
 }
 
 .backdrop-filter-slider::-moz-range-thumb {
@@ -249,10 +257,13 @@ button {
     border: none;
     transition: all 0.2s ease;
     box-shadow: var(--item-shadow-inset);
+    -webkit-backdrop-filter: var(--background-filter-transparent);
+    backdrop-filter: var(--background-filter-transparent);
 }
 
 .backdrop-filter-slider::-moz-range-thumb:hover {
     transform: scale(1.1);
+    background-color: var(--color-background-card-transparent);
 }
 
 .slider-label {
@@ -264,7 +275,6 @@ button {
 
 .backdrop-filter-value,
 .history-limit-value {
-    font-size: 0.85em;
     color: var(--color-text-secondary);
     margin-inline-start: 0.5em;
 }
@@ -323,6 +333,7 @@ button {
     background: var(--color-background-card);
     -webkit-backdrop-filter: var(--background-filter-transparent);
     backdrop-filter: var(--background-filter-transparent);
+    text-shadow: var(--text-shadow-normal);
     border-radius: 12px;
     padding: 16px 24px;
     margin: 0 12px;

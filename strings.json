@@ -216,7 +216,8 @@
         "action_login": {"zh_hans": "登录", "en": "Login", "zh_hant": "登入", "uk": "Вхід"},
         "current_device": {"zh_hans": "当前设备", "en": "Current Device", "zh_hant": "當前設備", "uk": "Поточний пристрій"},
         "refresh_devices": {"zh_hans": "刷新设备列表", "en": "Refresh Devices", "zh_hant": "刷新設備列表", "uk": "Оновити список пристроїв"},
-        "view_login_history": {"zh_hans": "查看登录历史", "en": "View Login History", "zh_hant": "查看登入歷史", "uk": "Переглянути історію входів"}
+        "view_login_history": {"zh_hans": "查看登录历史", "en": "View Login History", "zh_hant": "查看登入歷史", "uk": "Переглянути історію входів"},
+        "not_available_when_effect_reduced": {"zh_hans": "减弱效果时不可用", "en": "Not available when effect reduced", "zh_hant": "减弱效果時不可用", "uk": "Недоступна коли ефект зменшений"}
     },
     "storage_descriptions": {
         "preferences":{

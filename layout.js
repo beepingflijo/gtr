@@ -97,11 +97,32 @@ function applySavedTheme() {
         // 跟随系统
         html.removeAttribute('data-theme');
         html.classList.remove('dark');
+        html.classList.remove('light');
         const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (isDark) {
             html.classList.add('dark');
         }
     }
+
+    // 监听系统主题变化（仅在跟随系统模式下生效）
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    darkModeMediaQuery.addEventListener('change', (e) => {
+        const currentTheme = prefs.theme || 'system';
+        if (currentTheme === 'system') {
+            if (e.matches) {
+                html.classList.add('dark');
+                html.classList.remove('light');
+            } else {
+                html.classList.remove('dark');
+                html.classList.add('light');
+            }
+            // 重新应用背景模糊强度（因为主题变化可能影响相关变量）
+            if (window.applyBackdropFilterIntensity) {
+                const backdropFilterValue = prefs.backdropFilterIntensity || 50;
+                window.applyBackdropFilterIntensity(backdropFilterValue);
+            }
+        }
+    });
 
     const reduceMotion = prefs.reduceMotion || false;
     if (reduceMotion) {
@@ -1309,17 +1330,27 @@ window.addEventListener('resize', () => {
 // 应用背景模糊强度的 CSS 变量
 function applyBackdropFilterIntensity(value) {
     const root = document.documentElement;
-    const isDark = root.classList.contains('dark');
+    let savedTheme = 'system'
+    savedTheme = prefs.theme;
+    // 综合判断是否为深色模式：
+    // 1. 如果明确设置了 dark 主题，则为深色
+    // 2. 如果明确设置了 light 主题，则为浅色
+    // 3. 如果是跟随系统，则检查系统主题和 dark 类名
+    const isDark = savedTheme === 'dark' || 
+        (savedTheme === 'system' && (
+            root.classList.contains('dark') || 
+            (!root.classList.contains('light') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        ));
     
     // 将滑杆值 (0-100) 映射到各个参数
     // 0 = 最通透（低模糊、适度饱和度对比度、强内阴影、强文本阴影）
     // 50 = 默认值
     // 100 = 最可读（高模糊、适度饱和度对比度、弱内阴影、弱文本阴影）
     
-    // 模糊值映射 (px)
-    const blur1x = lerp(2, 10, value / 100);  // 2px -> 6px -> 10px
-    const blur2x = lerp(4, 20, value / 100);  // 4px -> 12px -> 20px
-    const blur4x = lerp(8, 40, value / 100);  // 8px -> 24px -> 40px
+    // 模糊值映射 (px) - 使用 easeInQuad 在低值时有更精细的控制
+    const blur1x = easeInQuad(1, 12, value / 100);  // 1px -> ~3px -> 10px
+    const blur2x = easeInQuad(2, 24, value / 100);  // 2px -> ~6px -> 20px
+    const blur4x = easeInQuad(4, 48, value / 100);  // 4px -> ~12px -> 40px
     
     // 滤镜参数映射（适度调整，避免过度）
     // 滑杆值50时精确对应默认值
@@ -1351,10 +1382,11 @@ function applyBackdropFilterIntensity(value) {
         'var(--blur-2x) saturate(' + lerp(70, 60, value / 100) + '%) contrast(' + lerp(65, 60, value / 100) + '%) brightness(' + lerp(35, 40, value / 100) + '%)');
     
     // 内阴影强度映射（模糊调低时加强内阴影，模糊调高时减弱）
+    // 使用 easeOutQuad 使阴影变化在低值时更平滑
     // 浅色模式默认值: input-shadow rgba(0,0,0,0.05), item-shadow rgba(0,0,0,0.05)
     // 深色模式默认值: input-shadow rgba(255,255,255,0.08), item-shadow rgba(255,255,255,0.05)
-    const shadowIntensityLight = lerp(0.10, 0.03, value / 100);  // 0.10 -> 0.05 -> 0.03
-    const shadowIntensityDark = lerp(0.12, 0.04, value / 100);   // 0.12 -> 0.08 -> 0.04
+    const shadowIntensityLight = easeOutQuad(0.10, 0.03, value / 100);  // 0.10 -> 0.05 -> 0.03
+    const shadowIntensityDark = easeOutQuad(0.12, 0.04, value / 100);   // 0.12 -> 0.08 -> 0.04
     
     // 设置内阴影变量
     if (isDark) {
@@ -1367,22 +1399,6 @@ function applyBackdropFilterIntensity(value) {
         root.style.setProperty('--item-shadow-inset-hover', 'inset 0 3px 3px rgba(255, 255, 255, ' + (shadowIntensityLight * 2) + ')');
     }
     
-    // 文本阴影映射（模糊调低时加强文本阴影以提高可读性）
-    // 默认值: h1 text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4)
-    // 浅色模式: 模糊低时阴影更强，模糊高时阴影更弱
-    // 深色模式: 类似调整
-    const textShadowBlur = lerp(16, 8, value / 100);  // 16px -> 12px -> 8px
-    const textShadowOpacity = lerp(0.6, 0.2, value / 100);  // 0.6 -> 0.4 -> 0.2
-    
-    // 设置文本阴影变量
-    if (isDark) {
-        root.style.setProperty('--text-shadow-normal', '0 2px ' + textShadowBlur + 'px rgba(0, 0, 0, ' + (textShadowOpacity * 1.2) + ')');
-        root.style.setProperty('--text-shadow-strong', '0 2px ' + (textShadowBlur * 1.5) + 'px rgba(0, 0, 0, ' + (textShadowOpacity * 1.5) + ')');
-    } else {
-        root.style.setProperty('--text-shadow-normal', '0 2px ' + textShadowBlur + 'px rgba(0, 0, 0, ' + textShadowOpacity + ')');
-        root.style.setProperty('--text-shadow-strong', '0 2px ' + (textShadowBlur * 1.5) + 'px rgba(0, 0, 0, ' + (textShadowOpacity * 1.3) + ')');
-    }
-    
     // 颜色变量透明度映射
     // 浅色模式默认值: actions=#fffffff0(240/255), card-transparent=#ffffff10(16/255), toast=#000000b0(176/255)
     // 深色模式默认值: actions=#212121f0(240/255), card-transparent=#21212110(16/255), toast=#00000080(128/255)
@@ -1392,12 +1408,12 @@ function applyBackdropFilterIntensity(value) {
     // 滑杆50(默认): 保持默认值
     // 滑杆100(可读): 更不透明
     
-    // 通过lerp确保滑杆值50时精确对应默认值
-    const actionsAlpha = Math.round(lerp(225, 255, value / 100));  // 225 -> 240 -> 255
-    const cardTransparentAlpha = Math.round(lerp(0, 32, value / 100));  // 0 -> 16 -> 32
+    // 使用 smoothstep 使透明度变化更平滑
+    const actionsAlpha = Math.round(smoothstep(225, 255, value / 100));  // 225 -> 240 -> 255
+    const cardTransparentAlpha = Math.round(smoothstep(0, 32, value / 100));  // 0 -> 16 -> 32
     const toastAlpha = isDark 
-        ? Math.round(lerp(76, 180, value / 100))   // 深色: 76 -> 128 -> 180
-        : Math.round(lerp(142, 210, value / 100)); // 浅色: 142 -> 176 -> 210
+        ? Math.round(smoothstep(76, 180, value / 100))   // 深色: 76 -> 128 -> 180
+        : Math.round(smoothstep(142, 210, value / 100)); // 浅色: 142 -> 176 -> 210
     
     // 转换为16进制
     const actionsAlphaHex = actionsAlpha.toString(16).padStart(2, '0');
@@ -1414,10 +1430,71 @@ function applyBackdropFilterIntensity(value) {
         root.style.setProperty('--color-background-card-transparent', '#ffffff' + cardTransparentAlphaHex);
         root.style.setProperty('--color-toast-background', '#000000' + toastAlphaHex);
     }
+    
+    // 文本阴影映射（模糊调低时加强文本阴影以提高可读性）
+    // 默认值: h1 text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4)
+    // 浅色模式: 模糊低时阴影更强，模糊高时阴影更弱
+    // 深色模式: 类似调整
+    const textShadowBlur = lerp(8, 16, value / 100);  // 16px -> 12px -> 8px
+    const textShadowOpacity = lerp(0.8, 0.2, value / 100);  // 0.8 -> 0.4 -> 0.2
+    
+    // 设置文本阴影变量
+    if (isDark) {
+        root.style.setProperty('--text-shadow-normal', '0 2px ' + textShadowBlur + 'px var(--color-background-card-solid)');
+        root.style.setProperty('--text-shadow-strong', '0 2px ' + (textShadowBlur * 1.5) + 'px rgba(0, 0, 0, ' + (textShadowOpacity * 1.5) + ')');
+    } else {
+        root.style.setProperty('--text-shadow-normal', '0 2px ' + textShadowBlur + 'px var(--color-background-card-solid)');
+        root.style.setProperty('--text-shadow-strong', '0 2px ' + (textShadowBlur * 1.5) + 'px rgba(0, 0, 0, ' + (textShadowOpacity * 1.3) + ')');
+    }
 }
 
-// 线性插值函数
+// ==================== 插值函数库 ====================
+
+// 线性插值 (Linear Interpolation)
 function lerp(start, end, t) {
+    t = Math.max(0, Math.min(1, t)); // 钳位到 [0, 1]
+    return start + (end - start) * t;
+}
+
+// 二次方缓入插值 (Ease-In Quad) - 开始慢，结束快
+// 适合：模糊值、透明度等需要在低值时更精细控制的参数
+function easeInQuad(start, end, t) {
+    t = Math.max(0, Math.min(1, t));
+    return start + (end - start) * (t * t);
+}
+
+// 二次方缓出插值 (Ease-Out Quad) - 开始快，结束慢
+// 适合：阴影强度等需要在高值时更精细控制的参数
+function easeOutQuad(start, end, t) {
+    t = Math.max(0, Math.min(1, t));
+    return start + (end - start) * (1 - (1 - t) * (1 - t));
+}
+
+// 三次方缓入插值 (Ease-In Cubic) - 开始更慢，结束更快
+// 适合：需要在低值区域有极高精度的参数
+function easeInCubic(start, end, t) {
+    t = Math.max(0, Math.min(1, t));
+    return start + (end - start) * (t * t * t);
+}
+
+// 三次方缓出插值 (Ease-Out Cubic) - 开始更快，结束更慢
+function easeOutCubic(start, end, t) {
+    t = Math.max(0, Math.min(1, t));
+    return start + (end - start) * (1 - Math.pow(1 - t, 3));
+}
+
+// 平滑阶梯插值 (Smoothstep) - 两端变化慢，中间变化快
+// 适合：需要平滑过渡且避免两端极端值的参数
+function smoothstep(start, end, t) {
+    t = Math.max(0, Math.min(1, t));
+    t = t * t * (3 - 2 * t);
+    return start + (end - start) * t;
+}
+
+// 更平滑的阶梯插值 (Smootherstep) - 两端变化更慢，中间变化更平滑
+function smootherstep(start, end, t) {
+    t = Math.max(0, Math.min(1, t));
+    t = t * t * t * (t * (t * 6 - 15) + 10);
     return start + (end - start) * t;
 }
 
@@ -1471,5 +1548,13 @@ async function getRandomCoverImage() {
 
 // 将函数挂载到全局
 window.applyBackdropFilterIntensity = applyBackdropFilterIntensity;
-window.lerp = lerp;
 window.getRandomCoverImage = getRandomCoverImage;
+
+// 插值函数库挂载到全局
+window.lerp = lerp;
+window.easeInQuad = easeInQuad;
+window.easeOutQuad = easeOutQuad;
+window.easeInCubic = easeInCubic;
+window.easeOutCubic = easeOutCubic;
+window.smoothstep = smoothstep;
+window.smootherstep = smootherstep;

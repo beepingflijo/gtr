@@ -427,12 +427,12 @@
     transition: all 0.2s ease;
     color: var(--color-text);
     font-size: 20px;
-    filter: var(--filter-item-shadow);
+    filter: drop-shadow(var(--item-shadow));
 }
 
 .map-ctrl-btn:hover {
     transform: scale(1.05);
-    filter: var(--filter-item-shadow-hover);
+    filter: drop-shadow(var(--item-shadow-hover));
 }
 
 .map-ctrl-btn.active {
@@ -448,7 +448,7 @@
     background: var(--color-background-card-transparent);
     -webkit-backdrop-filter: var(--background-filter-transparent);
     backdrop-filter: var(--background-filter-transparent);
-    filter: var(--filter-item-shadow);
+    filter: drop-shadow(var(--item-shadow));
     z-index: 20;
     pointer-events: none;
     max-width: 220px;

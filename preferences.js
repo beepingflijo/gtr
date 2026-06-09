@@ -123,7 +123,7 @@ function init() {
     historyLimitPref.textContent = strings.preferences.history_limit[lang];
     const setHistoryLimit = document.getElementById('setHistoryLimit');
     //setHistoryLimit.textContent = strings.general.set[lang];
-    setHistoryLimit.style.color = 'var(--color-primary)';
+    setHistoryLimit.style.color = 'var(--color-text-secondary)';
     const resumeOnLoadingPref = document.getElementById('resumeOnLoadingPref');
     resumeOnLoadingPref.textContent = strings.preferences.resume_on_loading[lang];
     const useDialogPref = document.getElementById('useDialogPref');
@@ -841,17 +841,27 @@ function applyTheme(theme) {
     if (theme === 'light') {
         html.setAttribute('data-theme', 'light');
         html.classList.remove('dark');
+        html.classList.add('light');
     } else if (theme === 'dark') {
         html.setAttribute('data-theme', 'dark');
         html.classList.add('dark');
+        html.classList.remove('light');
     } else {
         // 跟随系统
         html.removeAttribute('data-theme');
         html.classList.remove('dark');
+        html.classList.remove('light');
         const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (isDark) {
             html.classList.add('dark');
         }
+    }
+    
+    // 主题切换后重新应用背景模糊强度（因为颜色变量依赖于主题）
+    if (window.applyBackdropFilterIntensity) {
+        const prefs = getPreferences();
+        const backdropFilterValue = prefs.backdropFilterIntensity !== undefined ? prefs.backdropFilterIntensity : 50;
+        window.applyBackdropFilterIntensity(backdropFilterValue);
     }
 }
 
@@ -1333,6 +1343,11 @@ function initBackdropFilterSlider() {
 // 打开背景模糊强度调整弹窗
 async function openBackdropFilterDialog(currentValue, isEffectReduced) {
     const lang = window.lang || 'zh_hans';
+    const currentPrefs = getPreferences();
+    if (currentPrefs.reduceMotion) {
+        showToast(strings.preferences.not_available_when_effect_reduced[lang] || '请关闭“效果缩减”以使用此功能。');
+        return;
+    }
     
     // 创建弹窗内容容器
     const dialogContent = document.createElement('div');
@@ -1364,7 +1379,7 @@ async function openBackdropFilterDialog(currentValue, isEffectReduced) {
         <div class="backdrop-filter-preview-content">
             <div class="item backdrop-filter-preview-card">
                 <h4>${strings.preferences.backdrop_filter_intensity[lang] || '背景模糊强度'}</h4>
-                <p>${strings.preferences.backdrop_filter_transparent[lang] || '通透'} ↔ ${strings.preferences.backdrop_filter_readable[lang] || '可读'}</p>
+                <p>${strings.preferences.backdrop_filter_transparent[lang] || '通透'} ↔ ${strings.preferences.backdrop_filter_blur[lang] || '模糊'}</p>
             </div>
             <div class="actions backdrop-filter-preview-actions"> 
                 <div class="icon-btn">
